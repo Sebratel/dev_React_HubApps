@@ -5,8 +5,15 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    env_file:
-      - .env
+    environment:
+      - PORT=${PORT:-3000}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_NAME=${DB_NAME:-DB_Hub_Apps}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     volumes:
       - ${FIREBASE_SA_PATH:-./firebase-service-account.json}:/app/firebase-service-account.json:ro
     networks:
