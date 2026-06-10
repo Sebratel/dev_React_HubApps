@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "default": "hub-apps-staging",
+    "staging": "hub-apps-staging",
+    "prod": "hub-sebratel-apps"
+  },
+  "targets": {},
+  "etags": {}
+}
