@@ -1,6 +1,28 @@
-# Sebratel Hub — React
+# Sebratel Hub — Monorepo
 
-Hub corporativo da Sebratel — migração Flutter Web → React 18 + TypeScript + Vite 5.
+Hub corporativo da Sebratel — frontend React 18 + backend Node.js/Express em monorepo.
+
+## Estrutura do monorepo
+
+```
+dev_React_HubApps/
+├── hub-api/          # Backend Node.js/Express — API REST + Docker
+│   ├── src/          # Rotas, middlewares, utilitários
+│   ├── tests/        # Testes Jest
+│   ├── sql/          # Migrations MySQL
+│   ├── nginx/        # Config Nginx (reverse proxy + SSL)
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── src/              # Frontend React 18 + TypeScript + Vite
+├── test/             # Testes Vitest
+├── public/
+├── firebase.json     # Firebase Hosting
+└── package.json
+```
+
+**Deploy:**
+- `hub-api/` → Docker via Portainer (apontar compose para `hub-api/docker-compose.yml`)
+- Frontend (raiz) → Firebase Hosting via `firebase deploy`
 
 ## Pré-requisitos
 

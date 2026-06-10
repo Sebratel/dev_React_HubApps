@@ -1,0 +1,118 @@
+const router  = require('express').Router()
+const pool    = require('../db/pool')
+const { requireAuth, requireAdmin, invalidateAdminCache } = require('../middleware/auth')
+const { provisionLimiter, adminWriteLimiter } = require('../middleware/rateLimits')
+const logAudit       = require('../utils/logAudit')
+const AUDIT_ACTIONS  = require('../utils/auditActions')
+
+const USER_FIELDS = 'id, email, name, photo_url, profile, team, is_active, is_admin, last_login, created_at'
+
+// GET /users/me
+router.get('/me', requireAuth, async (req, res) => {
+  const [rows] = await pool.query(
+    `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+    [req.uid]
+  )
+  if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' })
+  res.json(rows[0])
+})
+
+// POST /users/provision — cria ou atualiza usuário no primeiro login (sem race condition)
+router.post('/provision', requireAuth, provisionLimiter, async (req, res) => {
+  const { name, email, photoUrl } = req.body
+  if (!name || !email) return res.status(400).json({ error: 'name e email obrigatórios' })
+
+  await pool.query(
+    `INSERT INTO users (id, email, name, photo_url, profile, is_active, is_admin, permissions, last_login, online)
+     VALUES (?, ?, ?, ?, '', 0, 0, '[]', NOW(), 1)
+     ON DUPLICATE KEY UPDATE last_login = NOW(), online = 1`,
+    [req.uid, email, name, photoUrl || null]
+  )
+
+  const [rows] = await pool.query(
+    `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+    [req.uid]
+  )
+  res.json(rows[0])
+})
+
+// PATCH /users/me/offline
+router.patch('/me/offline', requireAuth, async (req, res) => {
+  await pool.query('UPDATE users SET online = 0 WHERE id = ?', [req.uid])
+  res.json({ ok: true })
+})
+
+// GET /users — lista todos (admin only) com paginação
+router.get('/', requireAuth, requireAdmin, async (req, res) => {
+  const limit  = Math.min(Math.max(Number(req.query.limit)  || 50, 1), 200)
+  const offset = Math.max(Number(req.query.offset) || 0, 0)
+
+  const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users')
+  const [data] = await pool.query(
+    `SELECT ${USER_FIELDS} FROM users ORDER BY name LIMIT ? OFFSET ?`,
+    [limit, offset]
+  )
+
+  res.json({ data, pagination: { limit, offset, total } })
+})
+
+// PATCH /users/:id — atualiza usuário (admin only)
+router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
+  if (req.params.id === req.uid && 'is_admin' in req.body) {
+    return res.status(403).json({ error: 'Admin não pode alterar o próprio is_admin' })
+  }
+
+  if ('is_active' in req.body && 'is_admin' in req.body) {
+    return res.status(400).json({ error: 'is_active e is_admin não podem ser alterados na mesma requisição' })
+  }
+
+  const allowed = ['is_active', 'is_admin', 'profile', 'team', 'permissions']
+  const fields  = Object.keys(req.body).filter(k => allowed.includes(k))
+  if (!fields.length) return res.status(400).json({ error: 'Nenhum campo válido' })
+
+  const values = fields.map(f => req.body[f])
+  const set    = fields.map(f => `\`${f}\` = ?`).join(', ')
+
+  let auditAction = AUDIT_ACTIONS.USER_UPDATE
+  if ('is_admin' in req.body) {
+    auditAction = req.body.is_admin ? AUDIT_ACTIONS.USER_PROMOTE_ADMIN : AUDIT_ACTIONS.USER_REVOKE_ADMIN
+  } else if ('is_active' in req.body) {
+    auditAction = req.body.is_active ? AUDIT_ACTIONS.USER_ACTIVATE : AUDIT_ACTIONS.USER_DEACTIVATE
+  }
+
+  const conn = await pool.getConnection()
+  try {
+    await conn.beginTransaction()
+
+    await conn.query(
+      `UPDATE users SET ${set} WHERE id = ?`,
+      [...values, req.params.id]
+    )
+
+    if ('is_admin' in req.body) invalidateAdminCache(req.params.id)
+
+    await logAudit({
+      uid:     req.uid,
+      action:  auditAction,
+      details: { targetUserId: req.params.id, fields },
+      req,
+      conn,
+    })
+
+    await conn.commit()
+  } catch (err) {
+    await conn.rollback()
+    return next(err)
+  } finally {
+    conn.release()
+  }
+
+  const [rows] = await pool.query(
+    `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+    [req.params.id]
+  )
+
+  res.json(rows[0])
+})
+
+module.exports = router

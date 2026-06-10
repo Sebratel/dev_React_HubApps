@@ -1,0 +1,17 @@
+services:
+  hub-api:
+    build: .
+    container_name: hub-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ${FIREBASE_SA_PATH:-./firebase-service-account.json}:/app/firebase-service-account.json:ro
+    networks:
+      - sebratel-net
+
+networks:
+  sebratel-net:
+    external: true   # rede já existente no Portainer com acesso ao MySQL

@@ -29,3 +29,8 @@ Thumbs.db
 
 # Vite
 vite.config.ts.timestamp-*
+
+# hub-api — secrets e dependências (nunca commitar)
+hub-api/.env
+hub-api/firebase-service-account.json
+hub-api/node_modules/
