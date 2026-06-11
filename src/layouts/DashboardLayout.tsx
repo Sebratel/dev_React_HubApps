@@ -6,12 +6,14 @@ import { canAccessAdminDashboard } from '@/utils/permissions'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { useSecureSignOut } from '@/hooks/useSecureSignOut'
+import { useHeartbeat } from '@/hooks/useHeartbeat'
 import { cn } from '@/lib/utils'
 
 export function DashboardLayout() {
   const user = useAuthStore((s) => s.user)
   const secureSignOut = useSecureSignOut()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  useHeartbeat()
 
   const closeSidebar = () => setSidebarOpen(false)
 

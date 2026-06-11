@@ -10,6 +10,7 @@ import { AdminErrorState } from './components/AdminErrorState'
 import { AdminListSkeleton } from './components/AdminSkeleton'
 import { AdminProfileChart } from './components/AdminProfileChart'
 import { AdminTopAppsCard } from './components/AdminTopAppsCard'
+import { AdminOnlineWidget } from './components/AdminOnlineWidget'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
@@ -179,8 +180,8 @@ export function AdminDashboard() {
         </div>
       </section>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts + Presença Online */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <AdminProfileChart
           data={stats?.profileDistribution ?? []}
           isLoading={isLoading}
@@ -189,6 +190,7 @@ export function AdminDashboard() {
           data={stats?.topApps ?? []}
           isLoading={isLoading}
         />
+        <AdminOnlineWidget />
       </div>
 
       {/* Lower panels */}

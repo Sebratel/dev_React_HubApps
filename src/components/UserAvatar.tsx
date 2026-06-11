@@ -3,11 +3,12 @@ import { cn } from '@/lib/utils'
 interface UserAvatarProps {
   name: string
   photoUrl?: string | null
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   className?: string
 }
 
 const SIZE_CLASSES = {
+  xs: 'w-6 h-6 text-[10px]',
   sm: 'w-8 h-8 text-xs',
   md: 'w-10 h-10 text-sm',
   lg: 'w-14 h-14 text-base',
@@ -39,7 +40,7 @@ export function UserAvatar({ name, photoUrl, size = 'md', className }: UserAvata
   return (
     <div
       className={cn(
-        'rounded-full flex items-center justify-center font-semibold bg-sebratel-primary text-black',
+        'rounded-full flex items-center justify-center font-semibold bg-primary text-primary-foreground',
         sizeClass,
         className
       )}
