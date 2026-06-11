@@ -62,15 +62,6 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined
           if (id.includes('firebase')) return 'vendor-firebase'
-          if (id.includes('react-router')) return 'vendor-router'
-          if (id.includes('react')) return 'vendor-react'
-          if (
-            id.includes('@radix-ui') ||
-            id.includes('framer-motion') ||
-            id.includes('lucide-react')
-          )
-            return 'vendor-ui'
-          if (id.includes('zustand') || id.includes('@tanstack')) return 'vendor-state'
           return 'vendor'
         },
       },
