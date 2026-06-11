@@ -17,6 +17,7 @@ const MIGRATIONS = [
   { file: '03_add_passuser_status.sql',   label: 'pass_user e status em apps'        },
   { file: '04_seed_apps.sql',             label: 'Seed apps iniciais Sebratel'       },
   { file: '05_create_announcements.sql',  label: 'Tabela de avisos'                  },
+  { file: '06_create_teams.sql',          label: 'Tabela de times'                   },
 ]
 
 // Errors that mean "already exists" — safe to skip for idempotency
