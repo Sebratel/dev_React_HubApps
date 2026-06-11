@@ -67,6 +67,7 @@ app.use('/audit-logs',      require('./routes/auditLogs'))
 app.use('/access-requests', require('./routes/accessRequests'))
 app.use('/announcements',   require('./routes/announcements'))
 app.use('/teams',           require('./routes/teams'))
+app.use('/suggestions',     require('./routes/suggestions'))
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 

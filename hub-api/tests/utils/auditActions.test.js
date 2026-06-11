@@ -11,6 +11,7 @@ describe('AUDIT_ACTIONS', () => {
       'SSO_TOKEN_ISSUE',
       'ANNOUNCEMENT_CREATE', 'ANNOUNCEMENT_UPDATE', 'ANNOUNCEMENT_DELETE',
       'TEAM_CREATE', 'TEAM_UPDATE', 'TEAM_DELETE',
+      'SUGGESTION_CREATE', 'SUGGESTION_STATUS_UPDATE',
     ]
     expect(Object.keys(AUDIT_ACTIONS)).toEqual(expect.arrayContaining(expected))
     expect(Object.keys(AUDIT_ACTIONS)).toHaveLength(expected.length)
