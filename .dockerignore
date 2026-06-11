@@ -1,0 +1,7 @@
+node_modules
+dist
+.env*
+hub-api
+.claude
+.firebase
+.git
