@@ -9,6 +9,7 @@ describe('AUDIT_ACTIONS', () => {
       'APP_CREATE', 'APP_UPDATE', 'APP_DEACTIVATE', 'APP_REACTIVATE',
       'ACCESS_REQUEST_CREATE', 'ACCESS_REQUEST_APPROVE', 'ACCESS_REQUEST_REJECT',
       'SSO_TOKEN_ISSUE',
+      'ANNOUNCEMENT_CREATE', 'ANNOUNCEMENT_UPDATE', 'ANNOUNCEMENT_DELETE',
     ]
     expect(Object.keys(AUDIT_ACTIONS)).toEqual(expect.arrayContaining(expected))
     expect(Object.keys(AUDIT_ACTIONS)).toHaveLength(expected.length)

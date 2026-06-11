@@ -12,10 +12,11 @@ function splitStatements(sql) {
 }
 
 const MIGRATIONS = [
-  { file: '01_create_database.sql',      label: 'Criar schema DB_Hub_Apps'          },
-  { file: '02_add_indexes.sql',          label: 'Índices compostos'                 },
-  { file: '03_add_passuser_status.sql',  label: 'pass_user e status em apps'        },
-  { file: '04_seed_apps.sql',            label: 'Seed apps iniciais Sebratel'       },
+  { file: '01_create_database.sql',       label: 'Criar schema DB_Hub_Apps'          },
+  { file: '02_add_indexes.sql',           label: 'Índices compostos'                 },
+  { file: '03_add_passuser_status.sql',   label: 'pass_user e status em apps'        },
+  { file: '04_seed_apps.sql',             label: 'Seed apps iniciais Sebratel'       },
+  { file: '05_create_announcements.sql',  label: 'Tabela de avisos'                  },
 ]
 
 // Errors that mean "already exists" — safe to skip for idempotency
