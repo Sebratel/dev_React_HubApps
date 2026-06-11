@@ -45,8 +45,12 @@ router.get('/all', requireAuth, requireAdmin, async (_req, res) => {
 
 // POST /apps — cria app (admin only)
 router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
-  const { name, url, description, iconUrl, passToken, allowedProfiles, allowedUsers, allowedTeams } = req.body
+  const { name, url, description, iconUrl, passToken, passUser, status, allowedProfiles, allowedUsers, allowedTeams } = req.body
   if (!name || !url) return res.status(400).json({ error: 'name e url obrigatórios' })
+
+  const validStatuses = ['active', 'maintenance', 'novo']
+  const appStatus     = validStatuses.includes(status) ? status : 'active'
+  const isActive      = appStatus !== 'maintenance' ? 1 : 0
 
   const id = randomUUID()
 
@@ -55,13 +59,16 @@ router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, 
     await conn.beginTransaction()
 
     await conn.query(
-      `INSERT INTO apps (id, name, url, description, icon_url, pass_token, allowed_profiles, allowed_users, allowed_teams)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO apps (id, name, url, description, icon_url, pass_token, pass_user, is_active, status, allowed_profiles, allowed_users, allowed_teams)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id, name, url,
         description || null,
         iconUrl     || null,
         passToken   ? 1 : 0,
+        passUser    ? 1 : 0,
+        isActive,
+        appStatus,
         JSON.stringify(allowedProfiles || []),
         JSON.stringify(allowedUsers    || []),
         JSON.stringify(allowedTeams    || []),
@@ -84,20 +91,30 @@ router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, 
 
 // PATCH /apps/:id — atualiza app (admin only)
 router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
-  const allowed = ['name', 'url', 'description', 'icon_url', 'pass_token',
-                   'is_active', 'allowed_profiles', 'allowed_users', 'allowed_teams']
+  const allowed = ['name', 'url', 'description', 'icon_url', 'pass_token', 'pass_user',
+                   'is_active', 'status', 'allowed_profiles', 'allowed_users', 'allowed_teams']
   const fields  = Object.keys(req.body).filter(k => allowed.includes(k))
   if (!fields.length) return res.status(400).json({ error: 'Nenhum campo válido' })
 
+  // Manter is_active e status sincronizados
+  const body = { ...req.body }
+  if ('status' in body && !('is_active' in body)) {
+    body.is_active = body.status !== 'maintenance' ? 1 : 0
+    if (!fields.includes('is_active')) fields.push('is_active')
+  } else if ('is_active' in body && !('status' in body)) {
+    body.status = body.is_active ? 'active' : 'maintenance'
+    if (!fields.includes('status')) fields.push('status')
+  }
+
   const values = fields.map(f => {
-    const v = req.body[f]
+    const v = body[f]
     return Array.isArray(v) ? JSON.stringify(v) : v
   })
   const set = fields.map(f => `\`${f}\` = ?`).join(', ')
 
   let auditAction = AUDIT_ACTIONS.APP_UPDATE
-  if ('is_active' in req.body) {
-    auditAction = req.body.is_active ? AUDIT_ACTIONS.APP_REACTIVATE : AUDIT_ACTIONS.APP_DEACTIVATE
+  if ('is_active' in body) {
+    auditAction = body.is_active ? AUDIT_ACTIONS.APP_REACTIVATE : AUDIT_ACTIONS.APP_DEACTIVATE
   }
 
   const conn = await pool.getConnection()
