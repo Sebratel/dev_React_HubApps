@@ -8,7 +8,9 @@ interface AppRow {
   url: string
   icon_url: string | null
   pass_token: number
+  pass_user: number
   is_active: number
+  status: string
   allowed_profiles: string | string[]
   allowed_users: string | string[]
   allowed_teams: string | string[]
@@ -36,14 +38,14 @@ function rowToApp(row: AppRow): AppItemModel {
     launchMode: 'url',
     deepLink: null,
     openInExternalBrowser: false,
-    passUser: false,
+    passUser: !!row.pass_user,
     passToken: !!row.pass_token,
     url: row.url,
     route: null,
     allowedProfiles: parseJson(row.allowed_profiles),
     allowedUsers: parseJson(row.allowed_users),
     allowedTeams: parseJson(row.allowed_teams),
-    status: row.is_active ? 'active' : 'maintenance',
+    status: (row.status as import('@/types/enums').AppStatus) ?? (row.is_active ? 'active' : 'maintenance'),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   }

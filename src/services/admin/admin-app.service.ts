@@ -10,7 +10,9 @@ interface AdminAppRow {
   url: string
   icon_url: string | null
   pass_token: number
+  pass_user: number
   is_active: number
+  status: string
   allowed_profiles: string | string[]
   allowed_users: string | string[]
   allowed_teams: string | string[]
@@ -38,14 +40,14 @@ function rowToAppModel(row: AdminAppRow): AppItemModel {
     launchMode: 'url',
     deepLink: null,
     openInExternalBrowser: false,
-    passUser: false,
+    passUser: !!row.pass_user,
     passToken: !!row.pass_token,
     url: row.url,
     route: null,
     allowedProfiles: parseJson(row.allowed_profiles),
     allowedUsers: parseJson(row.allowed_users),
     allowedTeams: parseJson(row.allowed_teams),
-    status: row.is_active ? 'active' : 'maintenance',
+    status: (row.status as import('@/types/enums').AppStatus) ?? (row.is_active ? 'active' : 'maintenance'),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   }
@@ -59,6 +61,8 @@ export interface CreateAppPayload {
   description?: string
   iconUrl?: string
   passToken?: boolean
+  passUser?: boolean
+  status?: 'active' | 'maintenance' | 'novo'
   allowedProfiles?: string[]
   allowedUsers?: string[]
   allowedTeams?: string[]
@@ -70,7 +74,9 @@ export interface UpdateAppPayload {
   description?: string
   icon_url?: string
   pass_token?: boolean
+  pass_user?: boolean
   is_active?: boolean
+  status?: 'active' | 'maintenance' | 'novo'
   allowed_profiles?: string[]
   allowed_users?: string[]
   allowed_teams?: string[]
@@ -94,11 +100,11 @@ export async function updateApp(appId: string, payload: UpdateAppPayload): Promi
 }
 
 export async function deactivateApp(appId: string): Promise<AppItemModel> {
-  const row = await api.patch<AdminAppRow>(`/apps/${appId}`, { is_active: false })
+  const row = await api.patch<AdminAppRow>(`/apps/${appId}`, { is_active: false, status: 'maintenance' })
   return rowToAppModel(row)
 }
 
 export async function reactivateApp(appId: string): Promise<AppItemModel> {
-  const row = await api.patch<AdminAppRow>(`/apps/${appId}`, { is_active: true })
+  const row = await api.patch<AdminAppRow>(`/apps/${appId}`, { is_active: true, status: 'active' })
   return rowToAppModel(row)
 }
