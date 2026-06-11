@@ -43,6 +43,32 @@ router.patch('/me/offline', requireAuth, async (req, res) => {
   res.json({ ok: true })
 })
 
+// PATCH /users/me/heartbeat — atualiza presença online
+router.patch('/me/heartbeat', requireAuth, async (req, res) => {
+  await pool.query(
+    'UPDATE users SET last_heartbeat = NOW(), online = 1 WHERE id = ?',
+    [req.uid]
+  )
+  res.json({ ok: true })
+})
+
+// GET /users/online — admin: usuários ativos nos últimos 2 minutos
+router.get('/online', requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, name, email, photo_url, profile, is_active, last_heartbeat
+       FROM users
+       WHERE last_heartbeat >= DATE_SUB(NOW(), INTERVAL 2 MINUTE)
+         AND is_active = 1
+       ORDER BY last_heartbeat DESC
+       LIMIT 30`
+    )
+    res.json(rows)
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /users — lista todos (admin only) com paginação
 router.get('/', requireAuth, requireAdmin, async (req, res) => {
   const limit  = Math.min(Math.max(Number(req.query.limit)  || 50, 1), 200)

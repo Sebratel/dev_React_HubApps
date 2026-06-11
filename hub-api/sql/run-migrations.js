@@ -19,6 +19,7 @@ const MIGRATIONS = [
   { file: '05_create_announcements.sql',  label: 'Tabela de avisos'                  },
   { file: '06_create_teams.sql',          label: 'Tabela de times'                   },
   { file: '07_create_suggestions.sql',    label: 'Tabela de sugestões'               },
+  { file: '08_add_heartbeat.sql',         label: 'Coluna last_heartbeat em users'    },
 ]
 
 // Errors that mean "already exists" — safe to skip for idempotency
