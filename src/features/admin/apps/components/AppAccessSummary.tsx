@@ -1,10 +1,5 @@
 import type { AppItemModel } from '@/types/models'
-
-const PROFILE_LABELS: Record<string, string> = {
-  employee: 'Funcionários',
-  user: 'Usuários',
-  third_party: 'Terceiros',
-}
+import { PROFILE_LABEL } from '@/constants/profiles'
 
 export function AppAccessSummary({ app }: { app: AppItemModel }) {
   const hasProfiles = app.allowedProfiles.length > 0
@@ -27,7 +22,7 @@ export function AppAccessSummary({ app }: { app: AppItemModel }) {
           key={p}
           className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700"
         >
-          {PROFILE_LABELS[p] ?? p}
+          {PROFILE_LABEL[p] ?? p}
         </span>
       ))}
       {hasUsers && (

@@ -15,11 +15,9 @@ import type { AppItemModel } from '@/types/models'
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
-const PROFILE_OPTIONS = [
-  { value: 'employee', label: 'Funcionários' },
-  { value: 'user', label: 'Usuários externos' },
-  { value: 'third_party', label: 'Terceiros' },
-] as const
+import { SEBRATEL_PROFILES } from '@/constants/profiles'
+
+const PROFILE_OPTIONS = SEBRATEL_PROFILES
 
 const STATUS_OPTIONS = [
   { value: 'active',      label: 'Ativo'        },

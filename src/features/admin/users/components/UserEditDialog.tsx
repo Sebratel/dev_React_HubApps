@@ -12,11 +12,9 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import type { UserModel } from '@/types/models'
 
-const PROFILES = [
-  { value: 'employee', label: 'Funcionário' },
-  { value: 'user', label: 'Usuário' },
-  { value: 'third_party', label: 'Terceiro' },
-]
+import { SEBRATEL_PROFILES } from '@/constants/profiles'
+
+const PROFILES = SEBRATEL_PROFILES
 
 interface UserEditDialogProps {
   user: UserModel | null
