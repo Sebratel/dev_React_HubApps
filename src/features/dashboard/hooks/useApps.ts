@@ -11,7 +11,11 @@ export function useApps() {
   const favorites = useAppsStore((s) => s.favorites)
   const recent = useAppsStore((s) => s.recent)
 
-  const { data: allApps = [], isLoading, error } = useQuery({
+  const {
+    data: allApps = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['apps', user?.id],
     queryFn: getApps,
     enabled: !!user,
@@ -19,19 +23,13 @@ export function useApps() {
     gcTime: 10 * 60_000,
   })
 
-  const userApps = useMemo(
-    () => (user ? getUserApps(user, allApps) : []),
-    [user, allApps],
-  )
+  const userApps = useMemo(() => (user ? getUserApps(user, allApps) : []), [user, allApps])
 
-  const blockedApps = useMemo(
-    () => getAppsWithoutAccess(allApps, userApps),
-    [allApps, userApps],
-  )
+  const blockedApps = useMemo(() => getAppsWithoutAccess(allApps, userApps), [allApps, userApps])
 
   const favoriteApps = useMemo(
     () => userApps.filter((app) => favorites.includes(app.id)),
-    [userApps, favorites],
+    [userApps, favorites]
   )
 
   const recentApps = useMemo(
@@ -39,7 +37,7 @@ export function useApps() {
       recent
         .map((id) => userApps.find((app) => app.id === id))
         .filter((app): app is AppItemModel => app !== undefined),
-    [userApps, recent],
+    [userApps, recent]
   )
 
   // Prune stale IDs from persisted store when the app list is loaded

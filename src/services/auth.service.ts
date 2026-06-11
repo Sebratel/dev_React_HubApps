@@ -21,7 +21,8 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     await firebaseSignOut(auth)
     return {
       success: false,
-      error: 'Acesso permitido apenas para e-mails corporativos (@sebratel.com.br) ou parceiros autorizados.',
+      error:
+        'Acesso permitido apenas para e-mails corporativos (@sebratel.com.br) ou parceiros autorizados.',
     }
   }
 

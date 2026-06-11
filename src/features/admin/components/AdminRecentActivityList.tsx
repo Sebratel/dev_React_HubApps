@@ -35,7 +35,7 @@ export function AdminRecentActivityList({ logs }: AdminRecentActivityListProps) 
 
   return (
     <ul className="divide-y divide-border">
-      {logs.map(log => (
+      {logs.map((log) => (
         <li key={log.id} className="py-3 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">{log.userName}</p>

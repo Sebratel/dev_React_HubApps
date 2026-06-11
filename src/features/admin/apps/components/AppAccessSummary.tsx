@@ -1,16 +1,16 @@
 import type { AppItemModel } from '@/types/models'
 
 const PROFILE_LABELS: Record<string, string> = {
-  employee:    'Funcionários',
-  user:        'Usuários',
+  employee: 'Funcionários',
+  user: 'Usuários',
   third_party: 'Terceiros',
 }
 
 export function AppAccessSummary({ app }: { app: AppItemModel }) {
   const hasProfiles = app.allowedProfiles.length > 0
-  const hasUsers    = app.allowedUsers.length > 0
-  const hasTeams    = app.allowedTeams.length > 0
-  const hasAny      = hasProfiles || hasUsers || hasTeams
+  const hasUsers = app.allowedUsers.length > 0
+  const hasTeams = app.allowedTeams.length > 0
+  const hasAny = hasProfiles || hasUsers || hasTeams
 
   if (!hasAny) {
     return (
@@ -22,7 +22,7 @@ export function AppAccessSummary({ app }: { app: AppItemModel }) {
 
   return (
     <div className="flex flex-wrap gap-1">
-      {app.allowedProfiles.map(p => (
+      {app.allowedProfiles.map((p) => (
         <span
           key={p}
           className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700"

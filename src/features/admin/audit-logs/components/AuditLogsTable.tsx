@@ -1,3 +1,4 @@
+import { BookOpen } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AuditActionBadge } from './AuditActionBadge'
 import type { AuditLogModel } from '@/types/models'
@@ -39,13 +40,13 @@ export function AuditLogsTable({ logs, onDetails }: AuditLogsTableProps) {
 
       {/* Rows */}
       <div className="divide-y divide-border">
-        {logs.map(log => (
+        {logs.map((log) => (
           <div
             key={log.id}
             role="row"
             className="grid grid-cols-1 sm:grid-cols-[2fr_2fr_3fr_auto] gap-2 sm:gap-4 px-4 py-3 items-center hover:bg-muted/30 transition-colors cursor-pointer"
             onClick={() => onDetails(log)}
-            onKeyDown={e => {
+            onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') onDetails(log)
             }}
             tabIndex={0}
@@ -53,9 +54,7 @@ export function AuditLogsTable({ logs, onDetails }: AuditLogsTableProps) {
           >
             {/* User */}
             <div className="min-w-0">
-              <p className="text-sm font-medium truncate">
-                {log.userName || log.userId}
-              </p>
+              <p className="text-sm font-medium truncate">{log.userName || log.userId}</p>
             </div>
 
             {/* Action */}
@@ -65,9 +64,7 @@ export function AuditLogsTable({ logs, onDetails }: AuditLogsTableProps) {
 
             {/* Details */}
             <div className="min-w-0 hidden sm:block">
-              <p className="text-xs text-muted-foreground truncate">
-                {log.details || '—'}
-              </p>
+              <p className="text-xs text-muted-foreground truncate">{log.details || '—'}</p>
             </div>
 
             {/* Timestamp */}
@@ -109,16 +106,15 @@ export function AuditLogsTableSkeleton() {
 
 export function AuditLogsTableEmpty({ hasFilters }: { hasFilters: boolean }) {
   return (
-    <div className="rounded-xl border border-border px-6 py-12 text-center">
-      <p className="text-sm font-medium text-foreground">
+    <div className="rounded-xl border border-border px-6 py-12 flex flex-col items-center gap-3 text-center">
+      <BookOpen className="h-8 w-8 text-muted-foreground/40" aria-hidden />
+      <p className="text-sm font-medium text-muted-foreground">
         {hasFilters
           ? 'Nenhum evento corresponde aos filtros.'
           : 'Nenhum evento de auditoria registrado.'}
       </p>
       {hasFilters && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Tente ajustar ou limpar os filtros.
-        </p>
+        <p className="text-xs text-muted-foreground">Tente ajustar ou limpar os filtros.</p>
       )}
     </div>
   )

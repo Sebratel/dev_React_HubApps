@@ -24,8 +24,9 @@ export function AppCard({
   return (
     <div
       className={cn(
-        'relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md',
-        !hasAccess && 'opacity-75',
+        'group relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm',
+        'transition-all duration-200 hover:shadow-md hover:border-border/80',
+        !hasAccess && 'opacity-70'
       )}
     >
       {/* Icon + badge + favorite */}
@@ -35,18 +36,28 @@ export function AppCard({
         </div>
         <div className="flex items-center gap-1">
           {app.status === 'novo' && (
-            <Badge className="text-xs px-1.5 py-0.5">Novo</Badge>
+            <Badge className="text-xs px-1.5 py-0.5">
+              Novo
+              <span className="sr-only"> — aplicativo recém-adicionado</span>
+            </Badge>
           )}
           {hasAccess && (
             <button
               onClick={() => onToggleFavorite(app.id)}
               className={cn(
-                'rounded-full p-1 transition-colors hover:bg-muted',
-                isFavorite ? 'text-yellow-500' : 'text-muted-foreground',
+                'rounded-full p-1 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                isFavorite
+                  ? 'text-yellow-500'
+                  : 'text-muted-foreground opacity-0 group-hover:opacity-100'
               )}
-              aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+              aria-label={
+                isFavorite
+                  ? `Remover ${app.name} dos favoritos`
+                  : `Adicionar ${app.name} aos favoritos`
+              }
+              aria-pressed={isFavorite}
             >
-              <Star className="h-4 w-4" fill={isFavorite ? 'currentColor' : 'none'} />
+              <Star className="h-4 w-4" fill={isFavorite ? 'currentColor' : 'none'} aria-hidden />
             </button>
           )}
         </div>
@@ -58,7 +69,9 @@ export function AppCard({
           {app.name}
         </h3>
         {app.description && (
-          <p className="line-clamp-2 text-xs text-muted-foreground">{app.description}</p>
+          <p className="line-clamp-2 text-xs text-muted-foreground" title={app.description}>
+            {app.description}
+          </p>
         )}
       </div>
 
@@ -74,7 +87,7 @@ export function AppCard({
           className="mt-auto w-full gap-1.5"
           onClick={() => onRequestAccess(app)}
         >
-          <Lock className="h-3.5 w-3.5" />
+          <Lock className="h-3.5 w-3.5" aria-hidden />
           Solicitar acesso
         </Button>
       )}

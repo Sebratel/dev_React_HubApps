@@ -1,9 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
-import {
-  listAuditLogs,
-  type ListAuditLogsParams,
-} from '@/services/admin/admin-audit-log.service'
+import { listAuditLogs, type ListAuditLogsParams } from '@/services/admin/admin-audit-log.service'
 import type { AuditAction } from '@/types/api'
 
 export const PAGE_SIZE = 50
@@ -29,8 +26,7 @@ function periodToDates(period: AuditLogFilters['period']): {
   if (period === 'all') return {}
   const today = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
-  const toISO = (d: Date) =>
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
   if (period === 'today') {
     const iso = toISO(today)
     return { dateFrom: iso, dateTo: iso }
@@ -70,18 +66,13 @@ export function useAuditLogsPage() {
     if (!filters.search) return allLogs
     const q = filters.search.toLowerCase()
     return allLogs.filter(
-      log =>
-        log.userName.toLowerCase().includes(q) ||
-        log.details.toLowerCase().includes(q),
+      (log) => log.userName.toLowerCase().includes(q) || log.details.toLowerCase().includes(q)
     )
   }, [allLogs, filters.search])
 
   const totalLogs = data?.pagination.total ?? 0
   const totalPages = Math.max(1, Math.ceil(totalLogs / PAGE_SIZE))
-  const hasFilters =
-    filters.search !== '' ||
-    filters.action !== 'all' ||
-    filters.period !== 'all'
+  const hasFilters = filters.search !== '' || filters.action !== 'all' || filters.period !== 'all'
 
   return {
     logs: filteredLogs,

@@ -34,7 +34,7 @@ function formatMutationError(err: unknown): string {
 }
 
 export function UsersManagementPage() {
-  const currentUser = useAuthStore(s => s.user)
+  const currentUser = useAuthStore((s) => s.user)
 
   const {
     users,
@@ -80,8 +80,7 @@ export function UsersManagementPage() {
 
   // Promote/revoke admin share a generic confirm dialog
   const adminMutation = dialog === 'promoteAdmin' ? promoteAdminMutation : revokeAdminMutation
-  const adminMutationLabel =
-    dialog === 'promoteAdmin' ? 'Promover a admin' : 'Revogar admin'
+  const adminMutationLabel = dialog === 'promoteAdmin' ? 'Promover a admin' : 'Revogar admin'
   const adminMutationDescription =
     dialog === 'promoteAdmin'
       ? `Tem certeza que deseja promover ${selectedUser?.name} a administrador? Ele terá acesso total ao painel admin.`
@@ -113,7 +112,10 @@ export function UsersManagementPage() {
 
       {/* Error banner */}
       {isError && !isLoading && (
-        <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3"
+        >
           <p className="text-sm text-destructive">
             Erro ao carregar usuários.{' '}
             <button
@@ -134,16 +136,14 @@ export function UsersManagementPage() {
             placeholder="Buscar por nome ou e-mail..."
             className="pl-9"
             value={filters.search}
-            onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
           />
         </div>
 
         <Select
           className="w-36"
           value={filters.status}
-          onChange={e =>
-            setFilters(f => ({ ...f, status: e.target.value as typeof f.status }))
-          }
+          onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as typeof f.status }))}
           aria-label="Filtrar por status"
         >
           <option value="all">Todos status</option>
@@ -154,7 +154,7 @@ export function UsersManagementPage() {
         <Select
           className="w-36"
           value={filters.role}
-          onChange={e => setFilters(f => ({ ...f, role: e.target.value as typeof f.role }))}
+          onChange={(e) => setFilters((f) => ({ ...f, role: e.target.value as typeof f.role }))}
           aria-label="Filtrar por papel"
         >
           <option value="all">Todos papéis</option>
@@ -166,11 +166,11 @@ export function UsersManagementPage() {
           <Select
             className="w-36"
             value={filters.profile}
-            onChange={e => setFilters(f => ({ ...f, profile: e.target.value }))}
+            onChange={(e) => setFilters((f) => ({ ...f, profile: e.target.value }))}
             aria-label="Filtrar por perfil"
           >
             <option value="">Todos perfis</option>
-            {availableProfiles.map(p => (
+            {availableProfiles.map((p) => (
               <option key={p} value={p}>
                 {p}
               </option>
@@ -198,11 +198,11 @@ export function UsersManagementPage() {
         <UsersTable
           users={users}
           currentUserId={currentUser.id}
-          onEdit={user => openDialog('edit', user)}
-          onActivate={user => openDialog('activate', user)}
-          onDeactivate={user => openDialog('deactivate', user)}
-          onPromoteAdmin={user => openDialog('promoteAdmin', user)}
-          onRevokeAdmin={user => openDialog('revokeAdmin', user)}
+          onEdit={(user) => openDialog('edit', user)}
+          onActivate={(user) => openDialog('activate', user)}
+          onDeactivate={(user) => openDialog('deactivate', user)}
+          onPromoteAdmin={(user) => openDialog('promoteAdmin', user)}
+          onRevokeAdmin={(user) => openDialog('revokeAdmin', user)}
         />
       )}
 
@@ -246,11 +246,11 @@ export function UsersManagementPage() {
         error={
           updateProfileMutation.isError ? formatMutationError(updateProfileMutation.error) : null
         }
-        onConfirm={patch => {
+        onConfirm={(patch) => {
           if (!selectedUser) return
           updateProfileMutation.mutate(
             { userId: selectedUser.id, patch },
-            { onSuccess: closeDialog },
+            { onSuccess: closeDialog }
           )
         }}
         onClose={closeDialog}
@@ -259,7 +259,7 @@ export function UsersManagementPage() {
       {/* Generic admin promote/revoke confirmation dialog */}
       <Dialog
         open={dialog === 'promoteAdmin' || dialog === 'revokeAdmin'}
-        onOpenChange={v => !v && closeDialog()}
+        onOpenChange={(v) => !v && closeDialog()}
       >
         <DialogContent>
           <DialogHeader>
@@ -268,7 +268,10 @@ export function UsersManagementPage() {
           </DialogHeader>
 
           {adminMutation.isError && (
-            <p role="alert" className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+            <p
+              role="alert"
+              className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2"
+            >
               {formatMutationError(adminMutation.error)}
             </p>
           )}

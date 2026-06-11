@@ -21,7 +21,7 @@ export function AdminPendingRequestsList({ requests }: AdminPendingRequestsListP
 
   return (
     <ul className="divide-y divide-border">
-      {requests.slice(0, MAX_VISIBLE).map(req => (
+      {requests.slice(0, MAX_VISIBLE).map((req) => (
         <li key={req.id} className="py-3 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">{req.userName || req.userId}</p>

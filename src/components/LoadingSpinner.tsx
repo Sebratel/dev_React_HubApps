@@ -14,7 +14,9 @@ export function LoadingSpinner({ fullScreen, className }: LoadingSpinnerProps) {
       )}
       role="status"
       aria-label="Carregando"
-    />
+    >
+      <span className="sr-only">Carregando…</span>
+    </div>
   )
 
   if (fullScreen) {

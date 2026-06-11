@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Loader2, CheckCircle2, Clock3 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,8 @@ import {
 } from '@/services/access-request.service'
 import { useAuthStore } from '@/stores/auth.store'
 import type { AppItemModel } from '@/types/models'
+
+const MAX_REASON_LENGTH = 500
 
 interface AccessRequestModalProps {
   app: AppItemModel | null
@@ -80,7 +83,12 @@ export function AccessRequestModal({ app, open, onClose }: AccessRequestModalPro
   if (!app) return null
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose() }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) handleClose()
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Solicitar acesso</DialogTitle>
@@ -90,10 +98,13 @@ export function AccessRequestModal({ app, open, onClose }: AccessRequestModalPro
         </DialogHeader>
 
         {checkingPending ? (
-          <p className="py-4 text-sm text-muted-foreground">Verificando solicitações...</p>
+          <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            Verificando solicitações...
+          </div>
         ) : submitSuccess ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <span className="text-4xl">✅</span>
+            <CheckCircle2 className="h-10 w-10 text-green-500" aria-hidden />
             <p className="text-sm font-medium">Solicitação enviada com sucesso!</p>
             <p className="text-xs text-muted-foreground">
               Aguarde a aprovação de um administrador.
@@ -101,7 +112,7 @@ export function AccessRequestModal({ app, open, onClose }: AccessRequestModalPro
           </div>
         ) : pendingRequest ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <span className="text-4xl">⏳</span>
+            <Clock3 className="h-10 w-10 text-amber-500" aria-hidden />
             <p className="text-sm font-medium">Solicitação pendente</p>
             <p className="text-xs text-muted-foreground">
               Você já possui uma solicitação em análise para este aplicativo.
@@ -118,15 +129,36 @@ export function AccessRequestModal({ app, open, onClose }: AccessRequestModalPro
                 placeholder="Descreva brevemente o motivo..."
                 value={reason}
                 onChange={(e) => {
-                  setReason(e.target.value)
-                  setReasonError(null)
+                  if (e.target.value.length <= MAX_REASON_LENGTH) {
+                    setReason(e.target.value)
+                    setReasonError(null)
+                  }
                 }}
                 rows={4}
                 disabled={isSubmitting}
+                aria-describedby={reasonError ? 'reason-error' : 'reason-count'}
               />
-              {reasonError && <p className="text-xs text-destructive">{reasonError}</p>}
+              <div className="flex items-center justify-between">
+                {reasonError ? (
+                  <p id="reason-error" className="text-xs text-destructive" role="alert">
+                    {reasonError}
+                  </p>
+                ) : (
+                  <span />
+                )}
+                <span
+                  id="reason-count"
+                  className="text-xs text-muted-foreground tabular-nums ml-auto"
+                >
+                  {reason.length}/{MAX_REASON_LENGTH}
+                </span>
+              </div>
             </div>
-            {submitError && <p className="text-xs text-destructive">{submitError}</p>}
+            {submitError && (
+              <p className="text-xs text-destructive" role="alert">
+                {submitError}
+              </p>
+            )}
           </div>
         )}
 
@@ -139,6 +171,7 @@ export function AccessRequestModal({ app, open, onClose }: AccessRequestModalPro
                 Cancelar
               </Button>
               <Button onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden />}
                 {isSubmitting ? 'Enviando...' : 'Enviar solicitação'}
               </Button>
             </>

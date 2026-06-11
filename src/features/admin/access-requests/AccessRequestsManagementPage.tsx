@@ -30,7 +30,7 @@ function formatMutationError(err: unknown): string {
 }
 
 export function AccessRequestsManagementPage() {
-  const currentUser = useAuthStore(s => s.user)
+  const currentUser = useAuthStore((s) => s.user)
 
   const {
     requests,
@@ -88,7 +88,10 @@ export function AccessRequestsManagementPage() {
 
       {/* Error banner */}
       {isError && !isLoading && (
-        <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3"
+        >
           <p className="text-sm text-destructive">
             Erro ao carregar solicitações.{' '}
             <button
@@ -109,16 +112,14 @@ export function AccessRequestsManagementPage() {
             placeholder="Buscar por usuário, e-mail ou aplicativo..."
             className="pl-9"
             value={filters.search}
-            onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
           />
         </div>
 
         <Select
           className="w-40"
           value={filters.status}
-          onChange={e =>
-            setFilters(f => ({ ...f, status: e.target.value as typeof f.status }))
-          }
+          onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as typeof f.status }))}
           aria-label="Filtrar por status"
         >
           <option value="all">Todos os status</option>
@@ -146,9 +147,9 @@ export function AccessRequestsManagementPage() {
       ) : (
         <AccessRequestsTable
           requests={requests}
-          onDetails={req => openDialog('details', req)}
-          onApprove={req => openDialog('approve', req)}
-          onReject={req => openDialog('reject', req)}
+          onDetails={(req) => openDialog('details', req)}
+          onApprove={(req) => openDialog('approve', req)}
+          onReject={(req) => openDialog('reject', req)}
         />
       )}
 

@@ -20,28 +20,28 @@ import type { AuditAction } from '@/types/api'
 // ─── Action options for <select> ─────────────────────────────────────────────
 
 const ACTION_OPTIONS: { value: AuditAction | 'all'; label: string }[] = [
-  { value: 'all',                                label: 'Todas as ações' },
-  { value: AUDIT_ACTION.LOGIN,                   label: 'Login' },
-  { value: AUDIT_ACTION.LOGOUT,                  label: 'Logout' },
-  { value: AUDIT_ACTION.APP_OPEN,                label: 'Abriu app' },
-  { value: AUDIT_ACTION.USER_UPDATE,             label: 'Atualizou usuário' },
-  { value: AUDIT_ACTION.USER_ACTIVATE,           label: 'Ativou usuário' },
-  { value: AUDIT_ACTION.USER_DEACTIVATE,         label: 'Desativou usuário' },
-  { value: AUDIT_ACTION.USER_PROMOTE_ADMIN,      label: 'Promoveu a admin' },
-  { value: AUDIT_ACTION.USER_REVOKE_ADMIN,       label: 'Revogou admin' },
-  { value: AUDIT_ACTION.APP_CREATE,              label: 'Criou app' },
-  { value: AUDIT_ACTION.APP_UPDATE,              label: 'Atualizou app' },
-  { value: AUDIT_ACTION.APP_DEACTIVATE,          label: 'Desativou app' },
-  { value: AUDIT_ACTION.APP_REACTIVATE,          label: 'Reativou app' },
-  { value: AUDIT_ACTION.ACCESS_REQUEST_CREATE,   label: 'Solicitou acesso' },
-  { value: AUDIT_ACTION.ACCESS_REQUEST_APPROVE,  label: 'Aprovou solicitação' },
-  { value: AUDIT_ACTION.ACCESS_REQUEST_REJECT,   label: 'Rejeitou solicitação' },
+  { value: 'all', label: 'Todas as ações' },
+  { value: AUDIT_ACTION.LOGIN, label: 'Login' },
+  { value: AUDIT_ACTION.LOGOUT, label: 'Logout' },
+  { value: AUDIT_ACTION.APP_OPEN, label: 'Abriu app' },
+  { value: AUDIT_ACTION.USER_UPDATE, label: 'Atualizou usuário' },
+  { value: AUDIT_ACTION.USER_ACTIVATE, label: 'Ativou usuário' },
+  { value: AUDIT_ACTION.USER_DEACTIVATE, label: 'Desativou usuário' },
+  { value: AUDIT_ACTION.USER_PROMOTE_ADMIN, label: 'Promoveu a admin' },
+  { value: AUDIT_ACTION.USER_REVOKE_ADMIN, label: 'Revogou admin' },
+  { value: AUDIT_ACTION.APP_CREATE, label: 'Criou app' },
+  { value: AUDIT_ACTION.APP_UPDATE, label: 'Atualizou app' },
+  { value: AUDIT_ACTION.APP_DEACTIVATE, label: 'Desativou app' },
+  { value: AUDIT_ACTION.APP_REACTIVATE, label: 'Reativou app' },
+  { value: AUDIT_ACTION.ACCESS_REQUEST_CREATE, label: 'Solicitou acesso' },
+  { value: AUDIT_ACTION.ACCESS_REQUEST_APPROVE, label: 'Aprovou solicitação' },
+  { value: AUDIT_ACTION.ACCESS_REQUEST_REJECT, label: 'Rejeitou solicitação' },
 ]
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function AuditLogsManagementPage() {
-  const currentUser = useAuthStore(s => s.user)
+  const currentUser = useAuthStore((s) => s.user)
 
   const {
     logs,
@@ -60,7 +60,7 @@ export function AuditLogsManagementPage() {
   if (!currentUser || !canAccessAdminDashboard(currentUser)) return null
 
   function handlePageChange(page: number) {
-    setFilters(f => ({ ...f, page }))
+    setFilters((f) => ({ ...f, page }))
   }
 
   function clearFilters() {
@@ -117,15 +117,15 @@ export function AuditLogsManagementPage() {
             placeholder="Buscar por usuário ou detalhes..."
             className="pl-9"
             value={filters.search}
-            onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
           />
         </div>
 
         <Select
           className="w-52"
           value={filters.action}
-          onChange={e =>
-            setFilters(f => ({
+          onChange={(e) =>
+            setFilters((f) => ({
               ...f,
               action: e.target.value as typeof f.action,
               page: 1,
@@ -133,7 +133,7 @@ export function AuditLogsManagementPage() {
           }
           aria-label="Filtrar por ação"
         >
-          {ACTION_OPTIONS.map(opt => (
+          {ACTION_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -143,8 +143,8 @@ export function AuditLogsManagementPage() {
         <Select
           className="w-44"
           value={filters.period}
-          onChange={e =>
-            setFilters(f => ({
+          onChange={(e) =>
+            setFilters((f) => ({
               ...f,
               period: e.target.value as typeof f.period,
               page: 1,

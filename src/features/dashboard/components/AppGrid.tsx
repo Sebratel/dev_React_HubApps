@@ -1,3 +1,4 @@
+import { PackageOpen } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AppCard } from './AppCard'
 import type { AppItemModel } from '@/types/models'
@@ -39,8 +40,11 @@ export function AppGrid({
 
   if (apps.length === 0 && blockedApps.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-        <span className="text-4xl">📭</span>
+      <div
+        className="flex flex-col items-center justify-center gap-3 py-20 text-center"
+        role="status"
+      >
+        <PackageOpen className="h-12 w-12 text-muted-foreground/40" aria-hidden />
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
       </div>
     )
@@ -66,9 +70,13 @@ export function AppGrid({
 
       {blockedApps.length > 0 && (
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium text-muted-foreground">
-            Disponíveis para solicitar acesso
-          </p>
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" aria-hidden />
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide shrink-0">
+              Disponíveis para solicitar acesso
+            </p>
+            <div className="h-px flex-1 bg-border" aria-hidden />
+          </div>
           <div className={GRID}>
             {blockedApps.map((app) => (
               <AppCard

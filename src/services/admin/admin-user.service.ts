@@ -43,7 +43,7 @@ export type ListUsersParams = PaginationParams
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 export async function listUsers(
-  params: ListUsersParams = {},
+  params: ListUsersParams = {}
 ): Promise<PaginatedResponse<UserModel>> {
   const response = await api.getPaginated<AdminUserRow>('/users', params)
   return {
@@ -74,7 +74,7 @@ export async function revokeAdmin(userId: string): Promise<UserModel> {
 
 export async function updateUserProfile(
   userId: string,
-  data: Partial<Pick<UserModel, 'profile' | 'team'>>,
+  data: Partial<Pick<UserModel, 'profile' | 'team'>>
 ): Promise<UserModel> {
   const payload: Record<string, unknown> = {}
   if (data.profile !== undefined) payload.profile = data.profile

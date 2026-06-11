@@ -29,7 +29,7 @@ export function useAccessRequestsPage() {
   const allRequests = useMemo(() => data?.data ?? [], [data])
 
   const filteredRequests = useMemo(() => {
-    return allRequests.filter(req => {
+    return allRequests.filter((req) => {
       if (filters.status !== 'all' && req.status !== filters.status) return false
       if (filters.search) {
         const q = filters.search.toLowerCase()

@@ -56,7 +56,7 @@ export interface ListAccessRequestsParams extends PaginationParams {
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 export async function listAllAccessRequests(
-  params: ListAccessRequestsParams = {},
+  params: ListAccessRequestsParams = {}
 ): Promise<PaginatedResponse<AccessRequestModel>> {
   const response = await api.getPaginated<AccessRequestRow>('/access-requests', params)
   return {

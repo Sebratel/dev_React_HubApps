@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react'
 import { useAuthStore } from '@/stores/auth.store'
 import { canAccessAdminDashboard } from '@/utils/permissions'
 import { useAdminDashboard } from './hooks/useAdminDashboard'
@@ -11,12 +12,18 @@ import { RefreshCw, Users, LayoutGrid, Clock, ShieldCheck } from 'lucide-react'
 
 export function AdminDashboard() {
   const user = useAuthStore((s) => s.user)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   // All hooks must be called before conditional returns (React rules of hooks).
   // AdminRoute already ensures only admins reach this component; the check
   // below is a defense-in-depth guard against direct navigation.
   const { metrics, pendingRequests, recentAuditLogs, isLoading, hasError, refetchAll } =
     useAdminDashboard()
+
+  const handleRefresh = useCallback(() => {
+    refetchAll()
+    setLastUpdated(new Date())
+  }, [refetchAll])
 
   if (!user || !canAccessAdminDashboard(user)) return null
 
@@ -30,16 +37,27 @@ export function AdminDashboard() {
             Visão geral do Hub Sebratel — somente leitura
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={refetchAll}
-          disabled={isLoading}
-          aria-label="Atualizar dados"
-        >
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
-          Atualizar
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isLoading}
+            aria-label="Atualizar dados"
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-1.5 ${isLoading ? 'animate-spin' : ''}`}
+              aria-hidden
+            />
+            Atualizar
+          </Button>
+          {lastUpdated && !isLoading && (
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              Atualizado às{' '}
+              {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Error banner */}
@@ -137,9 +155,7 @@ export function AdminDashboard() {
           className="rounded-xl border border-border bg-card p-4"
           aria-label="Atividade recente"
         >
-          <h2 className="text-sm font-semibold text-foreground mb-3">
-            Atividade Recente
-          </h2>
+          <h2 className="text-sm font-semibold text-foreground mb-3">Atividade Recente</h2>
           {isLoading ? (
             <AdminListSkeleton rows={4} />
           ) : hasError ? (

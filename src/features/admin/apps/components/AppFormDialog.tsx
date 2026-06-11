@@ -16,26 +16,32 @@ import type { AppItemModel } from '@/types/models'
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const PROFILE_OPTIONS = [
-  { value: 'employee',    label: 'Funcionários' },
-  { value: 'user',        label: 'Usuários externos' },
+  { value: 'employee', label: 'Funcionários' },
+  { value: 'user', label: 'Usuários externos' },
   { value: 'third_party', label: 'Terceiros' },
 ] as const
 
 const appFormSchema = z.object({
-  name:             z.string().min(1, 'Nome é obrigatório').max(255),
-  url:              z.string().min(1, 'URL é obrigatória').url('URL inválida. Use o formato https://exemplo.com'),
-  description:      z.string().max(500).optional(),
-  iconUrl:          z.string().optional(),
-  passToken:        z.boolean(),
-  allowedProfiles:  z.array(z.string()),
-  allowedUsersRaw:  z.string(),
-  allowedTeamsRaw:  z.string(),
+  name: z.string().min(1, 'Nome é obrigatório').max(255),
+  url: z
+    .string()
+    .min(1, 'URL é obrigatória')
+    .url('URL inválida. Use o formato https://exemplo.com'),
+  description: z.string().max(500).optional(),
+  iconUrl: z.string().optional(),
+  passToken: z.boolean(),
+  allowedProfiles: z.array(z.string()),
+  allowedUsersRaw: z.string(),
+  allowedTeamsRaw: z.string(),
 })
 
 export type AppFormValues = z.infer<typeof appFormSchema>
 
 function parseLines(raw: string): string[] {
-  return raw.split('\n').map(s => s.trim()).filter(Boolean)
+  return raw
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -60,7 +66,7 @@ export function AppFormDialog({
   onClose,
 }: AppFormDialogProps) {
   const isEdit = !!app
-  const title  = isEdit ? 'Editar aplicativo' : 'Criar aplicativo'
+  const title = isEdit ? 'Editar aplicativo' : 'Criar aplicativo'
 
   const {
     register,
@@ -72,11 +78,11 @@ export function AppFormDialog({
   } = useForm<AppFormValues>({
     resolver: zodResolver(appFormSchema),
     defaultValues: {
-      name:            app?.name ?? '',
-      url:             app?.url ?? '',
-      description:     app?.description ?? '',
-      iconUrl:         app?.icon ?? '',
-      passToken:       app?.passToken ?? false,
+      name: app?.name ?? '',
+      url: app?.url ?? '',
+      description: app?.description ?? '',
+      iconUrl: app?.icon ?? '',
+      passToken: app?.passToken ?? false,
       allowedProfiles: app?.allowedProfiles ?? [],
       allowedUsersRaw: (app?.allowedUsers ?? []).join('\n'),
       allowedTeamsRaw: (app?.allowedTeams ?? []).join('\n'),
@@ -87,23 +93,23 @@ export function AppFormDialog({
   useEffect(() => {
     if (open) {
       reset({
-        name:            app?.name ?? '',
-        url:             app?.url ?? '',
-        description:     app?.description ?? '',
-        iconUrl:         app?.icon ?? '',
-        passToken:       app?.passToken ?? false,
+        name: app?.name ?? '',
+        url: app?.url ?? '',
+        description: app?.description ?? '',
+        iconUrl: app?.icon ?? '',
+        passToken: app?.passToken ?? false,
         allowedProfiles: app?.allowedProfiles ?? [],
         allowedUsersRaw: (app?.allowedUsers ?? []).join('\n'),
         allowedTeamsRaw: (app?.allowedTeams ?? []).join('\n'),
       })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, app?.id])
 
-  const passToken        = watch('passToken')
-  const allowedProfiles  = watch('allowedProfiles')
-  const allowedUsersRaw  = watch('allowedUsersRaw')
-  const allowedTeamsRaw  = watch('allowedTeamsRaw')
+  const passToken = watch('passToken')
+  const allowedProfiles = watch('allowedProfiles')
+  const allowedUsersRaw = watch('allowedUsersRaw')
+  const allowedTeamsRaw = watch('allowedTeamsRaw')
 
   const noAccessRules =
     allowedProfiles.length === 0 &&
@@ -115,7 +121,7 @@ export function AppFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -123,7 +129,9 @@ export function AppFormDialog({
 
         <form
           id="app-form"
-          onSubmit={e => { void handleSubmit(onSubmit)(e) }}
+          onSubmit={(e) => {
+            void handleSubmit(onSubmit)(e)
+          }}
           className="flex flex-col gap-4 py-1"
           noValidate
         >
@@ -138,9 +146,7 @@ export function AppFormDialog({
               aria-invalid={!!errors.name}
               {...register('name')}
             />
-            {errors.name && (
-              <p className="text-xs text-destructive">{errors.name.message}</p>
-            )}
+            {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
 
           {/* URL */}
@@ -199,7 +205,7 @@ export function AppFormDialog({
                     id="app-pass-token"
                     type="checkbox"
                     checked={field.value}
-                    onChange={e => field.onChange(e.target.checked)}
+                    onChange={(e) => field.onChange(e.target.checked)}
                     className="h-4 w-4 rounded border-input"
                   />
                   <span className="text-sm font-medium">Passar token de sessão (passToken)</span>
@@ -231,11 +237,11 @@ export function AppFormDialog({
                         type="checkbox"
                         value={value}
                         checked={field.value.includes(value)}
-                        onChange={e => {
+                        onChange={(e) => {
                           field.onChange(
                             e.target.checked
                               ? [...field.value, value]
-                              : field.value.filter(v => v !== value),
+                              : field.value.filter((v) => v !== value)
                           )
                         }}
                         className="h-4 w-4 rounded border-input"
@@ -252,7 +258,9 @@ export function AppFormDialog({
           <div className="flex flex-col gap-1.5">
             <label htmlFor="app-users" className="text-sm font-medium">
               Usuários específicos
-              <span className="ml-1 text-xs text-muted-foreground font-normal">(um UID por linha)</span>
+              <span className="ml-1 text-xs text-muted-foreground font-normal">
+                (um UID por linha)
+              </span>
             </label>
             <textarea
               id="app-users"
@@ -267,7 +275,9 @@ export function AppFormDialog({
           <div className="flex flex-col gap-1.5">
             <label htmlFor="app-teams" className="text-sm font-medium">
               Times com acesso
-              <span className="ml-1 text-xs text-muted-foreground font-normal">(um nome por linha)</span>
+              <span className="ml-1 text-xs text-muted-foreground font-normal">
+                (um nome por linha)
+              </span>
             </label>
             <textarea
               id="app-teams"
@@ -291,7 +301,10 @@ export function AppFormDialog({
 
           {/* Mutation error */}
           {error && (
-            <p role="alert" className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+            <p
+              role="alert"
+              className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2"
+            >
               {error}
             </p>
           )}

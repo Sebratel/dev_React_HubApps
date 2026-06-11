@@ -13,9 +13,9 @@ interface AdminMetricCardProps {
 
 const variantClasses: Record<NonNullable<AdminMetricCardProps['variant']>, string> = {
   default: '',
-  success: 'border-green-200 bg-green-50/50',
-  warning: 'border-yellow-200 bg-yellow-50/50',
-  danger: 'border-red-200 bg-red-50/50',
+  success: 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/40',
+  warning: 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/40',
+  danger: 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/40',
 }
 
 export function AdminMetricCard({
@@ -29,8 +29,12 @@ export function AdminMetricCard({
   if (isLoading) {
     return (
       <div className="rounded-xl border border-border bg-card p-4">
-        <Skeleton className="h-3.5 w-24 mb-3" />
-        <Skeleton className="h-8 w-14" />
+        <div className="flex items-center justify-between mb-2">
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="h-4 w-4 rounded" />
+        </div>
+        <Skeleton className="h-8 w-14 mb-1" />
+        <Skeleton className="h-3 w-20" />
       </div>
     )
   }
@@ -42,9 +46,7 @@ export function AdminMetricCard({
         {icon && <span className="text-muted-foreground">{icon}</span>}
       </div>
       <p className="text-2xl font-bold text-foreground">{value}</p>
-      {description && (
-        <p className="text-xs text-muted-foreground mt-1">{description}</p>
-      )}
+      {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
     </div>
   )
 }

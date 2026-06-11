@@ -34,7 +34,7 @@ export function useAuthSession(): void {
           firebaseUser.uid,
           firebaseUser.email ?? '',
           firebaseUser.displayName ?? '',
-          firebaseUser.photoURL ?? null,
+          firebaseUser.photoURL ?? null
         )
         setUser(user)
         // A1: only log LOGIN for genuine logins (not page-reload session restores).

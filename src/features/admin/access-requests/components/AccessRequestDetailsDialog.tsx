@@ -40,7 +40,7 @@ export function AccessRequestDetailsDialog({
   const isPending = request.status === 'pending'
 
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Detalhes da solicitação</DialogTitle>
@@ -92,9 +92,7 @@ export function AccessRequestDetailsDialog({
               Rejeitar
             </Button>
           )}
-          {isPending && onApprove && (
-            <Button onClick={onApprove}>Aprovar</Button>
-          )}
+          {isPending && onApprove && <Button onClick={onApprove}>Aprovar</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>

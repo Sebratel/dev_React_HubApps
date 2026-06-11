@@ -18,7 +18,11 @@ interface AppRow {
 
 function parseJson(value: string | string[]): string[] {
   if (Array.isArray(value)) return value
-  try { return JSON.parse(value) } catch { return [] }
+  try {
+    return JSON.parse(value)
+  } catch {
+    return []
+  }
 }
 
 function rowToApp(row: AppRow): AppItemModel {
@@ -54,9 +58,7 @@ export function searchApps(apps: AppItemModel[], searchQuery: string): AppItemMo
   const term = searchQuery.trim().toLowerCase()
   if (!term) return apps
   return apps.filter(
-    (app) =>
-      app.name.toLowerCase().includes(term) ||
-      app.description.toLowerCase().includes(term),
+    (app) => app.name.toLowerCase().includes(term) || app.description.toLowerCase().includes(term)
   )
 }
 
@@ -64,7 +66,7 @@ export function buildAppUrl(
   app: AppItemModel,
   userId: string,
   userName: string,
-  userEmail: string,
+  userEmail: string
 ): string {
   if (!app.url) return '#'
   if (!app.passUser) return app.url

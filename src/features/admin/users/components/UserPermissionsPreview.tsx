@@ -18,7 +18,10 @@ interface UserPermissionsPreviewProps {
   maxVisible?: number
 }
 
-export function UserPermissionsPreview({ permissions, maxVisible = 3 }: UserPermissionsPreviewProps) {
+export function UserPermissionsPreview({
+  permissions,
+  maxVisible = 3,
+}: UserPermissionsPreviewProps) {
   if (permissions.length === 0) {
     return <span className="text-xs text-muted-foreground">—</span>
   }
@@ -28,7 +31,7 @@ export function UserPermissionsPreview({ permissions, maxVisible = 3 }: UserPerm
 
   return (
     <div className="flex flex-wrap gap-1">
-      {visible.map(p => (
+      {visible.map((p) => (
         <Badge key={p} variant="outline" className="text-xs px-1.5 py-0">
           {PERMISSION_LABELS[p] ?? p}
         </Badge>

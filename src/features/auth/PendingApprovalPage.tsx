@@ -23,15 +23,13 @@ export function PendingApprovalPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md flex flex-col items-center gap-6 bg-card rounded-2xl border border-border p-8 shadow-lg text-center">
-        {user && (
-          <UserAvatar name={user.name || user.email} photoUrl={user.photoUrl} size="lg" />
-        )}
+        {user && <UserAvatar name={user.name || user.email} photoUrl={user.photoUrl} size="lg" />}
 
         <div className="flex flex-col gap-2">
           <h1 className="text-xl font-bold text-foreground">Aguardando ativação</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Sua conta foi registrada com sucesso, mas ainda precisa ser ativada por um
-            administrador antes que você possa acessar o Hub.
+            Sua conta foi registrada com sucesso, mas ainda precisa ser ativada por um administrador
+            antes que você possa acessar o Hub.
           </p>
         </div>
 
@@ -45,11 +43,7 @@ export function PendingApprovalPage() {
           Entre em contato com o administrador do sistema se a ativação estiver demorando.
         </p>
 
-        <Button
-          variant="outline"
-          onClick={handleSignOut}
-          className="w-full"
-        >
+        <Button variant="outline" onClick={handleSignOut} className="w-full">
           Sair da conta
         </Button>
       </div>

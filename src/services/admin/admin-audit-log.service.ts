@@ -31,13 +31,13 @@ export interface ListAuditLogsParams extends PaginationParams {
   user_id?: string
   action?: AuditAction
   date_from?: string // ISO date string: '2026-01-01'
-  date_to?: string   // ISO date string: '2026-12-31'
+  date_to?: string // ISO date string: '2026-12-31'
 }
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 export async function listAuditLogs(
-  params: ListAuditLogsParams = {},
+  params: ListAuditLogsParams = {}
 ): Promise<PaginatedResponse<AuditLogModel>> {
   const response = await api.getPaginated<AuditLogRow>('/audit-logs', params)
   return {

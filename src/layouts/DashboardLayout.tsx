@@ -24,6 +24,7 @@ export function DashboardLayout() {
         {user && canAccessAdminDashboard(user) && (
           <NavLink
             to="/admin"
+            aria-label="Painel administrativo"
             className={({ isActive }) =>
               `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 isActive
@@ -47,6 +48,8 @@ export function DashboardLayout() {
               size="sm"
               className="text-black/70 hover:bg-black/10 hover:text-black"
               onClick={secureSignOut}
+              title="Encerrar sessão"
+              aria-label="Encerrar sessão"
             >
               Sair
             </Button>

@@ -27,7 +27,7 @@ export function AppDeactivateDialog({
   onClose,
 }: AppDeactivateDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Desativar aplicativo</DialogTitle>
@@ -39,7 +39,10 @@ export function AppDeactivateDialog({
         </DialogHeader>
 
         {error && (
-          <p role="alert" className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+          <p
+            role="alert"
+            className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2"
+          >
             {error}
           </p>
         )}

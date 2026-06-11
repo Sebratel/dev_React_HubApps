@@ -3,21 +3,21 @@ import { AUDIT_ACTION } from '@/types/api'
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
-  [AUDIT_ACTION.LOGIN]:                   'Login',
-  [AUDIT_ACTION.LOGOUT]:                  'Logout',
-  [AUDIT_ACTION.APP_OPEN]:                'Abriu app',
-  [AUDIT_ACTION.USER_UPDATE]:             'Atualizou usuário',
-  [AUDIT_ACTION.USER_ACTIVATE]:           'Ativou usuário',
-  [AUDIT_ACTION.USER_DEACTIVATE]:         'Desativou usuário',
-  [AUDIT_ACTION.USER_PROMOTE_ADMIN]:      'Promoveu a admin',
-  [AUDIT_ACTION.USER_REVOKE_ADMIN]:       'Revogou admin',
-  [AUDIT_ACTION.APP_CREATE]:              'Criou app',
-  [AUDIT_ACTION.APP_UPDATE]:              'Atualizou app',
-  [AUDIT_ACTION.APP_DEACTIVATE]:          'Desativou app',
-  [AUDIT_ACTION.APP_REACTIVATE]:          'Reativou app',
-  [AUDIT_ACTION.ACCESS_REQUEST_CREATE]:   'Solicitou acesso',
-  [AUDIT_ACTION.ACCESS_REQUEST_APPROVE]:  'Aprovou solicitação',
-  [AUDIT_ACTION.ACCESS_REQUEST_REJECT]:   'Rejeitou solicitação',
+  [AUDIT_ACTION.LOGIN]: 'Login',
+  [AUDIT_ACTION.LOGOUT]: 'Logout',
+  [AUDIT_ACTION.APP_OPEN]: 'Abriu app',
+  [AUDIT_ACTION.USER_UPDATE]: 'Atualizou usuário',
+  [AUDIT_ACTION.USER_ACTIVATE]: 'Ativou usuário',
+  [AUDIT_ACTION.USER_DEACTIVATE]: 'Desativou usuário',
+  [AUDIT_ACTION.USER_PROMOTE_ADMIN]: 'Promoveu a admin',
+  [AUDIT_ACTION.USER_REVOKE_ADMIN]: 'Revogou admin',
+  [AUDIT_ACTION.APP_CREATE]: 'Criou app',
+  [AUDIT_ACTION.APP_UPDATE]: 'Atualizou app',
+  [AUDIT_ACTION.APP_DEACTIVATE]: 'Desativou app',
+  [AUDIT_ACTION.APP_REACTIVATE]: 'Reativou app',
+  [AUDIT_ACTION.ACCESS_REQUEST_CREATE]: 'Solicitou acesso',
+  [AUDIT_ACTION.ACCESS_REQUEST_APPROVE]: 'Aprovou solicitação',
+  [AUDIT_ACTION.ACCESS_REQUEST_REJECT]: 'Rejeitou solicitação',
 }
 
 // ─── Critical set (destaque visual) ──────────────────────────────────────────
@@ -35,27 +35,26 @@ function getBadgeClasses(action: string): string {
   switch (action) {
     case AUDIT_ACTION.LOGIN:
     case AUDIT_ACTION.LOGOUT:
-      return 'bg-gray-100 text-gray-600'
+      return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
     case AUDIT_ACTION.APP_OPEN:
-      return 'bg-blue-50 text-blue-700'
+      return 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
     case AUDIT_ACTION.USER_ACTIVATE:
     case AUDIT_ACTION.APP_CREATE:
     case AUDIT_ACTION.APP_REACTIVATE:
     case AUDIT_ACTION.ACCESS_REQUEST_CREATE:
-      return 'bg-green-50 text-green-700'
+      return 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300'
     case AUDIT_ACTION.USER_DEACTIVATE:
     case AUDIT_ACTION.APP_UPDATE:
-      return 'bg-yellow-50 text-yellow-700'
-    // All critical actions → red
+      return 'bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300'
     case AUDIT_ACTION.USER_UPDATE:
     case AUDIT_ACTION.USER_PROMOTE_ADMIN:
     case AUDIT_ACTION.USER_REVOKE_ADMIN:
     case AUDIT_ACTION.APP_DEACTIVATE:
     case AUDIT_ACTION.ACCESS_REQUEST_APPROVE:
     case AUDIT_ACTION.ACCESS_REQUEST_REJECT:
-      return 'bg-red-50 text-red-700 font-medium'
+      return 'bg-red-50 text-red-700 font-medium dark:bg-red-950 dark:text-red-300'
     default:
-      return 'bg-gray-100 text-gray-600'
+      return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
   }
 }
 

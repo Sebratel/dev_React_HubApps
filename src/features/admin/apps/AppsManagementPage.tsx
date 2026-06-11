@@ -26,11 +26,14 @@ function formatMutationError(err: unknown): string {
 }
 
 function parseLines(raw: string): string[] {
-  return raw.split('\n').map(s => s.trim()).filter(Boolean)
+  return raw
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
 }
 
 export function AppsManagementPage() {
-  const currentUser = useAuthStore(s => s.user)
+  const currentUser = useAuthStore((s) => s.user)
 
   const {
     apps,
@@ -67,40 +70,40 @@ export function AppsManagementPage() {
   }
 
   function handleFormConfirm(values: AppFormValues) {
-    const users  = parseLines(values.allowedUsersRaw)
-    const teams  = parseLines(values.allowedTeamsRaw)
+    const users = parseLines(values.allowedUsersRaw)
+    const teams = parseLines(values.allowedTeamsRaw)
     const iconVal = values.iconUrl?.trim() || undefined
 
     if (dialog === 'create') {
       createMutation.mutate(
         {
-          name:            values.name,
-          url:             values.url,
-          description:     values.description,
-          iconUrl:         iconVal,
-          passToken:       values.passToken,
+          name: values.name,
+          url: values.url,
+          description: values.description,
+          iconUrl: iconVal,
+          passToken: values.passToken,
           allowedProfiles: values.allowedProfiles,
-          allowedUsers:    users,
-          allowedTeams:    teams,
+          allowedUsers: users,
+          allowedTeams: teams,
         },
-        { onSuccess: closeDialog },
+        { onSuccess: closeDialog }
       )
     } else if (dialog === 'edit' && selectedApp) {
       updateMutation.mutate(
         {
           appId: selectedApp.id,
           payload: {
-            name:             values.name,
-            url:              values.url,
-            description:      values.description,
-            icon_url:         iconVal,
-            pass_token:       values.passToken,
+            name: values.name,
+            url: values.url,
+            description: values.description,
+            icon_url: iconVal,
+            pass_token: values.passToken,
             allowed_profiles: values.allowedProfiles,
-            allowed_users:    users,
-            allowed_teams:    teams,
+            allowed_users: users,
+            allowed_teams: teams,
           },
         },
-        { onSuccess: closeDialog },
+        { onSuccess: closeDialog }
       )
     }
   }
@@ -148,7 +151,10 @@ export function AppsManagementPage() {
 
       {/* Error banner */}
       {isError && !isLoading && (
-        <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3"
+        >
           <p className="text-sm text-destructive">
             Erro ao carregar aplicativos.{' '}
             <button
@@ -169,16 +175,14 @@ export function AppsManagementPage() {
             placeholder="Buscar por nome, descrição ou URL..."
             className="pl-9"
             value={filters.search}
-            onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
           />
         </div>
 
         <Select
           className="w-36"
           value={filters.status}
-          onChange={e =>
-            setFilters(f => ({ ...f, status: e.target.value as typeof f.status }))
-          }
+          onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as typeof f.status }))}
           aria-label="Filtrar por status"
         >
           <option value="all">Todos status</option>
@@ -189,8 +193,8 @@ export function AppsManagementPage() {
         <Select
           className="w-36"
           value={filters.passToken}
-          onChange={e =>
-            setFilters(f => ({ ...f, passToken: e.target.value as typeof f.passToken }))
+          onChange={(e) =>
+            setFilters((f) => ({ ...f, passToken: e.target.value as typeof f.passToken }))
           }
           aria-label="Filtrar por passToken"
         >
@@ -218,9 +222,9 @@ export function AppsManagementPage() {
       ) : (
         <AppsTable
           apps={apps}
-          onEdit={app => openDialog('edit', app)}
-          onDeactivate={app => openDialog('deactivate', app)}
-          onReactivate={app => openDialog('reactivate', app)}
+          onEdit={(app) => openDialog('edit', app)}
+          onDeactivate={(app) => openDialog('deactivate', app)}
+          onReactivate={(app) => openDialog('reactivate', app)}
         />
       )}
 
@@ -234,7 +238,7 @@ export function AppsManagementPage() {
       {/* ── Dialogs ────────────────────────────────────────────────────────── */}
 
       <AppFormDialog
-        app={dialog === 'edit' ? selectedApp ?? undefined : undefined}
+        app={dialog === 'edit' ? (selectedApp ?? undefined) : undefined}
         open={dialog === 'create' || dialog === 'edit'}
         isPending={activeFormPending}
         error={activeFormError}

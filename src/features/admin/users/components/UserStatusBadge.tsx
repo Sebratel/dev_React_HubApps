@@ -13,9 +13,9 @@ export function UserStatusBadge({ isActive, className }: UserStatusBadgeProps) {
       className={cn(
         'text-xs',
         isActive
-          ? 'border-green-300 bg-green-50 text-green-700'
-          : 'border-gray-300 bg-gray-50 text-gray-500',
-        className,
+          ? 'border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950 dark:text-green-300'
+          : 'border-gray-300 bg-gray-50 text-gray-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-400',
+        className
       )}
     >
       {isActive ? 'Ativo' : 'Inativo'}

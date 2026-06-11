@@ -40,10 +40,10 @@ interface RejectAccessRequestResponse {
   success: boolean
 }
 
-export const requestAppLaunchToken = httpsCallable<
-  AppLaunchTokenRequest,
-  AppLaunchTokenResponse
->(functions, 'generateAppLaunchToken')
+export const requestAppLaunchToken = httpsCallable<AppLaunchTokenRequest, AppLaunchTokenResponse>(
+  functions,
+  'generateAppLaunchToken'
+)
 
 export const updateUserPermissions = httpsCallable<
   UpdateUserPermissionsRequest,

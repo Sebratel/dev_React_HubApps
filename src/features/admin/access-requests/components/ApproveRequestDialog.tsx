@@ -27,7 +27,7 @@ export function ApproveRequestDialog({
   onClose,
 }: ApproveRequestDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Aprovar solicitação</DialogTitle>
@@ -36,13 +36,15 @@ export function ApproveRequestDialog({
             <span className="font-medium text-foreground">
               {request?.userName || request?.userId}
             </span>{' '}
-            ao aplicativo{' '}
-            <span className="font-medium text-foreground">{request?.appName}</span>?
+            ao aplicativo <span className="font-medium text-foreground">{request?.appName}</span>?
           </DialogDescription>
         </DialogHeader>
 
         {error && (
-          <p role="alert" className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+          <p
+            role="alert"
+            className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2"
+          >
             {error}
           </p>
         )}

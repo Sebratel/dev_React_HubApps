@@ -25,14 +25,19 @@ export function useAppsPage() {
   const queryClient = useQueryClient()
   const [filters, setFilters] = useState<AppFilters>(DEFAULT_FILTERS)
 
-  const { data: apps = [], isLoading, isError, refetch } = useQuery({
+  const {
+    data: apps = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['admin', 'apps', 'list'],
     queryFn: listAllApps,
     staleTime: 60_000,
   })
 
   const filteredApps = useMemo(() => {
-    return apps.filter(app => {
+    return apps.filter((app) => {
       if (filters.status === 'active' && app.status !== 'active') return false
       if (filters.status === 'inactive' && app.status === 'active') return false
       if (filters.passToken === 'yes' && !app.passToken) return false

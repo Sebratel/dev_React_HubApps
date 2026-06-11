@@ -54,7 +54,7 @@ export async function provisionUserOnFirstLogin(
   _uid: string,
   email: string,
   name: string,
-  photoUrl: string | null,
+  photoUrl: string | null
 ): Promise<UserModel> {
   const row = await api.post<UserRow>('/users/provision', { name, email, photoUrl })
   return rowToUserModel(row)
@@ -62,7 +62,7 @@ export async function provisionUserOnFirstLogin(
 
 export async function saveUser(
   _uid: string,
-  data: Partial<Omit<UserModel, 'id' | 'createdAt' | 'updatedAt'>>,
+  data: Partial<Omit<UserModel, 'id' | 'createdAt' | 'updatedAt'>>
 ): Promise<void> {
   // Only online/offline state is managed client-side; all other mutations go through admin endpoints.
   if ('online' in data && data.online === false) {

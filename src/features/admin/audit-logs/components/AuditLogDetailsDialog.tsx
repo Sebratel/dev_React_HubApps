@@ -52,11 +52,7 @@ interface AuditLogDetailsDialogProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function AuditLogDetailsDialog({
-  log,
-  open,
-  onClose,
-}: AuditLogDetailsDialogProps) {
+export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDialogProps) {
   const [copied, setCopied] = useState(false)
 
   async function handleCopyId() {
@@ -73,7 +69,7 @@ export function AuditLogDetailsDialog({
   if (!log) return null
 
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Detalhes do evento</DialogTitle>
@@ -114,9 +110,7 @@ export function AuditLogDetailsDialog({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">User ID</p>
-              <p className="text-xs font-mono text-muted-foreground break-all">
-                {log.userId}
-              </p>
+              <p className="text-xs font-mono text-muted-foreground break-all">{log.userId}</p>
             </div>
           </div>
 

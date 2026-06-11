@@ -37,7 +37,7 @@ export function useUsersPage() {
   const allUsers = useMemo(() => data?.data ?? [], [data])
 
   const filteredUsers = useMemo(() => {
-    return allUsers.filter(user => {
+    return allUsers.filter((user) => {
       if (filters.search) {
         const q = filters.search.toLowerCase()
         if (!user.name.toLowerCase().includes(q) && !user.email.toLowerCase().includes(q)) {
@@ -55,8 +55,8 @@ export function useUsersPage() {
 
   // Distinct profiles for the filter dropdown
   const availableProfiles = useMemo(
-    () => [...new Set(allUsers.map(u => u.profile).filter(Boolean))].sort(),
-    [allUsers],
+    () => [...new Set(allUsers.map((u) => u.profile).filter(Boolean))].sort(),
+    [allUsers]
   )
 
   function invalidateUsers() {

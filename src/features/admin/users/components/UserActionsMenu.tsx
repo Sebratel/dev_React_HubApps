@@ -72,11 +72,7 @@ export function UserActionsMenu({
               Revogar admin
             </DropdownMenu.Item>
           ) : (
-            <DropdownMenu.Item
-              className={itemClass}
-              disabled={isSelf}
-              onSelect={onPromoteAdmin}
-            >
+            <DropdownMenu.Item className={itemClass} disabled={isSelf} onSelect={onPromoteAdmin}>
               Promover a admin
             </DropdownMenu.Item>
           )}

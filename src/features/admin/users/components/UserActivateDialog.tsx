@@ -27,19 +27,22 @@ export function UserActivateDialog({
   onClose,
 }: UserActivateDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Ativar usuário</DialogTitle>
           <DialogDescription>
             Tem certeza que deseja ativar{' '}
-            <span className="font-medium text-foreground">{user?.name}</span>? O usuário
-            recuperará acesso ao Hub Sebratel.
+            <span className="font-medium text-foreground">{user?.name}</span>? O usuário recuperará
+            acesso ao Hub Sebratel.
           </DialogDescription>
         </DialogHeader>
 
         {error && (
-          <p role="alert" className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+          <p
+            role="alert"
+            className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2"
+          >
             {error}
           </p>
         )}

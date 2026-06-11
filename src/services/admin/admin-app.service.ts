@@ -20,7 +20,11 @@ interface AdminAppRow {
 
 function parseJson(value: string | string[]): string[] {
   if (Array.isArray(value)) return value
-  try { return JSON.parse(value) } catch { return [] }
+  try {
+    return JSON.parse(value)
+  } catch {
+    return []
+  }
 }
 
 function rowToAppModel(row: AdminAppRow): AppItemModel {

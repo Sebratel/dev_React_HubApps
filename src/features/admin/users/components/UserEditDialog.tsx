@@ -53,18 +53,20 @@ export function UserEditDialog({
     // Send null when team is cleared, original value when unchanged
     const newTeam = team.trim() || null
     if (newTeam !== (user.team ?? null)) patch.team = newTeam
-    if (Object.keys(patch).length === 0) { onClose(); return }
+    if (Object.keys(patch).length === 0) {
+      onClose()
+      return
+    }
     onConfirm(patch)
   }
 
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Editar usuário</DialogTitle>
           <DialogDescription>
-            Editando{' '}
-            <span className="font-medium text-foreground">{user?.name}</span>
+            Editando <span className="font-medium text-foreground">{user?.name}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -76,10 +78,10 @@ export function UserEditDialog({
             <Select
               id="edit-profile"
               value={profile}
-              onChange={e => setProfile(e.target.value)}
+              onChange={(e) => setProfile(e.target.value)}
               disabled={isPending}
             >
-              {PROFILES.map(p => (
+              {PROFILES.map((p) => (
                 <option key={p.value} value={p.value}>
                   {p.label}
                 </option>
@@ -95,7 +97,7 @@ export function UserEditDialog({
               id="edit-team"
               placeholder="ID do time ou deixe vazio"
               value={team}
-              onChange={e => setTeam(e.target.value)}
+              onChange={(e) => setTeam(e.target.value)}
               disabled={isPending}
             />
           </div>
@@ -106,7 +108,10 @@ export function UserEditDialog({
         </div>
 
         {error && (
-          <p role="alert" className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+          <p
+            role="alert"
+            className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2"
+          >
             {error}
           </p>
         )}

@@ -1,4 +1,4 @@
-import { Eye, CheckCircle, XCircle } from 'lucide-react'
+import { Eye, CheckCircle, XCircle, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatRelativeTime } from '@/utils/relative-time'
@@ -38,7 +38,7 @@ export function AccessRequestsTable({
 
       {/* Rows */}
       <div className="divide-y divide-border">
-        {requests.map(req => (
+        {requests.map((req) => (
           <div
             key={req.id}
             role="row"
@@ -46,12 +46,8 @@ export function AccessRequestsTable({
           >
             {/* User */}
             <div className="min-w-0">
-              <p className="text-sm font-medium truncate">
-                {req.userName || req.userId}
-              </p>
-              {req.email && (
-                <p className="text-xs text-muted-foreground truncate">{req.email}</p>
-              )}
+              <p className="text-sm font-medium truncate">{req.userName || req.userId}</p>
+              {req.email && <p className="text-xs text-muted-foreground truncate">{req.email}</p>}
             </div>
 
             {/* App */}
@@ -143,14 +139,15 @@ export function AccessRequestsTableSkeleton() {
 
 export function AccessRequestsTableEmpty({ hasFilters }: { hasFilters: boolean }) {
   return (
-    <div className="rounded-xl border border-border px-6 py-12 text-center">
-      <p className="text-sm font-medium text-foreground">
-        {hasFilters ? 'Nenhuma solicitação corresponde aos filtros.' : 'Nenhuma solicitação cadastrada.'}
+    <div className="rounded-xl border border-border px-6 py-12 flex flex-col items-center gap-3 text-center">
+      <ClipboardList className="h-8 w-8 text-muted-foreground/40" aria-hidden />
+      <p className="text-sm font-medium text-muted-foreground">
+        {hasFilters
+          ? 'Nenhuma solicitação corresponde aos filtros.'
+          : 'Nenhuma solicitação cadastrada.'}
       </p>
       {hasFilters && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Tente ajustar ou limpar os filtros.
-        </p>
+        <p className="text-xs text-muted-foreground">Tente ajustar ou limpar os filtros.</p>
       )}
     </div>
   )

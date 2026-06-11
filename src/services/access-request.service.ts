@@ -53,7 +53,7 @@ export async function getUserAccessRequests(_userId: string): Promise<AccessRequ
 
 export async function getPendingRequestForApp(
   userId: string,
-  appId: string,
+  appId: string
 ): Promise<AccessRequestModel | null> {
   const requests = await getUserAccessRequests(userId)
   return requests.find((r) => r.appId === appId && r.status === 'pending') ?? null
@@ -62,7 +62,7 @@ export async function getPendingRequestForApp(
 export async function createAccessRequest(
   user: UserModel,
   app: AppItemModel,
-  reason: string,
+  reason: string
 ): Promise<AccessRequestModel> {
   const validationError = validateReason(reason)
   if (validationError) throw new Error(validationError)

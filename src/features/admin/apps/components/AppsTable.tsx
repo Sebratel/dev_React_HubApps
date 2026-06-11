@@ -1,3 +1,4 @@
+import { AppWindowMac } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { AppItemModel } from '@/types/models'
 import { AppStatusBadge } from './AppStatusBadge'
@@ -32,7 +33,7 @@ export function AppsTable({ apps, onEdit, onDeactivate, onReactivate }: AppsTabl
 
       {/* Rows */}
       <div className="divide-y divide-border">
-        {apps.map(app => (
+        {apps.map((app) => (
           <div
             key={app.id}
             role="row"
@@ -53,7 +54,9 @@ export function AppsTable({ apps, onEdit, onDeactivate, onReactivate }: AppsTabl
 
             {/* URL */}
             <div className="hidden lg:block min-w-0">
-              <p className="text-xs text-muted-foreground truncate">{app.url}</p>
+              <p className="text-xs text-muted-foreground truncate" title={app.url ?? undefined}>
+                {app.url}
+              </p>
             </div>
 
             {/* Status */}
@@ -112,14 +115,15 @@ export function AppsTableSkeleton() {
 
 export function AppsTableEmpty({ hasFilters }: { hasFilters: boolean }) {
   return (
-    <div className="rounded-xl border border-border px-6 py-12 text-center">
-      <p className="text-sm font-medium text-foreground">
-        {hasFilters ? 'Nenhum aplicativo corresponde aos filtros.' : 'Nenhum aplicativo cadastrado.'}
+    <div className="rounded-xl border border-border px-6 py-12 flex flex-col items-center gap-3 text-center">
+      <AppWindowMac className="h-8 w-8 text-muted-foreground/40" aria-hidden />
+      <p className="text-sm font-medium text-muted-foreground">
+        {hasFilters
+          ? 'Nenhum aplicativo corresponde aos filtros.'
+          : 'Nenhum aplicativo cadastrado.'}
       </p>
       {hasFilters && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Tente ajustar ou limpar os filtros.
-        </p>
+        <p className="text-xs text-muted-foreground">Tente ajustar ou limpar os filtros.</p>
       )}
     </div>
   )

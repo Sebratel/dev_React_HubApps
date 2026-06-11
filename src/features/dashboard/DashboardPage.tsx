@@ -34,9 +34,7 @@ export function DashboardPage() {
   const { visibleApps, visibleBlocked } = useMemo(() => {
     const term = search.trim().toLowerCase()
     const matches = (a: AppItemModel) =>
-      !term ||
-      a.name.toLowerCase().includes(term) ||
-      a.description.toLowerCase().includes(term)
+      !term || a.name.toLowerCase().includes(term) || a.description.toLowerCase().includes(term)
 
     if (activeTab === 'favorites') {
       return { visibleApps: favoriteApps.filter(matches), visibleBlocked: [] }
@@ -126,7 +124,7 @@ export function DashboardPage() {
               '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
               activeTab === tab.id
                 ? 'border-sebratel-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground',
+                : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
             )}
           >
             {tab.label}

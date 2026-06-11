@@ -11,9 +11,7 @@ const BREAKPOINTS = {
 type Breakpoint = keyof typeof BREAKPOINTS
 
 export function useBreakpoint(breakpoint: Breakpoint): boolean {
-  const [matches, setMatches] = useState(
-    () => window.innerWidth >= BREAKPOINTS[breakpoint]
-  )
+  const [matches, setMatches] = useState(() => window.innerWidth >= BREAKPOINTS[breakpoint])
 
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${BREAKPOINTS[breakpoint]}px)`)

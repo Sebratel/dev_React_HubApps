@@ -1,4 +1,4 @@
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck, Users2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { UserStatusBadge } from './UserStatusBadge'
 import { UserProfileBadge } from './UserProfileBadge'
@@ -12,7 +12,7 @@ export function UsersTableSkeleton() {
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <div className="bg-muted/40 px-4 py-3 grid grid-cols-[1fr_auto_auto_auto_40px] gap-4 border-b border-border">
-        {['Usuário', 'Status', 'Perfil', 'Permissões', ''].map(h => (
+        {['Usuário', 'Status', 'Perfil', 'Permissões', ''].map((h) => (
           <Skeleton key={h} className="h-3.5 w-20" />
         ))}
       </div>
@@ -39,7 +39,8 @@ export function UsersTableSkeleton() {
 
 export function UsersTableEmpty({ hasFilters }: { hasFilters: boolean }) {
   return (
-    <div className="rounded-xl border border-border py-12 flex flex-col items-center gap-2 text-center">
+    <div className="rounded-xl border border-border py-12 flex flex-col items-center gap-3 text-center">
+      <Users2 className="h-8 w-8 text-muted-foreground/40" aria-hidden />
       <p className="text-sm font-medium text-muted-foreground">
         {hasFilters ? 'Nenhum usuário encontrado para este filtro.' : 'Nenhum usuário cadastrado.'}
       </p>
@@ -72,7 +73,11 @@ export function UsersTable({
   onRevokeAdmin,
 }: UsersTableProps) {
   return (
-    <div className="rounded-xl border border-border overflow-hidden" role="table" aria-label="Usuários">
+    <div
+      className="rounded-xl border border-border overflow-hidden"
+      role="table"
+      aria-label="Usuários"
+    >
       {/* Header */}
       <div
         role="row"
@@ -86,7 +91,7 @@ export function UsersTable({
       </div>
 
       {/* Rows */}
-      {users.map(user => (
+      {users.map((user) => (
         <div
           key={user.id}
           role="row"
@@ -94,11 +99,18 @@ export function UsersTable({
         >
           {/* Name + email */}
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-sm font-medium truncate">{user.name}</span>
               {user.isAdmin && (
-                <ShieldCheck className="h-3.5 w-3.5 text-purple-500 shrink-0" aria-label="Admin" />
+                <ShieldCheck
+                  className="h-3.5 w-3.5 text-purple-500 shrink-0"
+                  aria-label="Administrador"
+                />
               )}
+              {/* Status badge visible only on mobile */}
+              <span className="sm:hidden">
+                <UserStatusBadge isActive={user.isActive} />
+              </span>
             </div>
             <span className="text-xs text-muted-foreground truncate block">{user.email}</span>
           </div>

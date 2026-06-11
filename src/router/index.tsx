@@ -23,77 +23,84 @@ import { AuditLogsManagementPage } from '@/features/admin/audit-logs/AuditLogsMa
 //   - Unauthenticated → /login
 //   - Authenticated + inactive → /pending-approval (only accessible here)
 //   - Authenticated + active → / or /admin (based on role)
-export const router = createBrowserRouter([
+export const router = createBrowserRouter(
+  [
+    {
+      path: '/splash',
+      element: <SplashScreen />,
+    },
+    {
+      element: <AuthLayout />,
+      children: [
+        {
+          path: '/login',
+          element: <LoginPage />,
+        },
+      ],
+    },
+    {
+      element: <ProtectedRoute />,
+      children: [
+        // Accessible to authenticated users regardless of isActive
+        {
+          path: '/pending-approval',
+          element: <PendingApprovalPage />,
+        },
+        // All routes below require isActive === true
+        {
+          element: <ActiveRoute />,
+          children: [
+            {
+              element: <DashboardLayout />,
+              children: [
+                {
+                  path: '/',
+                  element: <DashboardPage />,
+                },
+              ],
+            },
+            {
+              element: <AdminRoute />,
+              children: [
+                {
+                  element: <AdminLayout />,
+                  children: [
+                    {
+                      path: '/admin',
+                      element: <AdminDashboard />,
+                    },
+                    {
+                      path: '/admin/users',
+                      element: <UsersManagementPage />,
+                    },
+                    {
+                      path: '/admin/access-requests',
+                      element: <AccessRequestsManagementPage />,
+                    },
+                    {
+                      path: '/admin/apps',
+                      element: <AppsManagementPage />,
+                    },
+                    {
+                      path: '/admin/audit-logs',
+                      element: <AuditLogsManagementPage />,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      path: '*',
+      element: <Navigate to="/" replace />,
+    },
+  ],
   {
-    path: '/splash',
-    element: <SplashScreen />,
-  },
-  {
-    element: <AuthLayout />,
-    children: [
-      {
-        path: '/login',
-        element: <LoginPage />,
-      },
-    ],
-  },
-  {
-    element: <ProtectedRoute />,
-    children: [
-      // Accessible to authenticated users regardless of isActive
-      {
-        path: '/pending-approval',
-        element: <PendingApprovalPage />,
-      },
-      // All routes below require isActive === true
-      {
-        element: <ActiveRoute />,
-        children: [
-          {
-            element: <DashboardLayout />,
-            children: [
-              {
-                path: '/',
-                element: <DashboardPage />,
-              },
-            ],
-          },
-          {
-            element: <AdminRoute />,
-            children: [
-              {
-                element: <AdminLayout />,
-                children: [
-                  {
-                    path: '/admin',
-                    element: <AdminDashboard />,
-                  },
-                  {
-                    path: '/admin/users',
-                    element: <UsersManagementPage />,
-                  },
-                  {
-                    path: '/admin/access-requests',
-                    element: <AccessRequestsManagementPage />,
-                  },
-                  {
-                    path: '/admin/apps',
-                    element: <AppsManagementPage />,
-                  },
-                  {
-                    path: '/admin/audit-logs',
-                    element: <AuditLogsManagementPage />,
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    path: '*',
-    element: <Navigate to="/" replace />,
-  },
-])
+    future: {
+      v7_relativeSplatPath: true,
+    },
+  }
+)

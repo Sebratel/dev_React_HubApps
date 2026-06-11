@@ -34,25 +34,19 @@ export function useAdminDashboard() {
 
   const metrics = {
     totalUsers: usersQuery.data?.pagination.total ?? 0,
-    activeUsers: users.filter(u => u.isActive).length,
-    inactiveUsers: users.filter(u => !u.isActive).length,
-    adminUsers: users.filter(u => u.isAdmin).length,
-    activeApps: apps.filter(a => a.status === 'active').length,
-    inactiveApps: apps.filter(a => a.status !== 'active').length,
+    activeUsers: users.filter((u) => u.isActive).length,
+    inactiveUsers: users.filter((u) => !u.isActive).length,
+    adminUsers: users.filter((u) => u.isAdmin).length,
+    activeApps: apps.filter((a) => a.status === 'active').length,
+    inactiveApps: apps.filter((a) => a.status !== 'active').length,
     pendingRequests: pendingQuery.data?.pagination.total ?? 0,
   }
 
   const isLoading =
-    usersQuery.isLoading ||
-    appsQuery.isLoading ||
-    pendingQuery.isLoading ||
-    logsQuery.isLoading
+    usersQuery.isLoading || appsQuery.isLoading || pendingQuery.isLoading || logsQuery.isLoading
 
   const hasError =
-    usersQuery.isError ||
-    appsQuery.isError ||
-    pendingQuery.isError ||
-    logsQuery.isError
+    usersQuery.isError || appsQuery.isError || pendingQuery.isError || logsQuery.isError
 
   function refetchAll() {
     void usersQuery.refetch()
