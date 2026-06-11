@@ -10,7 +10,7 @@ const AUDIT_ACTIONS = require('../utils/auditActions')
 // GET /apps — lista apps acessíveis ao usuário autenticado
 router.get('/', requireAuth, async (req, res) => {
   const [user] = await pool.query(
-    'SELECT id, profile, team, is_active FROM users WHERE id = ?',
+    'SELECT id, profile, team, is_active, is_admin FROM users WHERE id = ?',
     [req.uid]
   )
   if (!user.length || !user[0].is_active) return res.json([])
@@ -18,6 +18,9 @@ router.get('/', requireAuth, async (req, res) => {
   const [allApps] = await pool.query(
     'SELECT * FROM apps WHERE is_active = 1 ORDER BY name'
   )
+
+  // Admins veem todos os apps ativos
+  if (user[0].is_admin) return res.json(allApps)
 
   const u           = user[0]
   const userProfile = u.profile || ''
