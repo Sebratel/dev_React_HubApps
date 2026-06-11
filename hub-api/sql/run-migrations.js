@@ -15,6 +15,7 @@ const MIGRATIONS = [
   { file: '01_create_database.sql',      label: 'Criar schema DB_Hub_Apps'          },
   { file: '02_add_indexes.sql',          label: 'Índices compostos'                 },
   { file: '03_add_passuser_status.sql',  label: 'pass_user e status em apps'        },
+  { file: '04_seed_apps.sql',            label: 'Seed apps iniciais Sebratel'       },
 ]
 
 // Errors that mean "already exists" — safe to skip for idempotency
@@ -23,6 +24,7 @@ const SKIP_CODES = new Set([
   'ER_TABLE_EXISTS_ERROR',
   'ER_DB_CREATE_EXISTS',
   'ER_DUP_FIELDNAME',  // ALTER TABLE ADD COLUMN quando coluna já existe
+  'ER_DUP_ENTRY',      // INSERT IGNORE quando registro já existe
 ])
 
 async function runMigration(conn, file) {
