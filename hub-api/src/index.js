@@ -10,10 +10,25 @@ const path      = require('path')
 
 // ─── Firebase Admin ───────────────────────────────────────────
 if (!admin.apps.length) {
-  const serviceAccountPath = path.resolve(__dirname, '..', 'firebase-service-account.json')
+  let credential
+
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    // Env var contém o JSON do service account (em plain JSON ou base64)
+    let raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+    try {
+      // Tenta base64 primeiro, cai em plain JSON se falhar
+      raw = Buffer.from(raw, 'base64').toString('utf8')
+    } catch {}
+    credential = admin.credential.cert(JSON.parse(raw))
+  } else {
+    const saPath = process.env.FIREBASE_SA_PATH
+      || path.resolve(__dirname, '..', 'firebase-service-account.json')
+    credential = admin.credential.cert(saPath)
+  }
+
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccountPath),
-    projectId:  process.env.FIREBASE_PROJECT_ID,
+    credential,
+    projectId: process.env.FIREBASE_PROJECT_ID,
   })
 }
 
