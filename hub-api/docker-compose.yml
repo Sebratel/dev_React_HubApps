@@ -4,7 +4,7 @@ services:
     container_name: hub-api
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3010:3000"
     environment:
       - PORT=${PORT:-3000}
       - DB_HOST=${DB_HOST}
@@ -21,4 +21,4 @@ services:
 
 networks:
   sebratel-net:
-    external: true   # rede já existente no Portainer com acesso ao MySQL
+    external: true
