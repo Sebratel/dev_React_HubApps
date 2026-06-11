@@ -1,5 +1,6 @@
 const router  = require('express').Router()
 const pool    = require('../db/pool')
+const admin   = require('firebase-admin')
 const { requireAuth, requireAdmin, invalidateAdminCache } = require('../middleware/auth')
 const { provisionLimiter, adminWriteLimiter } = require('../middleware/rateLimits')
 const logAudit       = require('../utils/logAudit')
@@ -113,6 +114,66 @@ router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, r
   )
 
   res.json(rows[0])
+})
+
+// POST /users/create-external — admin: cria usuário externo com e-mail/senha
+router.post('/create-external', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
+  const { name, email, password, profile, teamId } = req.body
+
+  if (!name?.trim())              return res.status(400).json({ error: 'name obrigatório' })
+  if (!email?.trim())             return res.status(400).json({ error: 'email obrigatório' })
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'password deve ter ao menos 6 caracteres' })
+  }
+
+  const normalEmail = email.trim().toLowerCase()
+
+  // 1. Cria conta Firebase
+  let firebaseUid
+  try {
+    const fbUser = await admin.auth().createUser({
+      email:       normalEmail,
+      password,
+      displayName: name.trim(),
+    })
+    firebaseUid = fbUser.uid
+  } catch (err) {
+    if (err.code === 'auth/email-already-exists') {
+      return res.status(409).json({ error: 'E-mail já está em uso por outra conta' })
+    }
+    return next(err)
+  }
+
+  // 2. Provisiona no MySQL (ativo imediatamente — admin está criando intencionalmente)
+  const conn = await pool.getConnection()
+  try {
+    await conn.beginTransaction()
+
+    await conn.query(
+      `INSERT INTO users (id, email, name, profile, team, is_active, is_admin, permissions)
+       VALUES (?, ?, ?, ?, ?, 1, 0, '[]')`,
+      [firebaseUid, normalEmail, name.trim(), profile || '', teamId || null]
+    )
+
+    await logAudit({
+      uid:     req.uid,
+      action:  AUDIT_ACTIONS.USER_CREATE_EXTERNAL,
+      details: { createdUid: firebaseUid, email: normalEmail },
+      req, conn,
+    })
+
+    await conn.commit()
+  } catch (err) {
+    await conn.rollback()
+    // Cleanup: remove conta Firebase para evitar órfão
+    try { await admin.auth().deleteUser(firebaseUid) } catch {}
+    return next(err)
+  } finally {
+    conn.release()
+  }
+
+  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM users WHERE id = ?`, [firebaseUid])
+  res.status(201).json(rows[0])
 })
 
 module.exports = router
