@@ -10,6 +10,7 @@ import {
   BookOpen,
   Bell,
   UsersRound,
+  MessageSquare,
   ArrowLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { to: '/admin/access-requests',  label: 'Solicitações', icon: ClipboardList    },
   { to: '/admin/apps',             label: 'Aplicativos',  icon: AppWindow        },
   { to: '/admin/announcements',    label: 'Avisos',       icon: Bell             },
+  { to: '/admin/suggestions',      label: 'Sugestões',    icon: MessageSquare    },
   { to: '/admin/audit-logs',       label: 'Auditoria',    icon: BookOpen         },
 ]
 

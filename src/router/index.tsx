@@ -16,7 +16,9 @@ import { AccessRequestsManagementPage } from '@/features/admin/access-requests/A
 import { AppsManagementPage } from '@/features/admin/apps/AppsManagementPage'
 import { AdminAnnouncementsPage } from '@/features/admin/announcements/AdminAnnouncementsPage'
 import { AdminTeamsPage } from '@/features/admin/teams/AdminTeamsPage'
+import { AdminSuggestionsPage } from '@/features/admin/suggestions/AdminSuggestionsPage'
 import { AuditLogsManagementPage } from '@/features/admin/audit-logs/AuditLogsManagementPage'
+import { SuggestionsPage } from '@/features/suggestions/SuggestionsPage'
 
 export const router = createBrowserRouter(
   [
@@ -54,6 +56,10 @@ export const router = createBrowserRouter(
                   path: '/avisos',
                   element: <AnnouncementsPage />,
                 },
+                {
+                  path: '/sugestoes',
+                  element: <SuggestionsPage />,
+                },
               ],
             },
             {
@@ -85,6 +91,10 @@ export const router = createBrowserRouter(
                     {
                       path: '/admin/announcements',
                       element: <AdminAnnouncementsPage />,
+                    },
+                    {
+                      path: '/admin/suggestions',
+                      element: <AdminSuggestionsPage />,
                     },
                     {
                       path: '/admin/audit-logs',

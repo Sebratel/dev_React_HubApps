@@ -15,3 +15,9 @@ export type NoticeType = 'info' | 'warning' | 'success' | 'alert' | 'danger'
 
 // Tipo de aviso (hub-api)
 export type AnnouncementType = 'info' | 'warning' | 'urgent' | 'success'
+
+// Tipo de sugestão
+export type SuggestionType = 'feature' | 'bug' | 'improvement' | 'other'
+
+// Status de sugestão
+export type SuggestionStatus = 'pending' | 'in_review' | 'done' | 'rejected'
