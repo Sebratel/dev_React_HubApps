@@ -5,7 +5,7 @@ import { useApps } from './hooks/useApps'
 import { AppGrid } from './components/AppGrid'
 import { AccessRequestModal } from './components/AccessRequestModal'
 import { Input } from '@/components/ui/input'
-import { buildAppUrl } from '@/services/app.service'
+import { buildAppUrl, requestAppLaunchToken } from '@/services/app.service'
 import { logAppOpen } from '@/services/audit-log.service'
 import { cn } from '@/lib/utils'
 import type { AppItemModel } from '@/types/models'
@@ -24,6 +24,7 @@ export function DashboardPage() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('all')
   const [requestApp, setRequestApp] = useState<AppItemModel | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [ssoLoadingId, setSsoLoadingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!notice) return
@@ -50,16 +51,29 @@ export function DashboardPage() {
 
   async function handleOpenApp(app: AppItemModel) {
     if (!user) return
+    if (ssoLoadingId) return
 
-    // A2: apps requiring SSO token are blocked until Sprint 3 implements
-    // requestAppLaunchToken. Opening without a token bypasses server-side auth.
     if (app.passToken) {
-      setNotice(`"${app.name}" requer autenticação SSO ainda não disponível. Em breve.`)
+      setSsoLoadingId(app.id)
+      setNotice(`Autenticando acesso a "${app.name}"...`)
+      try {
+        const { token } = await requestAppLaunchToken(app.id)
+        const sep = app.url && app.url.includes('?') ? '&' : '?'
+        const finalUrl = `${app.url}${sep}sso_token=${encodeURIComponent(token)}`
+        markRecent(app.id)
+        logAppOpen(user, app).catch((e) => console.error('[audit]', e))
+        window.open(finalUrl, '_blank', 'noopener,noreferrer')
+        setNotice(null)
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Erro ao obter token SSO'
+        setNotice(`Erro ao abrir "${app.name}": ${msg}`)
+      } finally {
+        setSsoLoadingId(null)
+      }
       return
     }
 
     const url = buildAppUrl(app, user.id, user.name, user.email)
-    // M5: only record activity after confirming there is a URL to open.
     if (url === '#') return
 
     markRecent(app.id)

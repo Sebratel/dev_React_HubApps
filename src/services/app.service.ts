@@ -62,6 +62,12 @@ export function searchApps(apps: AppItemModel[], searchQuery: string): AppItemMo
   )
 }
 
+export async function requestAppLaunchToken(
+  appId: string
+): Promise<{ token: string; expiresAt: string }> {
+  return api.post<{ token: string; expiresAt: string }>(`/apps/${appId}/launch-token`)
+}
+
 export function buildAppUrl(
   app: AppItemModel,
   userId: string,
