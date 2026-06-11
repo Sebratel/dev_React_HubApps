@@ -253,19 +253,15 @@ describe('AppsManagementPage', () => {
     expect(createApp).not.toHaveBeenCalled()
   })
 
-  it('shows passToken warning when passToken is checked', async () => {
+  it('shows passToken checkbox in create dialog', async () => {
     vi.mocked(listAllApps).mockResolvedValue([])
     render(<AppsManagementPage />, { wrapper: createWrapper() })
     await waitFor(() => expect(screen.getByText('Nenhum aplicativo cadastrado.')).toBeTruthy())
 
     await openCreateDialog()
 
-    fireEvent.click(screen.getByLabelText(/Passar token de sessão/))
-
-    await waitFor(() => {
-      expect(screen.getAllByRole('note').length).toBeGreaterThan(1)
-      expect(screen.getByText(/SSO via token ainda não está implementada/)).toBeTruthy()
-    })
+    expect(screen.getByLabelText(/SSO.*passar token de sessão/i)).toBeTruthy()
+    expect(screen.getByLabelText(/Passar dados do usuário na URL/i)).toBeTruthy()
   })
 
   it('edits app — opens dialog pre-filled and calls updateApp', async () => {

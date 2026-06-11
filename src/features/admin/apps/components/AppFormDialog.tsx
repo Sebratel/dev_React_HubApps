@@ -21,6 +21,12 @@ const PROFILE_OPTIONS = [
   { value: 'third_party', label: 'Terceiros' },
 ] as const
 
+const STATUS_OPTIONS = [
+  { value: 'active',      label: 'Ativo'        },
+  { value: 'novo',        label: 'Novo'          },
+  { value: 'maintenance', label: 'Manutenção'    },
+] as const
+
 const appFormSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(255),
   url: z
@@ -30,6 +36,8 @@ const appFormSchema = z.object({
   description: z.string().max(500).optional(),
   iconUrl: z.string().optional(),
   passToken: z.boolean(),
+  passUser: z.boolean(),
+  status: z.enum(['active', 'maintenance', 'novo']),
   allowedProfiles: z.array(z.string()),
   allowedUsersRaw: z.string(),
   allowedTeamsRaw: z.string(),
@@ -83,6 +91,8 @@ export function AppFormDialog({
       description: app?.description ?? '',
       iconUrl: app?.icon ?? '',
       passToken: app?.passToken ?? false,
+      passUser: app?.passUser ?? false,
+      status: (app?.status as 'active' | 'maintenance' | 'novo') ?? 'active',
       allowedProfiles: app?.allowedProfiles ?? [],
       allowedUsersRaw: (app?.allowedUsers ?? []).join('\n'),
       allowedTeamsRaw: (app?.allowedTeams ?? []).join('\n'),
@@ -98,6 +108,8 @@ export function AppFormDialog({
         description: app?.description ?? '',
         iconUrl: app?.icon ?? '',
         passToken: app?.passToken ?? false,
+        passUser: app?.passUser ?? false,
+        status: (app?.status as 'active' | 'maintenance' | 'novo') ?? 'active',
         allowedProfiles: app?.allowedProfiles ?? [],
         allowedUsersRaw: (app?.allowedUsers ?? []).join('\n'),
         allowedTeamsRaw: (app?.allowedTeams ?? []).join('\n'),
@@ -106,7 +118,6 @@ export function AppFormDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, app?.id])
 
-  const passToken = watch('passToken')
   const allowedProfiles = watch('allowedProfiles')
   const allowedUsersRaw = watch('allowedUsersRaw')
   const allowedTeamsRaw = watch('allowedTeamsRaw')
@@ -194,8 +205,32 @@ export function AppFormDialog({
             />
           </div>
 
-          {/* passToken */}
+          {/* Status */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="app-status" className="text-sm font-medium">
+              Status
+            </label>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <select
+                  id="app-status"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {STATUS_OPTIONS.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              )}
+            />
+          </div>
+
+          {/* Flags de integração */}
           <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Integração</span>
             <Controller
               name="passToken"
               control={control}
@@ -208,19 +243,32 @@ export function AppFormDialog({
                     onChange={(e) => field.onChange(e.target.checked)}
                     className="h-4 w-4 rounded border-input"
                   />
-                  <span className="text-sm font-medium">Passar token de sessão (passToken)</span>
+                  <span className="text-sm">
+                    <span className="font-medium">SSO — passar token de sessão</span>
+                    <span className="ml-1 text-xs text-muted-foreground">(passToken)</span>
+                  </span>
                 </label>
               )}
             />
-            {passToken && (
-              <div
-                role="note"
-                className="rounded-md border border-yellow-300 bg-yellow-50 px-3 py-2 text-xs text-yellow-800"
-              >
-                <strong>Atenção:</strong> A integração SSO via token ainda não está implementada no
-                front-end React. Este campo só terá efeito quando o fluxo SSO estiver concluído.
-              </div>
-            )}
+            <Controller
+              name="passUser"
+              control={control}
+              render={({ field }) => (
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    id="app-pass-user"
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium">Passar dados do usuário na URL</span>
+                    <span className="ml-1 text-xs text-muted-foreground">(uid, nome, email)</span>
+                  </span>
+                </label>
+              )}
+            />
           </div>
 
           {/* Allowed Profiles */}
