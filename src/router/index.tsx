@@ -15,6 +15,7 @@ import { UsersManagementPage } from '@/features/admin/users/UsersManagementPage'
 import { AccessRequestsManagementPage } from '@/features/admin/access-requests/AccessRequestsManagementPage'
 import { AppsManagementPage } from '@/features/admin/apps/AppsManagementPage'
 import { AdminAnnouncementsPage } from '@/features/admin/announcements/AdminAnnouncementsPage'
+import { AdminTeamsPage } from '@/features/admin/teams/AdminTeamsPage'
 import { AuditLogsManagementPage } from '@/features/admin/audit-logs/AuditLogsManagementPage'
 
 export const router = createBrowserRouter(
@@ -76,6 +77,10 @@ export const router = createBrowserRouter(
                     {
                       path: '/admin/apps',
                       element: <AppsManagementPage />,
+                    },
+                    {
+                      path: '/admin/teams',
+                      element: <AdminTeamsPage />,
                     },
                     {
                       path: '/admin/announcements',

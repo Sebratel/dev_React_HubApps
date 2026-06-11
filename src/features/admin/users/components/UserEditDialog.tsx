@@ -1,20 +1,14 @@
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import type { UserModel } from '@/types/models'
-
 import { SEBRATEL_PROFILES } from '@/constants/profiles'
-
-const PROFILES = SEBRATEL_PROFILES
+import { getTeams } from '@/services/team.service'
+import type { UserModel } from '@/types/models'
 
 interface UserEditDialogProps {
   user: UserModel | null
@@ -26,21 +20,22 @@ interface UserEditDialogProps {
 }
 
 export function UserEditDialog({
-  user,
-  open,
-  isPending,
-  error,
-  onConfirm,
-  onClose,
+  user, open, isPending, error, onConfirm, onClose,
 }: UserEditDialogProps) {
   const [profile, setProfile] = useState('')
-  const [team, setTeam] = useState('')
+  const [teamId, setTeamId]   = useState<string>('')
 
-  // Sync form when target user changes
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn:  getTeams,
+    staleTime: 300_000,
+    enabled: open,
+  })
+
   useEffect(() => {
     if (user) {
       setProfile(user.profile)
-      setTeam(user.team ?? '')
+      setTeamId(user.team ?? '')
     }
   }, [user])
 
@@ -48,13 +43,9 @@ export function UserEditDialog({
     if (!user) return
     const patch: Partial<Pick<UserModel, 'profile' | 'team'>> = {}
     if (profile !== user.profile) patch.profile = profile
-    // Send null when team is cleared, original value when unchanged
-    const newTeam = team.trim() || null
+    const newTeam = teamId || null
     if (newTeam !== (user.team ?? null)) patch.team = newTeam
-    if (Object.keys(patch).length === 0) {
-      onClose()
-      return
-    }
+    if (Object.keys(patch).length === 0) { onClose(); return }
     onConfirm(patch)
   }
 
@@ -70,19 +61,15 @@ export function UserEditDialog({
 
         <div className="flex flex-col gap-4 py-2">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="edit-profile" className="text-sm font-medium">
-              Perfil
-            </label>
+            <label htmlFor="edit-profile" className="text-sm font-medium">Perfil</label>
             <Select
               id="edit-profile"
               value={profile}
               onChange={(e) => setProfile(e.target.value)}
               disabled={isPending}
             >
-              {PROFILES.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
+              {SEBRATEL_PROFILES.map((p) => (
+                <option key={p.value} value={p.value}>{p.label}</option>
               ))}
             </Select>
           </div>
@@ -91,13 +78,23 @@ export function UserEditDialog({
             <label htmlFor="edit-team" className="text-sm font-medium">
               Time <span className="text-muted-foreground font-normal">(opcional)</span>
             </label>
-            <Input
+            <Select
               id="edit-team"
-              placeholder="ID do time ou deixe vazio"
-              value={team}
-              onChange={(e) => setTeam(e.target.value)}
+              value={teamId}
+              onChange={(e) => setTeamId(e.target.value)}
               disabled={isPending}
-            />
+            >
+              <option value="">— Nenhum —</option>
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Times são gerenciados em{' '}
+              <a href="/admin/teams" className="underline hover:text-foreground">
+                Admin → Times
+              </a>.
+            </p>
           </div>
 
           <p className="text-xs text-muted-foreground">
@@ -106,18 +103,13 @@ export function UserEditDialog({
         </div>
 
         {error && (
-          <p
-            role="alert"
-            className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2"
-          >
+          <p role="alert" className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
             {error}
           </p>
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isPending}>
-            Cancelar
-          </Button>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancelar</Button>
           <Button onClick={handleSubmit} disabled={isPending}>
             {isPending ? 'Salvando...' : 'Salvar'}
           </Button>
