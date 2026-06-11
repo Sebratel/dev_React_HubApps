@@ -29,4 +29,13 @@ const adminWriteLimiter = rateLimit({
   message: { error: 'Limite de operações administrativas excedido. Tente novamente em 1 minuto.' },
 })
 
-module.exports = { auditLogLimiter, provisionLimiter, adminWriteLimiter }
+const ssoLaunchLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 10,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Limite de tokens SSO excedido. Tente novamente em 1 minuto.' },
+})
+
+module.exports = { auditLogLimiter, provisionLimiter, adminWriteLimiter, ssoLaunchLimiter }

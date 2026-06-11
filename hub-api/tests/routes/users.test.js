@@ -31,6 +31,7 @@ jest.mock('../../src/middleware/rateLimits', () => ({
   provisionLimiter:  (_req, _res, next) => next(),
   adminWriteLimiter: (_req, _res, next) => next(),
   auditLogLimiter:   (_req, _res, next) => next(),
+  ssoLaunchLimiter:  (_req, _res, next) => next(),
 }))
 
 const request = require('supertest')

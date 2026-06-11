@@ -8,6 +8,7 @@ describe('AUDIT_ACTIONS', () => {
       'USER_PROMOTE_ADMIN', 'USER_REVOKE_ADMIN',
       'APP_CREATE', 'APP_UPDATE', 'APP_DEACTIVATE', 'APP_REACTIVATE',
       'ACCESS_REQUEST_CREATE', 'ACCESS_REQUEST_APPROVE', 'ACCESS_REQUEST_REJECT',
+      'SSO_TOKEN_ISSUE',
     ]
     expect(Object.keys(AUDIT_ACTIONS)).toEqual(expect.arrayContaining(expected))
     expect(Object.keys(AUDIT_ACTIONS)).toHaveLength(expected.length)

@@ -1,7 +1,8 @@
 const router = require('express').Router()
 const pool   = require('../db/pool')
+const jwt    = require('jsonwebtoken')
 const { requireAuth, requireAdmin } = require('../middleware/auth')
-const { adminWriteLimiter } = require('../middleware/rateLimits')
+const { adminWriteLimiter, ssoLaunchLimiter } = require('../middleware/rateLimits')
 const { randomUUID } = require('crypto')
 const logAudit      = require('../utils/logAudit')
 const AUDIT_ACTIONS = require('../utils/auditActions')
@@ -117,6 +118,66 @@ router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, r
 
   const [rows] = await pool.query('SELECT * FROM apps WHERE id = ?', [req.params.id])
   res.json(rows[0])
+})
+
+// POST /apps/:id/launch-token — emite JWT SSO de curta duração para apps com pass_token=1
+router.post('/:id/launch-token', requireAuth, ssoLaunchLimiter, async (req, res, next) => {
+  const secret = process.env.SSO_JWT_SECRET
+  if (!secret) return res.status(503).json({ error: 'SSO não configurado no servidor' })
+
+  try {
+    const [appRows] = await pool.query(
+      'SELECT id, name, url, pass_token, is_active, allowed_profiles, allowed_users, allowed_teams FROM apps WHERE id = ?',
+      [req.params.id]
+    )
+    if (!appRows.length || !appRows[0].is_active) {
+      return res.status(404).json({ error: 'App não encontrado' })
+    }
+    const app = appRows[0]
+    if (!app.pass_token) {
+      return res.status(400).json({ error: 'Este app não requer SSO' })
+    }
+
+    const [userRows] = await pool.query(
+      'SELECT id, name, profile, team, is_active FROM users WHERE id = ?',
+      [req.uid]
+    )
+    if (!userRows.length || !userRows[0].is_active) {
+      return res.status(403).json({ error: 'Usuário inativo ou não encontrado' })
+    }
+    const u = userRows[0]
+
+    const profiles = JSON.parse(app.allowed_profiles || '[]')
+    const users    = JSON.parse(app.allowed_users    || '[]')
+    const teams    = JSON.parse(app.allowed_teams    || '[]')
+    const hasAccess =
+      profiles.includes(u.profile) ||
+      users.includes(req.uid)      ||
+      (u.team && teams.includes(u.team))
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Acesso não autorizado a este app' })
+    }
+
+    const expSeconds = 300 // 5 minutos
+    const token = jwt.sign(
+      { sub: req.uid, email: req.email, name: u.name, appId: app.id },
+      secret,
+      { algorithm: 'HS256', expiresIn: expSeconds }
+    )
+    const expiresAt = new Date(Date.now() + expSeconds * 1000).toISOString()
+
+    await logAudit({
+      uid: req.uid,
+      action: AUDIT_ACTIONS.SSO_TOKEN_ISSUE,
+      details: { appId: app.id, appName: app.name },
+      req,
+    })
+
+    res.json({ token, expiresAt })
+  } catch (err) {
+    next(err)
+  }
 })
 
 module.exports = router
