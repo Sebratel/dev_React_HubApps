@@ -1,6 +1,6 @@
 services:
   hub-api:
-    build: ./hub-api
+    build: .
     container_name: hub-api
     restart: unless-stopped
     ports:
