@@ -6,12 +6,6 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Sebratel brand tokens
-        sebratel: {
-          primary: '#FFD700',
-          secondary: '#E50914',
-          header: '#FFAE00',
-        },
         // shadcn/ui CSS-variable tokens
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -29,6 +23,10 @@ const config: Config = {
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
+        },
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          foreground: 'hsl(var(--success-foreground))',
         },
         muted: {
           DEFAULT: 'hsl(var(--muted))',
@@ -49,8 +47,7 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Inter', 'Segoe UI', 'Arial', 'sans-serif'],
-        heading: ['Poppins', 'Segoe UI', 'Arial', 'sans-serif'],
+        sans: ['DM Sans', 'sans-serif'],
       },
       keyframes: {
         'fade-in': {

@@ -13,9 +13,16 @@ interface AdminMetricCardProps {
 
 const variantClasses: Record<NonNullable<AdminMetricCardProps['variant']>, string> = {
   default: '',
-  success: 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/40',
-  warning: 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/40',
-  danger: 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/40',
+  success: 'border-green-200  bg-green-50/60',
+  warning: 'border-amber-200  bg-amber-50/60',
+  danger:  'border-red-200    bg-red-50/60',
+}
+
+const valueClasses: Record<NonNullable<AdminMetricCardProps['variant']>, string> = {
+  default: 'text-foreground',
+  success: 'text-green-700',
+  warning: 'text-amber-700',
+  danger:  'text-red-700',
 }
 
 export function AdminMetricCard({
@@ -45,7 +52,7 @@ export function AdminMetricCard({
         <p className="text-sm text-muted-foreground">{title}</p>
         {icon && <span className="text-muted-foreground">{icon}</span>}
       </div>
-      <p className="text-2xl font-bold text-foreground">{value}</p>
+      <p className={cn('text-2xl font-bold', valueClasses[variant])}>{value}</p>
       {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
     </div>
   )

@@ -12,10 +12,11 @@ export const PROFILE_LABEL: Record<string, string> = Object.fromEntries(
   SEBRATEL_PROFILES.map(({ value, label }) => [value, label])
 )
 
+// Earth-tone / warm-palette — alinhado com design system GER (sem azul/roxo)
 export const PROFILE_STYLE: Record<string, string> = {
-  infraestrutura: 'border-blue-200   bg-blue-50   text-blue-700   dark:border-blue-700   dark:bg-blue-950   dark:text-blue-300',
-  tecnica:        'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
-  atendimento:    'border-green-200  bg-green-50  text-green-700  dark:border-green-700  dark:bg-green-950  dark:text-green-300',
-  comercial:      'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-700 dark:bg-orange-950 dark:text-orange-300',
-  users:          'border-gray-200   bg-gray-50   text-gray-600   dark:border-gray-600   dark:bg-gray-900   dark:text-gray-400',
+  infraestrutura: 'border-stone-300  bg-stone-100  text-stone-700',
+  tecnica:        'border-amber-300  bg-amber-50   text-amber-800',
+  atendimento:    'border-green-200  bg-green-50   text-green-700',
+  comercial:      'border-orange-200 bg-orange-50  text-orange-700',
+  users:          'border-gray-200   bg-gray-50    text-gray-600',
 }

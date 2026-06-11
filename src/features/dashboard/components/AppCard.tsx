@@ -47,7 +47,7 @@ export function AppCard({
               className={cn(
                 'rounded-full p-1 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isFavorite
-                  ? 'text-yellow-500'
+                  ? 'text-primary'
                   : 'text-muted-foreground opacity-0 group-hover:opacity-100'
               )}
               aria-label={

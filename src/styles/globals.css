@@ -4,49 +4,38 @@
 
 @layer base {
   :root {
-    /* shadcn/ui CSS variable tokens */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 47.9 95.8% 53.1%; /* Sebratel primary #FFD700 */
-    --primary-foreground: 0 0% 0%;
-    --secondary: 354 84% 47%; /* Sebratel secondary #E50914 */
-    --secondary-foreground: 0 0% 100%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 47.9 95.8% 53.1%;
-    --radius: 0.5rem;
-  }
+    /* GER / Sebratel Design System tokens */
+    --background: 41 40% 94%;          /* #F5F1E8 — fundo principal */
+    --foreground: 0 0% 7%;             /* #111111 — texto, títulos */
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 47.9 95.8% 53.1%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 354 84% 47%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 47.9 95.8% 53.1%;
+    --card: 0 0% 100%;                 /* #FFFFFF — cards, modais */
+    --card-foreground: 0 0% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+
+    --primary: 41 100% 50%;            /* #FFB000 — botões primários, destaques */
+    --primary-foreground: 0 0% 7%;
+
+    --secondary: 38 15% 88%;           /* cinza quente suave */
+    --secondary-foreground: 0 0% 20%;
+
+    --muted: 38 20% 90%;               /* fundo muted, hover suave */
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 38 25% 91%;              /* accent sutil */
+    --accent-foreground: 0 0% 7%;
+
+    --destructive: 0 72% 51%;          /* #DC2626 — erro, destruição */
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;            /* #16A34A — sucesso, meta */
+    --success-foreground: 0 0% 100%;
+
+    --border: 38 18% 84%;              /* #E5E0D5-like — bordas */
+    --input: 38 18% 86%;
+    --ring: 41 100% 50%;               /* primary para focus rings */
+    --radius: 0.5rem;
   }
 }
 
@@ -57,6 +46,8 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }

@@ -1,65 +1,159 @@
-import { Outlet, Link, NavLink } from 'react-router-dom'
+import { useState } from 'react'
+import { Outlet, NavLink, Link } from 'react-router-dom'
+import { LayoutGrid, Bell, MessageSquare, ShieldCheck, Menu, X, LogOut } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
 import { canAccessAdminDashboard } from '@/utils/permissions'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { useSecureSignOut } from '@/hooks/useSecureSignOut'
+import { cn } from '@/lib/utils'
 
 export function DashboardLayout() {
   const user = useAuthStore((s) => s.user)
   const secureSignOut = useSecureSignOut()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const closeSidebar = () => setSidebarOpen(false)
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex h-14 shrink-0 items-center gap-3 bg-sebratel-header px-4 shadow-sm sm:px-6">
-        <Link
-          to="/"
-          className="shrink-0 text-lg font-bold tracking-tight text-black/90 transition-opacity hover:opacity-80"
-        >
-          Sebratel Hub
-        </Link>
+    <div className="min-h-screen flex bg-background">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+          aria-hidden
+          onClick={closeSidebar}
+        />
+      )}
 
-        <div className="flex-1" />
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          'fixed lg:static inset-y-0 left-0 z-30 w-64 bg-card border-r border-border flex flex-col shrink-0',
+          'transition-transform duration-200 ease-in-out',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        )}
+        aria-label="Navegação principal"
+      >
+        {/* Brand */}
+        <div className="h-14 flex items-center px-5 border-b border-border shrink-0">
+          <Link
+            to="/"
+            className="font-bold text-base text-foreground tracking-tight hover:opacity-75 transition-opacity"
+            onClick={closeSidebar}
+          >
+            Sebratel Hub
+          </Link>
+        </div>
 
-        {user && canAccessAdminDashboard(user) && (
+        {/* Navigation */}
+        <nav className="flex-1 p-3 flex flex-col gap-0.5 overflow-y-auto" aria-label="Menu principal">
           <NavLink
-            to="/admin"
-            aria-label="Painel administrativo"
+            to="/"
+            end
+            onClick={closeSidebar}
             className={({ isActive }) =>
-              `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              cn(
+                'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-black/20 text-black'
-                  : 'text-black/70 hover:bg-black/10 hover:text-black'
-              }`
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              )
             }
           >
-            Admin
+            <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden />
+            Aplicativos
           </NavLink>
-        )}
 
-        {user && (
-          <div className="flex items-center gap-2 sm:gap-3">
-            <UserAvatar name={user.name || user.email} photoUrl={user.photoUrl} size="sm" />
-            <span className="hidden max-w-[130px] truncate text-sm font-medium text-black/80 sm:block">
-              {user.name || user.email}
+          {/* Itens futuros — em breve */}
+          <span className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-muted-foreground/50 cursor-not-allowed select-none">
+            <Bell className="h-4 w-4 shrink-0" aria-hidden />
+            Avisos
+            <span className="ml-auto text-[10px] bg-muted text-muted-foreground/60 px-1.5 py-0.5 rounded-sm font-medium leading-tight">
+              Em breve
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-black/70 hover:bg-black/10 hover:text-black"
-              onClick={secureSignOut}
-              title="Encerrar sessão"
-              aria-label="Encerrar sessão"
-            >
-              Sair
-            </Button>
+          </span>
+          <span className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-muted-foreground/50 cursor-not-allowed select-none">
+            <MessageSquare className="h-4 w-4 shrink-0" aria-hidden />
+            Sugestões
+            <span className="ml-auto text-[10px] bg-muted text-muted-foreground/60 px-1.5 py-0.5 rounded-sm font-medium leading-tight">
+              Em breve
+            </span>
+          </span>
+
+          {/* Admin link — somente para admins */}
+          {user && canAccessAdminDashboard(user) && (
+            <>
+              <div className="my-2 h-px bg-border" />
+              <NavLink
+                to="/admin"
+                onClick={closeSidebar}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  )
+                }
+              >
+                <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
+                Administração
+              </NavLink>
+            </>
+          )}
+        </nav>
+
+        {/* User section */}
+        {user && (
+          <div className="border-t border-border p-4 shrink-0">
+            <div className="flex items-center gap-3">
+              <UserAvatar name={user.name || user.email} photoUrl={user.photoUrl} size="sm" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate leading-tight">
+                  {user.name || user.email}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                onClick={secureSignOut}
+                title="Encerrar sessão"
+                aria-label="Encerrar sessão"
+              >
+                <LogOut className="h-4 w-4" aria-hidden />
+              </Button>
+            </div>
           </div>
         )}
-      </header>
+      </aside>
 
-      <main className="flex-1 p-4 sm:p-6 w-full max-w-7xl mx-auto">
-        <Outlet />
-      </main>
+      {/* Área principal */}
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Topbar mobile */}
+        <header className="h-14 bg-primary flex items-center px-4 gap-3 shrink-0 lg:hidden shadow-sm">
+          <button
+            className="text-black/80 hover:text-black p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30"
+            onClick={() => setSidebarOpen((o) => !o)}
+            aria-label={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={sidebarOpen}
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+          <span className="font-bold text-black/90 text-base tracking-tight">Sebratel Hub</span>
+          {user && (
+            <div className="ml-auto">
+              <UserAvatar name={user.name || user.email} photoUrl={user.photoUrl} size="sm" />
+            </div>
+          )}
+        </header>
+
+        <main className="flex-1 p-6 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   )
 }
