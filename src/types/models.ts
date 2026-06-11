@@ -135,6 +135,21 @@ export interface DashboardNotice {
   pushSentAt: Date | null
 }
 
+// ─── AnnouncementModel ────────────────────────────────────────────────────────
+// MySQL table: announcements
+
+export interface AnnouncementModel {
+  id: string
+  title: string
+  body: string | null
+  type: import('./enums').AnnouncementType
+  isActive: boolean
+  createdBy: string
+  allowedProfiles: string[]
+  createdAt: Date
+  updatedAt: Date
+}
+
 // ─── ExternalAppLaunchSession ─────────────────────────────────────────────────
 // Returned by Cloud Function createExternalAppSessionV1.
 // ADR-0001-D7: token is generated exclusively server-side.

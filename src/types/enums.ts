@@ -12,3 +12,6 @@ export type AuditPeriod = 'all' | 'today' | 'last7days' | 'last30days'
 
 // Announcement display type
 export type NoticeType = 'info' | 'warning' | 'success' | 'alert' | 'danger'
+
+// Tipo de aviso (hub-api)
+export type AnnouncementType = 'info' | 'warning' | 'urgent' | 'success'

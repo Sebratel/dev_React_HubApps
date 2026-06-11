@@ -65,14 +65,23 @@ export function DashboardLayout() {
             Aplicativos
           </NavLink>
 
-          {/* Itens futuros — em breve */}
-          <span className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-muted-foreground/50 cursor-not-allowed select-none">
+          <NavLink
+            to="/avisos"
+            onClick={closeSidebar}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              )
+            }
+          >
             <Bell className="h-4 w-4 shrink-0" aria-hidden />
             Avisos
-            <span className="ml-auto text-[10px] bg-muted text-muted-foreground/60 px-1.5 py-0.5 rounded-sm font-medium leading-tight">
-              Em breve
-            </span>
-          </span>
+          </NavLink>
+
+          {/* Item futuro */}
           <span className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-muted-foreground/50 cursor-not-allowed select-none">
             <MessageSquare className="h-4 w-4 shrink-0" aria-hidden />
             Sugestões

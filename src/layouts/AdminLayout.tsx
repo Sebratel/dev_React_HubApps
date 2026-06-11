@@ -8,16 +8,18 @@ import {
   ClipboardList,
   AppWindow,
   BookOpen,
+  Bell,
   ArrowLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
-  { to: '/admin',                  label: 'Dashboard',    icon: LayoutDashboard, end: true },
-  { to: '/admin/users',            label: 'Usuários',     icon: Users            },
-  { to: '/admin/access-requests',  label: 'Solicitações', icon: ClipboardList    },
-  { to: '/admin/apps',             label: 'Aplicativos',  icon: AppWindow        },
-  { to: '/admin/audit-logs',       label: 'Auditoria',    icon: BookOpen         },
+  { to: '/admin',                       label: 'Dashboard',    icon: LayoutDashboard, end: true },
+  { to: '/admin/users',                 label: 'Usuários',     icon: Users            },
+  { to: '/admin/access-requests',       label: 'Solicitações', icon: ClipboardList    },
+  { to: '/admin/apps',                  label: 'Aplicativos',  icon: AppWindow        },
+  { to: '/admin/announcements',         label: 'Avisos',       icon: Bell             },
+  { to: '/admin/audit-logs',            label: 'Auditoria',    icon: BookOpen         },
 ]
 
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {

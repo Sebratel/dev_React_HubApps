@@ -9,20 +9,14 @@ import { SplashScreen } from '@/features/auth/SplashScreen'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { PendingApprovalPage } from '@/features/auth/PendingApprovalPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
+import { AnnouncementsPage } from '@/features/announcements/AnnouncementsPage'
 import { AdminDashboard } from '@/features/admin/AdminDashboard'
 import { UsersManagementPage } from '@/features/admin/users/UsersManagementPage'
 import { AccessRequestsManagementPage } from '@/features/admin/access-requests/AccessRequestsManagementPage'
 import { AppsManagementPage } from '@/features/admin/apps/AppsManagementPage'
+import { AdminAnnouncementsPage } from '@/features/admin/announcements/AdminAnnouncementsPage'
 import { AuditLogsManagementPage } from '@/features/admin/audit-logs/AuditLogsManagementPage'
 
-// Route hierarchy:
-// ProtectedRoute (auth) → PendingApprovalPage (authenticated but possibly inactive)
-//                       → ActiveRoute (isActive check) → all real app routes
-//
-// This ensures:
-//   - Unauthenticated → /login
-//   - Authenticated + inactive → /pending-approval (only accessible here)
-//   - Authenticated + active → / or /admin (based on role)
 export const router = createBrowserRouter(
   [
     {
@@ -41,12 +35,10 @@ export const router = createBrowserRouter(
     {
       element: <ProtectedRoute />,
       children: [
-        // Accessible to authenticated users regardless of isActive
         {
           path: '/pending-approval',
           element: <PendingApprovalPage />,
         },
-        // All routes below require isActive === true
         {
           element: <ActiveRoute />,
           children: [
@@ -56,6 +48,10 @@ export const router = createBrowserRouter(
                 {
                   path: '/',
                   element: <DashboardPage />,
+                },
+                {
+                  path: '/avisos',
+                  element: <AnnouncementsPage />,
                 },
               ],
             },
@@ -80,6 +76,10 @@ export const router = createBrowserRouter(
                     {
                       path: '/admin/apps',
                       element: <AppsManagementPage />,
+                    },
+                    {
+                      path: '/admin/announcements',
+                      element: <AdminAnnouncementsPage />,
                     },
                     {
                       path: '/admin/audit-logs',
