@@ -7,7 +7,9 @@ import {
   promoteToAdmin,
   revokeAdmin,
   updateUserProfile,
+  createExternalUser,
 } from '@/services/admin/admin-user.service'
+import type { CreateExternalUserPayload } from '@/services/admin/admin-user.service'
 import type { UserModel } from '@/types/models'
 
 export interface UserFilters {
@@ -94,6 +96,11 @@ export function useUsersPage() {
     onSuccess: invalidateUsers,
   })
 
+  const createExternalMutation = useMutation({
+    mutationFn: (payload: CreateExternalUserPayload) => createExternalUser(payload),
+    onSuccess: invalidateUsers,
+  })
+
   return {
     users: filteredUsers,
     totalUsers: data?.pagination.total ?? 0,
@@ -108,5 +115,6 @@ export function useUsersPage() {
     promoteAdminMutation,
     revokeAdminMutation,
     updateProfileMutation,
+    createExternalMutation,
   }
 }

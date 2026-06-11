@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Search } from 'lucide-react'
+import { RefreshCw, Search, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -11,6 +11,7 @@ import { UsersTable, UsersTableEmpty, UsersTableSkeleton } from './components/Us
 import { UserActivateDialog } from './components/UserActivateDialog'
 import { UserDeactivateDialog } from './components/UserDeactivateDialog'
 import { UserEditDialog } from './components/UserEditDialog'
+import { CreateExternalUserDialog } from './components/CreateExternalUserDialog'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,7 @@ import {
 } from '@/components/ui/dialog'
 import type { UserModel } from '@/types/models'
 
-type DialogKind = 'activate' | 'deactivate' | 'edit' | 'promoteAdmin' | 'revokeAdmin' | null
+type DialogKind = 'activate' | 'deactivate' | 'edit' | 'promoteAdmin' | 'revokeAdmin' | 'createExternal' | null
 
 function formatMutationError(err: unknown): string {
   if (err instanceof ApiError) {
@@ -50,6 +51,7 @@ export function UsersManagementPage() {
     promoteAdminMutation,
     revokeAdminMutation,
     updateProfileMutation,
+    createExternalMutation,
   } = useUsersPage()
 
   const [selectedUser, setSelectedUser] = useState<UserModel | null>(null)
@@ -98,16 +100,25 @@ export function UsersManagementPage() {
               : `${totalUsers} usuário${totalUsers !== 1 ? 's' : ''} cadastrado${totalUsers !== 1 ? 's' : ''}`}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => void refetch()}
-          disabled={isLoading}
-          aria-label="Atualizar lista"
-        >
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refetch()}
+            disabled={isLoading}
+            aria-label="Atualizar lista"
+          >
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => { setSelectedUser(null); setDialog('createExternal') }}
+          >
+            <UserPlus className="h-4 w-4 mr-1.5" aria-hidden />
+            Novo usuário
+          </Button>
+        </div>
       </div>
 
       {/* Error banner */}
@@ -254,6 +265,15 @@ export function UsersManagementPage() {
           )
         }}
         onClose={closeDialog}
+      />
+
+      <CreateExternalUserDialog
+        open={dialog === 'createExternal'}
+        isPending={createExternalMutation.isPending}
+        onClose={closeDialog}
+        onConfirm={async (payload) => {
+          await createExternalMutation.mutateAsync(payload)
+        }}
       />
 
       {/* Generic admin promote/revoke confirmation dialog */}

@@ -72,6 +72,19 @@ export async function revokeAdmin(userId: string): Promise<UserModel> {
   return rowToUserModel(row)
 }
 
+export interface CreateExternalUserPayload {
+  name: string
+  email: string
+  password: string
+  profile?: string
+  teamId?: string | null
+}
+
+export async function createExternalUser(payload: CreateExternalUserPayload): Promise<UserModel> {
+  const row = await api.post<AdminUserRow>('/users/create-external', payload)
+  return rowToUserModel(row)
+}
+
 export async function updateUserProfile(
   userId: string,
   data: Partial<Pick<UserModel, 'profile' | 'team'>>
