@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useAuthStore } from '@/stores/auth.store'
 import {
   signInWithGoogle,
   signInWithEmailAndPassword,
@@ -11,6 +12,8 @@ import {
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const authError = useAuthStore((s) => s.error)
+  const setAuthError = useAuthStore((s) => s.setError)
   const from = (location.state as { from?: Location })?.from?.pathname ?? '/'
 
   const [email, setEmail] = useState('')
@@ -22,6 +25,7 @@ export function LoginPage() {
   const [resetError, setResetError] = useState<string | null>(null)
 
   async function handleGoogleSignIn() {
+    setAuthError(null)
     setError(null)
     setIsLoading(true)
     try {
@@ -40,6 +44,7 @@ export function LoginPage() {
 
   async function handleEmailSignIn(e: React.FormEvent) {
     e.preventDefault()
+    setAuthError(null)
     setError(null)
     setIsLoading(true)
     try {
@@ -162,9 +167,9 @@ export function LoginPage() {
         </p>
       )}
 
-      {error && (
+      {(error || authError) && (
         <p className="text-sm text-destructive text-center rounded-md bg-destructive/10 px-3 py-2">
-          {error}
+          {error ?? authError}
         </p>
       )}
     </div>

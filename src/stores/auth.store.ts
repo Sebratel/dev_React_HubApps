@@ -16,6 +16,7 @@ interface AuthActions {
   setUser: (user: UserModel | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
+  failAuth: (error: string) => void
   clearUser: () => void
 }
 
@@ -29,6 +30,7 @@ export const useAuthStore = create<AuthState & AuthActions>()((set) => ({
   setUser: (user) => set({ user, isLoading: false, error: null }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error, isLoading: false }),
+  failAuth: (error) => set({ user: null, isLoading: false, error }),
 
   // Clears all auth state — called on signOut and auth errors
   clearUser: () => set({ user: null, isLoading: false, error: null }),

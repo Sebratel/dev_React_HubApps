@@ -2,7 +2,8 @@ import { auth } from '@/firebase'
 import { getIdToken } from 'firebase/auth'
 import { ApiError, type PaginatedResponse, type QueryParams } from '@/types/api'
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000'
+const configuredApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
+const API_URL = configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:3000' : '')
 
 async function getToken(): Promise<string> {
   const user = auth.currentUser
@@ -28,6 +29,13 @@ async function request<T>(
   body?: unknown,
   params?: QueryParams
 ): Promise<T> {
+  if (!API_URL) {
+    throw new ApiError(
+      'Configuracao ausente: defina VITE_API_URL no build do frontend antes do deploy.',
+      500
+    )
+  }
+
   const token = await getToken()
   const res = await fetch(buildUrl(path, params), {
     method,
