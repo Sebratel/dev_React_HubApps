@@ -18,6 +18,11 @@ import {
   UsersRound, Bell, MessageSquare, AlertTriangle, UserX,
 } from 'lucide-react'
 
+const zone = (delay: number): React.CSSProperties => ({
+  animationDelay: `${delay}ms`,
+  animationFillMode: 'both',
+})
+
 export function AdminDashboard() {
   const user = useAuthStore((s) => s.user)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -33,8 +38,8 @@ export function AdminDashboard() {
   if (!user || !canAccessAdminDashboard(user)) return null
 
   const hasPendingSuggestions = metrics.pendingSuggestions > 0
-  const hasPendingUsers = metrics.inactiveUsers > 0
-  const hasAlerts = !isLoading && (hasPendingUsers || hasPendingSuggestions)
+  const hasPendingUsers       = metrics.inactiveUsers > 0
+  const hasAlerts             = !isLoading && (hasPendingUsers || hasPendingSuggestions)
 
   const usersPercent =
     metrics.totalUsers > 0
@@ -43,8 +48,12 @@ export function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
+
       {/* Zona 1 — Comando */}
-      <div className="flex items-center justify-between gap-4">
+      <div
+        className="flex items-center justify-between gap-4 animate-fade-in"
+        style={zone(0)}
+      >
         <h1 className="text-2xl font-bold text-foreground">Painel Administrativo</h1>
         <div className="flex items-center gap-3">
           {lastUpdated && !isLoading && (
@@ -71,7 +80,10 @@ export function AdminDashboard() {
 
       {/* Zona 2 — Triagem (condicional) */}
       {hasAlerts && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+        <div
+          className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 animate-fade-in"
+          style={zone(40)}
+        >
           <p className="text-sm font-semibold text-amber-800 mb-2">Atenção necessária</p>
           <div className="flex flex-col gap-1.5">
             {hasPendingUsers && (
@@ -116,7 +128,11 @@ export function AdminDashboard() {
 
       {/* Error banner */}
       {hasError && !isLoading && (
-        <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 animate-fade-in"
+          style={zone(40)}
+        >
           <p className="text-sm text-destructive">
             Alguns dados não puderam ser carregados.{' '}
             <button
@@ -139,6 +155,7 @@ export function AdminDashboard() {
             description={`${metrics.activeUsers} ativos (${usersPercent}%)`}
             icon={<Users className="h-4 w-4" />}
             isLoading={isLoading}
+            delay={60}
           />
           <AdminMetricCard
             title="Apps Ativos"
@@ -146,6 +163,7 @@ export function AdminDashboard() {
             icon={<LayoutGrid className="h-4 w-4" />}
             variant="success"
             isLoading={isLoading}
+            delay={110}
           />
           <AdminMetricCard
             title="Sol. Pendentes"
@@ -153,6 +171,7 @@ export function AdminDashboard() {
             icon={<Clock className="h-4 w-4" />}
             variant={metrics.pendingRequests > 0 ? 'warning' : 'default'}
             isLoading={isLoading}
+            delay={160}
           />
         </div>
 
@@ -163,30 +182,35 @@ export function AdminDashboard() {
             value={metrics.inactiveUsers}
             variant={metrics.inactiveUsers > 0 ? 'warning' : 'default'}
             isLoading={isLoading}
+            delay={180}
           />
           <AdminMetricCard
             title="Administradores"
             value={metrics.adminUsers}
             icon={<ShieldCheck className="h-4 w-4" />}
             isLoading={isLoading}
+            delay={210}
           />
           <AdminMetricCard
             title="Apps Inativos"
             value={metrics.inactiveApps}
             variant={metrics.inactiveApps > 0 ? 'warning' : 'default'}
             isLoading={isLoading}
+            delay={240}
           />
           <AdminMetricCard
             title="Times Ativos"
             value={metrics.activeTeams}
             icon={<UsersRound className="h-4 w-4" />}
             isLoading={isLoading}
+            delay={270}
           />
           <AdminMetricCard
             title="Avisos Ativos"
             value={metrics.activeAnnouncements}
             icon={<Bell className="h-4 w-4" />}
             isLoading={isLoading}
+            delay={300}
           />
           <AdminMetricCard
             title="Sugestões Pend."
@@ -194,12 +218,16 @@ export function AdminDashboard() {
             icon={<MessageSquare className="h-4 w-4" />}
             variant={hasPendingSuggestions ? 'warning' : 'default'}
             isLoading={isLoading}
+            delay={330}
           />
         </div>
       </section>
 
       {/* Zona 4A — Inteligência: widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in"
+        style={zone(370)}
+      >
         <AdminProfileChart
           data={stats?.profileDistribution ?? []}
           isLoading={isLoading}
@@ -212,7 +240,10 @@ export function AdminDashboard() {
       </div>
 
       {/* Zona 4B — Inteligência: painéis de atividade */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in"
+        style={zone(430)}
+      >
         <section
           className="rounded-xl border border-border bg-card p-4"
           aria-label="Solicitações pendentes"
