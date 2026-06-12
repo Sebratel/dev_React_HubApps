@@ -130,6 +130,24 @@ router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, r
       [status, req.uid, req.params.id]
     )
 
+    // Aprovação: adiciona o usuário ao allowed_users do app
+    if (status === 'approved') {
+      const [[app]] = await conn.query(
+        'SELECT allowed_users FROM apps WHERE id = ?',
+        [existing[0].app_id]
+      )
+      if (app) {
+        const allowedUsers = JSON.parse(app.allowed_users || '[]')
+        if (!allowedUsers.includes(existing[0].user_id)) {
+          allowedUsers.push(existing[0].user_id)
+          await conn.query(
+            'UPDATE apps SET allowed_users = ? WHERE id = ?',
+            [JSON.stringify(allowedUsers), existing[0].app_id]
+          )
+        }
+      }
+    }
+
     await logAudit({
       uid:     req.uid,
       action:  status === 'approved' ? AUDIT_ACTIONS.ACCESS_REQUEST_APPROVE : AUDIT_ACTIONS.ACCESS_REQUEST_REJECT,
