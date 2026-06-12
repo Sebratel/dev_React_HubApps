@@ -27,7 +27,7 @@ export function AppCard({
     <div
       className={cn(
         'group relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm',
-        'transition-all duration-200 hover:shadow-md hover:border-border/80',
+        'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-border/80',
         !hasAccess && !isPending && 'opacity-70',
         isPending && 'border-amber-200 bg-amber-50/40'
       )}

@@ -152,7 +152,7 @@ export function AdminDashboard() {
           <AdminMetricCard
             title="Usuários"
             value={metrics.totalUsers}
-            description={`${metrics.activeUsers} ativos (${usersPercent}%)`}
+            description={`${metrics.activeUsers} ativo${metrics.activeUsers !== 1 ? 's' : ''} (${usersPercent}%)`}
             icon={<Users className="h-4 w-4" />}
             isLoading={isLoading}
             delay={60}

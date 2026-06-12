@@ -28,7 +28,7 @@ export function AdminOnlineWidget() {
 
   return (
     <section
-      className="rounded-xl border border-border bg-card p-4 flex flex-col"
+      className="rounded-xl border border-border bg-card shadow-sm p-4 flex flex-col"
       aria-label="Usuários online agora"
     >
       <div className="flex items-center justify-between mb-4">

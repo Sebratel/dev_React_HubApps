@@ -52,7 +52,7 @@ const DOT_CLASS: Record<ActionCategory, string> = {
   danger:  'bg-destructive',
 }
 
-function parseDetails(raw: string): string {
+function parseDetails(raw: string, action?: string): string {
   if (!raw) return ''
   try {
     const obj = JSON.parse(raw) as Record<string, unknown>
@@ -66,6 +66,8 @@ function parseDetails(raw: string): string {
       ''
     )
   } catch {
+    // APP_OPEN stores detail as "Abriu: AppName" — strip the verb prefix to avoid redundancy
+    if (action === 'APP_OPEN') return raw.replace(/^[^:]+:\s*/, '')
     return raw
   }
 }
@@ -88,7 +90,7 @@ export function AdminRecentActivityList({ logs }: AdminRecentActivityListProps) 
     <ul className="flex flex-col -mx-1">
       {logs.map((log, i) => {
         const label  = ACTION_LABELS[log.action] ?? log.action
-        const detail = parseDetails(log.details)
+        const detail = parseDetails(log.details, log.action)
         const cat    = ACTION_CATEGORY[log.action] ?? 'neutral'
 
         return (
