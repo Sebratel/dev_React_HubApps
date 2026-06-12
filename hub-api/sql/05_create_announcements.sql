@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS announcements (
   type             ENUM('info','warning','urgent','success')      NOT NULL DEFAULT 'info',
   is_active        TINYINT(1)                                     NOT NULL DEFAULT 1,
   created_by       VARCHAR(128)                                   NOT NULL,
-  -- JSON array de perfis que enxergam o aviso; vazio = todos
+  -- JSON array de perfis que enxergam o aviso (vazio = todos)
   allowed_profiles JSON                                           NOT NULL DEFAULT ('[]'),
   created_at       DATETIME                                       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at       DATETIME                                       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

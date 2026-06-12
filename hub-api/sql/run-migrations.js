@@ -3,12 +3,15 @@ const mysql = require('mysql2/promise')
 const fs    = require('fs')
 const path  = require('path')
 
-// Splits SQL into individual statements, skipping blank/comment-only chunks
+// Splits SQL into individual statements, skipping blank/comment-only chunks.
+// Ignores semicolons inside -- line comments to avoid breaking multi-line statements.
 function splitStatements(sql) {
-  return sql
+  // Remove inline -- comments before splitting so their semicolons are invisible
+  const stripped = sql.replace(/--[^\n]*/g, '')
+  return stripped
     .split(';')
     .map(s => s.trim())
-    .filter(s => s.length > 0 && s.replace(/^(--.*)(\n|$)/gm, '').trim().length > 0)
+    .filter(s => s.length > 0)
 }
 
 const MIGRATIONS = [
