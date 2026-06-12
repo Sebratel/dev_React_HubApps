@@ -7,6 +7,7 @@ interface AppGridProps {
   apps: AppItemModel[]
   blockedApps: AppItemModel[]
   favorites: string[]
+  pendingAppIds: Set<string>
   isLoading: boolean
   emptyMessage?: string
   onOpen: (app: AppItemModel) => void
@@ -30,6 +31,7 @@ export function AppGrid({
   apps,
   blockedApps,
   favorites,
+  pendingAppIds,
   isLoading,
   emptyMessage = 'Nenhum aplicativo encontrado.',
   onOpen,
@@ -70,12 +72,11 @@ export function AppGrid({
 
       {blockedApps.length > 0 && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" aria-hidden />
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide shrink-0">
-              Disponíveis para solicitar acesso
-            </p>
-            <div className="h-px flex-1 bg-border" aria-hidden />
+          <div className="flex items-baseline justify-between pb-2 border-b border-border">
+            <span className="text-sm font-semibold text-foreground">Solicitar acesso</span>
+            <span className="text-xs text-muted-foreground">
+              {blockedApps.length} app{blockedApps.length !== 1 ? 's' : ''}
+            </span>
           </div>
           <div className={GRID}>
             {blockedApps.map((app) => (
@@ -84,6 +85,7 @@ export function AppGrid({
                 app={app}
                 hasAccess={false}
                 isFavorite={false}
+                isPending={pendingAppIds.has(app.id)}
                 onOpen={onOpen}
                 onRequestAccess={onRequestAccess}
                 onToggleFavorite={onToggleFavorite}

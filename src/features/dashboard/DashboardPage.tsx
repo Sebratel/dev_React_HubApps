@@ -1,17 +1,19 @@
 import { useState, useMemo, useEffect } from 'react'
+import { Search, PackageOpen } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
 import { useAppsStore } from '@/stores/apps.store'
 import { useApps } from './hooks/useApps'
 import { AppGrid } from './components/AppGrid'
+import { AppCard } from './components/AppCard'
 import { AccessRequestModal } from './components/AccessRequestModal'
 import { Input } from '@/components/ui/input'
 import { buildAppUrl, requestAppLaunchToken } from '@/services/app.service'
 import { logAppOpen } from '@/services/audit-log.service'
 import { useFavoritesSync } from './hooks/useFavoritesSync'
-import { cn } from '@/lib/utils'
+import { usePendingRequestAppIds } from './hooks/usePendingRequestAppIds'
 import type { AppItemModel } from '@/types/models'
 
-type DashboardTab = 'all' | 'favorites' | 'recent'
+const GRID = 'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4'
 
 export function DashboardPage() {
   useFavoritesSync()
@@ -21,9 +23,9 @@ export function DashboardPage() {
   const markRecent = useAppsStore((s) => s.markRecent)
 
   const { userApps, blockedApps, favoriteApps, recentApps, isLoading, error } = useApps()
+  const pendingAppIds = usePendingRequestAppIds()
 
   const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<DashboardTab>('all')
   const [requestApp, setRequestApp] = useState<AppItemModel | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [ssoLoadingId, setSsoLoadingId] = useState<string | null>(null)
@@ -34,22 +36,36 @@ export function DashboardPage() {
     return () => clearTimeout(timer)
   }, [notice])
 
-  const { visibleApps, visibleBlocked } = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    const matches = (a: AppItemModel) =>
-      !term || a.name.toLowerCase().includes(term) || a.description.toLowerCase().includes(term)
+  const searchTerm = search.trim()
+  const isSearching = searchTerm !== ''
 
-    if (activeTab === 'favorites') {
-      return { visibleApps: favoriteApps.filter(matches), visibleBlocked: [] }
+  const { favoritesSection, recentsSection, searchResults } = useMemo(() => {
+    const normalized = searchTerm.toLowerCase()
+    const matches = (a: AppItemModel) =>
+      a.name.toLowerCase().includes(normalized) ||
+      a.description.toLowerCase().includes(normalized)
+
+    const favoritesSection = favoriteApps.slice(0, 4)
+    const recentsSection = recentApps
+      .filter((app) => !favorites.includes(app.id))
+      .slice(0, 4)
+
+    if (!isSearching) {
+      return { favoritesSection, recentsSection, searchResults: null }
     }
-    if (activeTab === 'recent') {
-      return { visibleApps: recentApps.filter(matches), visibleBlocked: [] }
-    }
+
+    const accessible = userApps.filter(matches)
+    const blocked = blockedApps.filter(matches)
     return {
-      visibleApps: userApps.filter(matches),
-      visibleBlocked: blockedApps.filter(matches),
+      favoritesSection,
+      recentsSection,
+      searchResults: {
+        accessible,
+        blocked,
+        total: accessible.length + blocked.length,
+      },
     }
-  }, [userApps, blockedApps, favoriteApps, recentApps, activeTab, search])
+  }, [favoriteApps, recentApps, userApps, blockedApps, favorites, searchTerm, isSearching])
 
   async function handleOpenApp(app: AppItemModel) {
     if (!user) return
@@ -83,26 +99,39 @@ export function DashboardPage() {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
-  const tabs: { id: DashboardTab; label: string; count: number }[] = [
-    { id: 'all', label: 'Todos', count: userApps.length + blockedApps.length },
-    { id: 'favorites', label: 'Favoritos', count: favoriteApps.length },
-    { id: 'recent', label: 'Recentes', count: recentApps.length },
-  ]
-
   if (!user) return null
+
+  const sharedCardProps = {
+    onOpen: handleOpenApp,
+    onRequestAccess: setRequestApp,
+    onToggleFavorite: toggleFavorite,
+  }
+
+  const sharedGridProps = {
+    favorites,
+    pendingAppIds,
+    isLoading: false as const,
+    ...sharedCardProps,
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Greeting */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Olá, {user.name.split(' ')[0] || 'usuário'} 👋
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {isLoading
-            ? 'Carregando aplicativos...'
-            : `${userApps.length} aplicativo${userApps.length !== 1 ? 's' : ''} disponíve${userApps.length !== 1 ? 'is' : 'l'}`}
-        </p>
+      {/* Zona 1 — Header integrado: título + busca */}
+      <div className="flex items-center gap-4">
+        <h1 className="text-2xl font-bold text-foreground shrink-0">Aplicativos</h1>
+        <div className="relative flex-1 min-w-[200px]">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"
+            aria-hidden
+          />
+          <Input
+            placeholder="Buscar aplicativo..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 w-full"
+            aria-label="Buscar aplicativo"
+          />
+        </div>
       </div>
 
       {/* Error banner */}
@@ -112,7 +141,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* SSO / passToken notice (auto-dismisses after 4 s) */}
+      {/* SSO / passToken notice (auto-dismiss em 4s) */}
       {notice && (
         <div
           role="status"
@@ -122,58 +151,115 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Search */}
-      <Input
-        placeholder="Buscar aplicativo..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
+      {/* Loading */}
+      {isLoading && (
+        <AppGrid
+          apps={[]}
+          blockedApps={[]}
+          {...sharedGridProps}
+          isLoading={true}
+        />
+      )}
 
-      {/* Tab bar */}
-      <div className="flex border-b border-border">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
-              activeTab === tab.id
-                ? 'border-sebratel-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
-            )}
-          >
-            {tab.label}
-            {tab.count > 0 && (
-              <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                {tab.count}
+      {/* Modo de busca — seção única consolidada */}
+      {!isLoading && isSearching && searchResults && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between pb-2 border-b border-border">
+            <span className="text-sm font-semibold text-foreground">Resultados da busca</span>
+            <span className="text-xs text-muted-foreground">
+              {searchResults.total} app{searchResults.total !== 1 ? 's' : ''}
+            </span>
+          </div>
+          {searchResults.total === 0 ? (
+            <div
+              className="flex flex-col items-center justify-center gap-3 py-20 text-center"
+              role="status"
+            >
+              <PackageOpen className="h-12 w-12 text-muted-foreground/40" aria-hidden />
+              <p className="text-sm text-muted-foreground">
+                Nenhum resultado para &ldquo;{search}&rdquo;.
+              </p>
+            </div>
+          ) : (
+            <div className={GRID}>
+              {searchResults.accessible.map((app) => (
+                <AppCard
+                  key={app.id}
+                  app={app}
+                  hasAccess={true}
+                  isFavorite={favorites.includes(app.id)}
+                  isPending={false}
+                  {...sharedCardProps}
+                />
+              ))}
+              {searchResults.blocked.map((app) => (
+                <AppCard
+                  key={app.id}
+                  app={app}
+                  hasAccess={false}
+                  isFavorite={false}
+                  isPending={pendingAppIds.has(app.id)}
+                  {...sharedCardProps}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Seções permanentes (modo normal, sem busca ativa) */}
+      {!isLoading && !isSearching && (
+        <>
+          {/* Favoritos — apenas quando houver itens, limitado a 4 */}
+          {favoritesSection.length > 0 && (
+            <section aria-label="Favoritos">
+              <div className="flex items-baseline justify-between pb-2 border-b border-border mb-4">
+                <span className="text-sm font-semibold text-foreground">Favoritos</span>
+                <span className="text-xs text-muted-foreground">
+                  {favoritesSection.length} app{favoritesSection.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <AppGrid apps={favoritesSection} blockedApps={[]} {...sharedGridProps} />
+            </section>
+          )}
+
+          {/* Recentes — apenas quando houver itens, excluindo favoritos, limitado a 4 */}
+          {recentsSection.length > 0 && (
+            <section aria-label="Recentes">
+              <div className="flex items-baseline justify-between pb-2 border-b border-border mb-4">
+                <span className="text-sm font-semibold text-foreground">Recentes</span>
+                <span className="text-xs text-muted-foreground">
+                  {recentsSection.length} app{recentsSection.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <AppGrid apps={recentsSection} blockedApps={[]} {...sharedGridProps} />
+            </section>
+          )}
+
+          {/* Todos os aplicativos — sempre visível */}
+          <section aria-label="Todos os aplicativos">
+            <div className="flex items-baseline justify-between pb-2 border-b border-border mb-4">
+              <span className="text-sm font-semibold text-foreground">Todos os aplicativos</span>
+              <span className="text-xs text-muted-foreground">
+                {userApps.length} app{userApps.length !== 1 ? 's' : ''}
               </span>
-            )}
-          </button>
-        ))}
-      </div>
+            </div>
+            <AppGrid
+              apps={userApps}
+              blockedApps={[]}
+              {...sharedGridProps}
+              emptyMessage="Nenhum aplicativo disponível."
+            />
+          </section>
 
-      {/* App grid */}
-      <AppGrid
-        apps={visibleApps}
-        blockedApps={visibleBlocked}
-        favorites={favorites}
-        isLoading={isLoading}
-        onOpen={handleOpenApp}
-        onRequestAccess={setRequestApp}
-        onToggleFavorite={toggleFavorite}
-        emptyMessage={
-          activeTab === 'favorites'
-            ? 'Nenhum favorito ainda. Marque aplicativos com ⭐ para adicioná-los aqui.'
-            : activeTab === 'recent'
-              ? 'Nenhum aplicativo acessado recentemente.'
-              : search
-                ? `Nenhum resultado para "${search}".`
-                : 'Nenhum aplicativo disponível.'
-        }
-      />
+          {/* Solicitar acesso — apenas quando houver apps bloqueados */}
+          {blockedApps.length > 0 && (
+            <AppGrid apps={[]} blockedApps={blockedApps} {...sharedGridProps} />
+          )}
+        </>
+      )}
 
-      {/* Access request modal */}
+      {/* Modal de solicitação de acesso */}
       <AccessRequestModal
         app={requestApp}
         open={requestApp !== null}
