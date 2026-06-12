@@ -9,6 +9,8 @@ export interface AuditLogFilters {
   search: string
   action: AuditAction | 'all'
   period: 'all' | 'today' | 'last7days' | 'last30days'
+  dateFrom: string // YYYY-MM-DD — sobrescreve period quando preenchido
+  dateTo: string   // YYYY-MM-DD — sobrescreve period quando preenchido
   page: number
 }
 
@@ -16,6 +18,8 @@ const DEFAULT_FILTERS: AuditLogFilters = {
   search: '',
   action: 'all',
   period: 'all',
+  dateFrom: '',
+  dateTo: '',
   page: 1,
 }
 
@@ -41,16 +45,24 @@ export function useAuditLogsPage() {
   const [filters, setFilters] = useState<AuditLogFilters>(DEFAULT_FILTERS)
 
   const serverParams = useMemo((): ListAuditLogsParams => {
-    const { dateFrom, dateTo } = periodToDates(filters.period)
     const params: ListAuditLogsParams = {
       limit: PAGE_SIZE,
       offset: (filters.page - 1) * PAGE_SIZE,
     }
     if (filters.action !== 'all') params.action = filters.action as AuditAction
-    if (dateFrom) params.date_from = dateFrom
-    if (dateTo) params.date_to = dateTo
+
+    // Custom dates override period presets
+    if (filters.dateFrom || filters.dateTo) {
+      if (filters.dateFrom) params.date_from = filters.dateFrom
+      if (filters.dateTo)   params.date_to   = filters.dateTo
+    } else {
+      const { dateFrom, dateTo } = periodToDates(filters.period)
+      if (dateFrom) params.date_from = dateFrom
+      if (dateTo)   params.date_to   = dateTo
+    }
+
     return params
-  }, [filters.action, filters.period, filters.page])
+  }, [filters.action, filters.period, filters.dateFrom, filters.dateTo, filters.page])
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin', 'audit-logs', serverParams],
@@ -72,7 +84,12 @@ export function useAuditLogsPage() {
 
   const totalLogs = data?.pagination.total ?? 0
   const totalPages = Math.max(1, Math.ceil(totalLogs / PAGE_SIZE))
-  const hasFilters = filters.search !== '' || filters.action !== 'all' || filters.period !== 'all'
+  const hasFilters =
+    filters.search !== '' ||
+    filters.action !== 'all' ||
+    filters.period !== 'all' ||
+    !!filters.dateFrom ||
+    !!filters.dateTo
 
   return {
     logs: filteredLogs,
@@ -84,5 +101,6 @@ export function useAuditLogsPage() {
     filters,
     setFilters,
     hasFilters,
+    serverParams,
   }
 }

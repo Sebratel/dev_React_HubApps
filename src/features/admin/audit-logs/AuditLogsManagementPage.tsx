@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { RefreshCw, Search } from 'lucide-react'
+import { RefreshCw, Search, Download } from 'lucide-react'
+import { listAuditLogs } from '@/services/admin/admin-audit-log.service'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -53,9 +54,40 @@ export function AuditLogsManagementPage() {
     filters,
     setFilters,
     hasFilters,
+    serverParams,
   } = useAuditLogsPage()
 
   const [selectedLog, setSelectedLog] = useState<AuditLogModel | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+
+  async function handleExportCsv() {
+    setIsExporting(true)
+    try {
+      const result = await listAuditLogs({ ...serverParams, limit: 5000, offset: 0 })
+      const headers = ['Data/Hora', 'Usuário', 'ID Usuário', 'Ação', 'Detalhes']
+      const rows = result.data.map((log) => [
+        log.timestamp.toLocaleString('pt-BR'),
+        log.userName,
+        log.userId,
+        log.action,
+        log.details,
+      ])
+      const csv = [headers, ...rows]
+        .map((row) => row.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+        .join('\n')
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   if (!currentUser || !canAccessAdminDashboard(currentUser)) return null
 
@@ -63,8 +95,18 @@ export function AuditLogsManagementPage() {
     setFilters((f) => ({ ...f, page }))
   }
 
+  const hasCustomDates = !!filters.dateFrom || !!filters.dateTo
+
   function clearFilters() {
-    setFilters({ search: '', action: 'all', period: 'all', page: 1 })
+    setFilters({ search: '', action: 'all', period: 'all', dateFrom: '', dateTo: '', page: 1 })
+  }
+
+  function handlePeriodChange(period: typeof filters.period) {
+    setFilters((f) => ({ ...f, period, dateFrom: '', dateTo: '', page: 1 }))
+  }
+
+  function handleDateChange(field: 'dateFrom' | 'dateTo', value: string) {
+    setFilters((f) => ({ ...f, [field]: value, period: 'all', page: 1 }))
   }
 
   return (
@@ -79,16 +121,28 @@ export function AuditLogsManagementPage() {
               : `${totalLogs} evento${totalLogs !== 1 ? 's' : ''} no total`}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => void refetch()}
-          disabled={isLoading}
-          aria-label="Atualizar lista"
-        >
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={isLoading || isExporting || totalLogs === 0}
+            aria-label="Exportar CSV"
+          >
+            <Download className={`h-4 w-4 mr-1.5 ${isExporting ? 'animate-bounce' : ''}`} />
+            {isExporting ? 'Exportando...' : 'Exportar CSV'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refetch()}
+            disabled={isLoading}
+            aria-label="Atualizar lista"
+          >
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Error banner */}
@@ -125,11 +179,7 @@ export function AuditLogsManagementPage() {
           className="w-52"
           value={filters.action}
           onChange={(e) =>
-            setFilters((f) => ({
-              ...f,
-              action: e.target.value as typeof f.action,
-              page: 1,
-            }))
+            setFilters((f) => ({ ...f, action: e.target.value as typeof f.action, page: 1 }))
           }
           aria-label="Filtrar por ação"
         >
@@ -140,23 +190,41 @@ export function AuditLogsManagementPage() {
           ))}
         </Select>
 
+        {/* Period preset — desabilitado quando datas customizadas estão ativas */}
         <Select
           className="w-44"
-          value={filters.period}
-          onChange={(e) =>
-            setFilters((f) => ({
-              ...f,
-              period: e.target.value as typeof f.period,
-              page: 1,
-            }))
-          }
+          value={hasCustomDates ? 'all' : filters.period}
+          onChange={(e) => handlePeriodChange(e.target.value as typeof filters.period)}
+          disabled={hasCustomDates}
           aria-label="Filtrar por período"
         >
-          <option value="all">Qualquer período</option>
+          <option value="all">{hasCustomDates ? 'Período customizado' : 'Qualquer período'}</option>
           <option value="today">Hoje</option>
           <option value="last7days">Últimos 7 dias</option>
           <option value="last30days">Últimos 30 dias</option>
         </Select>
+
+        {/* Custom date range */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">De</span>
+          <Input
+            type="date"
+            className="w-36"
+            value={filters.dateFrom}
+            max={filters.dateTo || undefined}
+            onChange={(e) => handleDateChange('dateFrom', e.target.value)}
+            aria-label="Data inicial"
+          />
+          <span className="text-xs text-muted-foreground whitespace-nowrap">até</span>
+          <Input
+            type="date"
+            className="w-36"
+            value={filters.dateTo}
+            min={filters.dateFrom || undefined}
+            onChange={(e) => handleDateChange('dateTo', e.target.value)}
+            aria-label="Data final"
+          />
+        </div>
 
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={clearFilters}>
