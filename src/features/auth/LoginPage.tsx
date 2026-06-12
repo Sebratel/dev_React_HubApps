@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { signInWithGoogle, signInWithEmailAndPassword } from '@/services/auth.service'
+import {
+  signInWithGoogle,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from '@/services/auth.service'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -13,6 +17,9 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [resetState, setResetState] = useState<'idle' | 'sending' | 'sent'>('idle')
+  const [resetError, setResetError] = useState<string | null>(null)
 
   async function handleGoogleSignIn() {
     setError(null)
@@ -46,6 +53,22 @@ export function LoginPage() {
       setError(err instanceof Error ? err.message : 'E-mail ou senha incorretos.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  async function handlePasswordReset() {
+    setResetError(null)
+    if (!email.trim()) {
+      setResetError('Preencha o e-mail acima antes de solicitar a recuperação.')
+      return
+    }
+    setResetState('sending')
+    try {
+      await sendPasswordResetEmail(email.trim())
+      setResetState('sent')
+    } catch {
+      setResetState('idle')
+      setResetError('Não foi possível enviar o e-mail. Verifique o endereço e tente novamente.')
     }
   }
 
@@ -108,10 +131,36 @@ export function LoginPage() {
           autoComplete="current-password"
           disabled={isLoading}
         />
+
+        <button
+          type="button"
+          onClick={handlePasswordReset}
+          disabled={resetState === 'sending' || resetState === 'sent' || isLoading}
+          className="self-end text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {resetState === 'sending'
+            ? 'Enviando...'
+            : resetState === 'sent'
+              ? 'E-mail enviado ✓'
+              : 'Esqueci minha senha'}
+        </button>
+
         <Button type="submit" className="w-full" disabled={isLoading || !email || !password}>
           {isLoading ? 'Entrando...' : 'Entrar'}
         </Button>
       </form>
+
+      {resetState === 'sent' && (
+        <p className="text-sm text-center rounded-md bg-green-50 border border-green-200 px-3 py-2 text-green-800">
+          Se este e-mail estiver cadastrado, você receberá as instruções de recuperação em breve.
+        </p>
+      )}
+
+      {resetError && (
+        <p className="text-sm text-destructive text-center rounded-md bg-destructive/10 px-3 py-2">
+          {resetError}
+        </p>
+      )}
 
       {error && (
         <p className="text-sm text-destructive text-center rounded-md bg-destructive/10 px-3 py-2">
