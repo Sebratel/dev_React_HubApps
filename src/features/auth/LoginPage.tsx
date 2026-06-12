@@ -73,7 +73,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto p-8 bg-card rounded-2xl shadow-lg border border-border flex flex-col gap-6">
+    <div className="w-full max-w-sm mx-auto p-6 sm:p-8 bg-card rounded-2xl shadow-lg border border-border flex flex-col gap-6">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-foreground">Sebratel Hub</h1>
         <p className="text-sm text-muted-foreground mt-1">Acesso corporativo</p>

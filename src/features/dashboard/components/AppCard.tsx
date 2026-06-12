@@ -51,7 +51,7 @@ export function AppCard({
                 'rounded-full p-1 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isFavorite
                   ? 'text-primary'
-                  : 'text-muted-foreground opacity-0 group-hover:opacity-100'
+                  : 'text-muted-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100'
               )}
               aria-label={
                 isFavorite

@@ -3,6 +3,7 @@ import { Eye, CheckCircle, XCircle, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatRelativeTime } from '@/utils/relative-time'
+import { cn } from '@/lib/utils'
 import type { AccessRequestModel } from '@/types/models'
 import { AccessRequestStatusBadge } from './AccessRequestStatusBadge'
 
@@ -44,14 +45,19 @@ export function AccessRequestsTable({
   }, [somePendingSelected])
 
   const selectable = !!selectedIds && !!onToggleSelect && !!onToggleAll
+  const desktopColumns = selectable
+    ? 'sm:grid-cols-[auto_2fr_2fr_1fr_1fr_auto]'
+    : 'sm:grid-cols-[2fr_2fr_1fr_1fr_auto]'
 
   return (
     <div role="table" className="rounded-xl border border-border overflow-hidden">
       {/* Header */}
       <div
         role="row"
-        className="hidden sm:grid gap-4 px-4 py-2.5 bg-muted/40 text-xs font-medium text-muted-foreground uppercase tracking-wide"
-        style={{ gridTemplateColumns: selectable ? 'auto 2fr 2fr 1fr 1fr auto' : '2fr 2fr 1fr 1fr auto' }}
+        className={cn(
+          'hidden sm:grid gap-4 px-4 py-2.5 bg-muted/40 text-xs font-medium text-muted-foreground uppercase tracking-wide',
+          desktopColumns
+        )}
       >
         {selectable && (
           <span className="flex items-center">
@@ -79,8 +85,11 @@ export function AccessRequestsTable({
           <div
             key={req.id}
             role="row"
-            className="grid grid-cols-1 gap-2 sm:gap-4 px-4 py-3 items-center hover:bg-muted/30 transition-colors"
-            style={{ gridTemplateColumns: selectable ? 'auto 2fr 2fr 1fr 1fr auto' : '2fr 2fr 1fr 1fr auto' }}
+            className={cn(
+              'grid grid-cols-1 gap-2 px-4 py-3 items-start hover:bg-muted/30 transition-colors',
+              'sm:items-center sm:gap-4',
+              desktopColumns
+            )}
           >
             {/* Checkbox (pending only) */}
             {selectable && (
@@ -123,7 +132,7 @@ export function AccessRequestsTable({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-1.5 justify-end">
+            <div className="flex flex-wrap items-center gap-1.5 justify-start sm:justify-end">
               <Button
                 size="sm"
                 variant="ghost"

@@ -7,8 +7,6 @@ import type { ReactNode } from 'react'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import type { UserModel, AppItemModel } from '@/types/models'
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
 const mockUser: UserModel = {
   id: 'uid-1',
   email: 'test@sebratel.com.br',
@@ -50,10 +48,16 @@ function makeApp(overrides: Partial<AppItemModel> = {}): AppItemModel {
   }
 }
 
-const accessibleApp = makeApp({ id: 'app-1', name: 'Financeiro', description: 'Sistema financeiro' })
-const blockedApp = makeApp({ id: 'app-2', name: 'RH Portal', description: 'Portal de RH' })
-
-// ─── Module mocks ─────────────────────────────────────────────────────────────
+const accessibleApp = makeApp({
+  id: 'app-1',
+  name: 'Financeiro',
+  description: 'Sistema financeiro',
+})
+const blockedApp = makeApp({
+  id: 'app-2',
+  name: 'RH Portal',
+  description: 'Portal de RH',
+})
 
 vi.mock('@/features/dashboard/hooks/useApps', () => ({
   useApps: () => ({
@@ -83,6 +87,7 @@ vi.mock('@/hooks/useSecureSignOut', () => ({
 vi.mock('@/services/app.service', () => ({
   buildAppUrl: vi.fn().mockReturnValue('https://example.com'),
   getApps: vi.fn().mockResolvedValue([]),
+  requestAppLaunchToken: vi.fn().mockResolvedValue({ token: 'token-1' }),
 }))
 
 vi.mock('@/services/audit-log.service', () => ({
@@ -96,13 +101,11 @@ vi.mock('@/services/access-request.service', () => ({
   validateReason: vi.fn().mockReturnValue(null),
 }))
 
-// ─── Test wrapper ─────────────────────────────────────────────────────────────
-
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false } },
-})
-
 function Wrapper({ children }: { children: ReactNode }) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+
   return (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>{children}</MemoryRouter>
@@ -110,16 +113,15 @@ function Wrapper({ children }: { children: ReactNode }) {
   )
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
 describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('renders greeting with user first name', () => {
+  it('renders dashboard header and search', () => {
     render(<DashboardPage />, { wrapper: Wrapper })
-    expect(screen.getByText(/Olá, Test/)).toBeTruthy()
+    expect(screen.getByText('Aplicativos')).toBeTruthy()
+    expect(screen.getByPlaceholderText('Buscar aplicativo...')).toBeTruthy()
   })
 
   it('renders accessible app with Abrir button', () => {

@@ -124,7 +124,7 @@ export function UsersManagementPage() {
               : `${totalUsers} usuário${totalUsers !== 1 ? 's' : ''} cadastrado${totalUsers !== 1 ? 's' : ''}`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
           <Button
             variant="outline"
             size="sm"

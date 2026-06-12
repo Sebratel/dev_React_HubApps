@@ -8,8 +8,6 @@ import { AccessRequestsManagementPage } from '@/features/admin/access-requests/A
 import type { AccessRequestModel } from '@/types/models'
 import { ApiError } from '@/types/api'
 
-// ─── Module mocks ─────────────────────────────────────────────────────────────
-
 vi.mock('@/firebase', () => ({ db: {}, auth: {}, rtdb: {}, functions: {} }))
 
 const mockAdminUser = {
@@ -45,8 +43,6 @@ import {
   rejectRequest,
 } from '@/services/admin/admin-access-request.service'
 
-// ─── Fixtures ─────────────────────────────────────────────────────────────────
-
 function makeRequest(overrides: Partial<AccessRequestModel> = {}): AccessRequestModel {
   return {
     id: 'req-1',
@@ -73,8 +69,6 @@ function paginated(requests: AccessRequestModel[]) {
   return { data: requests, pagination: { limit: 200, offset: 0, total: requests.length } }
 }
 
-// ─── Wrapper ──────────────────────────────────────────────────────────────────
-
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -87,8 +81,6 @@ function createWrapper() {
     )
   }
 }
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('AccessRequestsManagementPage', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -139,8 +131,14 @@ describe('AccessRequestsManagementPage', () => {
     vi.mocked(listAllAccessRequests).mockResolvedValue(
       paginated([
         makeRequest({ id: 'r-1', userName: 'Alice', status: 'pending' }),
-        makeRequest({ id: 'r-2', userName: 'Bob', appName: 'CRM', status: 'approved',
-          reviewedByUserId: 'uid-admin', reviewedAt: new Date() }),
+        makeRequest({
+          id: 'r-2',
+          userName: 'Bob',
+          appName: 'CRM',
+          status: 'approved',
+          reviewedByUserId: 'uid-admin',
+          reviewedAt: new Date(),
+        }),
       ]),
     )
     render(<AccessRequestsManagementPage />, { wrapper: createWrapper() })
@@ -164,10 +162,9 @@ describe('AccessRequestsManagementPage', () => {
     render(<AccessRequestsManagementPage />, { wrapper: createWrapper() })
     await waitFor(() => expect(screen.getByText('Alice')).toBeTruthy())
 
-    fireEvent.change(
-      screen.getByPlaceholderText('Buscar por usuário, e-mail ou aplicativo...'),
-      { target: { value: 'crm' } },
-    )
+    fireEvent.change(screen.getByPlaceholderText('Buscar por usuário, e-mail ou aplicativo...'), {
+      target: { value: 'crm' },
+    })
 
     expect(screen.queryByText('Alice')).toBeNull()
     expect(screen.getByText('Bob')).toBeTruthy()
@@ -183,10 +180,9 @@ describe('AccessRequestsManagementPage', () => {
     render(<AccessRequestsManagementPage />, { wrapper: createWrapper() })
     await waitFor(() => expect(screen.getByText('Alice')).toBeTruthy())
 
-    fireEvent.change(
-      screen.getByPlaceholderText('Buscar por usuário, e-mail ou aplicativo...'),
-      { target: { value: 'carlos' } },
-    )
+    fireEvent.change(screen.getByPlaceholderText('Buscar por usuário, e-mail ou aplicativo...'), {
+      target: { value: 'carlos' },
+    })
 
     expect(screen.queryByText('Alice')).toBeNull()
     expect(screen.getByText('Carlos')).toBeTruthy()
@@ -207,7 +203,6 @@ describe('AccessRequestsManagementPage', () => {
 
     await waitFor(() => expect(screen.getByText('Aprovar solicitação')).toBeTruthy())
 
-    // Confirm inside dialog to avoid matching the table button
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Aprovar' }))
 
     await waitFor(() => {
@@ -236,7 +231,7 @@ describe('AccessRequestsManagementPage', () => {
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Rejeitar' }))
 
     await waitFor(() => {
-      expect(rejectRequest).toHaveBeenCalledWith('req-1', expect.any(Object))
+      expect(rejectRequest).toHaveBeenCalledWith('req-1', '')
     })
   })
 
@@ -304,20 +299,24 @@ describe('AccessRequestsManagementPage', () => {
     vi.mocked(listAllAccessRequests).mockResolvedValue(
       paginated([
         makeRequest({ id: 'r-1', userName: 'Alice', status: 'pending' }),
-        makeRequest({ id: 'r-2', userName: 'Bob', appName: 'CRM', status: 'approved',
-          reviewedByUserId: 'uid-admin', reviewedAt: new Date() }),
+        makeRequest({
+          id: 'r-2',
+          userName: 'Bob',
+          appName: 'CRM',
+          status: 'approved',
+          reviewedByUserId: 'uid-admin',
+          reviewedAt: new Date(),
+        }),
       ]),
     )
     render(<AccessRequestsManagementPage />, { wrapper: createWrapper() })
     await waitFor(() => expect(screen.getByText('Alice')).toBeTruthy())
 
-    // Apply filter
     fireEvent.change(screen.getByRole('combobox', { name: 'Filtrar por status' }), {
       target: { value: 'pending' },
     })
     expect(screen.queryByText('Bob')).toBeNull()
 
-    // Clear
     fireEvent.click(screen.getByText('Limpar filtros'))
     expect(screen.getByText('Bob')).toBeTruthy()
   })

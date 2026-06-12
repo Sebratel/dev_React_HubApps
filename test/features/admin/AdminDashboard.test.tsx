@@ -1,13 +1,9 @@
 /// <reference types="vitest/globals" />
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import type { ReactNode } from 'react'
 import { AdminDashboard } from '@/features/admin/AdminDashboard'
-import type { UserModel, AccessRequestModel, AuditLogModel, AppItemModel } from '@/types/models'
-
-// ─── Module mocks ─────────────────────────────────────────────────────────────
+import type { UserModel, AccessRequestModel, AuditLogModel } from '@/types/models'
 
 vi.mock('@/firebase', () => ({ db: {}, auth: {}, rtdb: {}, functions: {} }))
 
@@ -32,63 +28,33 @@ vi.mock('@/stores/auth.store', () => ({
     selector({ user: mockAdminUser, isLoading: false, error: null }),
 }))
 
-vi.mock('@/services/admin/admin-user.service', () => ({
-  listUsers: vi.fn(),
+vi.mock('@/features/admin/hooks/useAdminDashboard', () => ({
+  useAdminDashboard: vi.fn(),
 }))
 
-vi.mock('@/services/admin/admin-app.service', () => ({
-  listAllApps: vi.fn(),
+vi.mock('@/features/admin/components/AdminMetricCard', () => ({
+  AdminMetricCard: ({
+    title,
+    value,
+    description,
+  }: {
+    title: string
+    value: number | string
+    description?: string
+  }) => (
+    <div>
+      <span>{title}</span>
+      <span>{String(value)}</span>
+      {description ? <span>{description}</span> : null}
+    </div>
+  ),
 }))
 
-vi.mock('@/services/admin/admin-access-request.service', () => ({
-  listAllAccessRequests: vi.fn(),
+vi.mock('@/features/admin/components/AdminOnlineWidget', () => ({
+  AdminOnlineWidget: () => <section aria-label="Usuários online agora" />,
 }))
 
-vi.mock('@/services/admin/admin-audit-log.service', () => ({
-  listAuditLogs: vi.fn(),
-}))
-
-import { listUsers } from '@/services/admin/admin-user.service'
-import { listAllApps } from '@/services/admin/admin-app.service'
-import { listAllAccessRequests } from '@/services/admin/admin-access-request.service'
-import { listAuditLogs } from '@/services/admin/admin-audit-log.service'
-
-// ─── Fixtures ─────────────────────────────────────────────────────────────────
-
-function makeUser(id: string, isActive: boolean, isAdmin: boolean): UserModel {
-  return {
-    ...mockAdminUser,
-    id,
-    name: `User ${id}`,
-    email: `${id}@sebratel.com.br`,
-    isActive,
-    isAdmin,
-  }
-}
-
-function makeApp(id: string, active: boolean): AppItemModel {
-  return {
-    id,
-    name: `App ${id}`,
-    icon: '📦',
-    lottie: null,
-    description: '',
-    type: 'internal',
-    launchMode: 'url',
-    deepLink: null,
-    openInExternalBrowser: false,
-    passUser: false,
-    passToken: false,
-    url: 'https://example.com',
-    route: null,
-    allowedProfiles: [],
-    allowedUsers: [],
-    allowedTeams: [],
-    status: active ? 'active' : 'maintenance',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-}
+import { useAdminDashboard } from '@/features/admin/hooks/useAdminDashboard'
 
 function makeRequest(id: string, appName = 'Portal RH'): AccessRequestModel {
   return {
@@ -111,152 +77,150 @@ function makeRequest(id: string, appName = 'Portal RH'): AccessRequestModel {
   }
 }
 
-function makeLog(id: string, userName: string, action: string): AuditLogModel {
+function makeLog(id: string, userName: string, action: string, details = ''): AuditLogModel {
   return {
     id,
     userId: 'u-1',
     userName,
     action,
-    details: '',
+    details,
     timestamp: new Date('2026-06-08T10:00:00Z'),
   }
 }
 
-const emptyPaginated = { data: [], pagination: { limit: 50, offset: 0, total: 0 } }
-
-// ─── Test wrapper ─────────────────────────────────────────────────────────────
-
-// Fresh QueryClient per test to prevent cross-test state contamination.
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-  return function Wrapper({ children }: { children: ReactNode }) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>{children}</MemoryRouter>
-      </QueryClientProvider>
-    )
-  }
+const baseDashboardData = {
+  metrics: {
+    totalUsers: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
+    adminUsers: 0,
+    activeApps: 0,
+    inactiveApps: 0,
+    pendingRequests: 0,
+    pendingSuggestions: 0,
+    activeTeams: 0,
+    activeAnnouncements: 0,
+  },
+  stats: {
+    profileDistribution: [],
+    topApps: [],
+    pendingSuggestions: 0,
+    pendingRequests: 0,
+    inactiveUsers: 0,
+    teams: { total: 0, active: 0 },
+    announcements: { total: 0, active: 0 },
+  },
+  pendingRequests: [] as AccessRequestModel[],
+  recentAuditLogs: [] as AuditLogModel[],
+  isLoading: false,
+  hasError: false,
+  refetchAll: vi.fn(),
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <AdminDashboard />
+    </MemoryRouter>
+  )
+}
 
 describe('AdminDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(useAdminDashboard).mockReturnValue(baseDashboardData)
   })
 
-  it('renders the page title', async () => {
-    vi.mocked(listUsers).mockResolvedValue({ data: [], pagination: { limit: 500, offset: 0, total: 0 } })
-    vi.mocked(listAllApps).mockResolvedValue([])
-    vi.mocked(listAllAccessRequests).mockResolvedValue(emptyPaginated)
-    vi.mocked(listAuditLogs).mockResolvedValue(emptyPaginated)
-
-    render(<AdminDashboard />, { wrapper: createWrapper() })
-
+  it('renders the page title', () => {
+    renderPage()
     expect(screen.getByText('Painel Administrativo')).toBeTruthy()
   })
 
-  it('shows loading skeletons while data is fetching', () => {
-    // Queries never resolve → component stays in loading state
-    vi.mocked(listUsers).mockImplementation(() => new Promise(() => {}))
-    vi.mocked(listAllApps).mockImplementation(() => new Promise(() => {}))
-    vi.mocked(listAllAccessRequests).mockImplementation(() => new Promise(() => {}))
-    vi.mocked(listAuditLogs).mockImplementation(() => new Promise(() => {}))
+  it('shows loading state while dashboard data is fetching', () => {
+    vi.mocked(useAdminDashboard).mockReturnValue({
+      ...baseDashboardData,
+      isLoading: true,
+    })
 
-    render(<AdminDashboard />, { wrapper: createWrapper() })
+    renderPage()
 
-    // Metric titles are NOT shown while loading (cards render skeletons instead)
-    expect(screen.queryByText('Total de Usuários')).toBeNull()
-    // Sections exist but show skeleton lists, not data
+    expect(screen.getByRole('button', { name: 'Atualizar dados' })).toBeDisabled()
     expect(screen.getByRole('region', { name: 'Solicitações pendentes' })).toBeTruthy()
   })
 
-  it('calculates user metrics correctly', async () => {
-    vi.mocked(listUsers).mockResolvedValue({
-      data: [
-        makeUser('u-1', true, true),   // active + admin
-        makeUser('u-2', true, false),  // active only
-        makeUser('u-3', false, false), // inactive
-      ],
-      pagination: { limit: 500, offset: 0, total: 3 },
+  it('renders user metrics correctly', async () => {
+    vi.mocked(useAdminDashboard).mockReturnValue({
+      ...baseDashboardData,
+      metrics: {
+        ...baseDashboardData.metrics,
+        totalUsers: 3,
+        activeUsers: 2,
+        inactiveUsers: 1,
+        adminUsers: 1,
+      },
     })
-    vi.mocked(listAllApps).mockResolvedValue([])
-    vi.mocked(listAllAccessRequests).mockResolvedValue(emptyPaginated)
-    vi.mocked(listAuditLogs).mockResolvedValue(emptyPaginated)
 
-    render(<AdminDashboard />, { wrapper: createWrapper() })
+    renderPage()
 
     await waitFor(() => {
-      expect(screen.getByText('Total de Usuários')).toBeTruthy()
+      expect(screen.getByText('Usuários')).toBeTruthy()
+      expect(screen.getByText('2 ativos (67%)')).toBeTruthy()
+      expect(screen.getByText('Usuários Inativos')).toBeTruthy()
+      expect(screen.getByText('Administradores')).toBeTruthy()
     })
-
-    // totalUsers=3 comes from pagination.total
-    expect(screen.getByText('3')).toBeTruthy()
-    // activeUsers=2, inactiveUsers=1, adminUsers=1 appear as metric values
-    expect(screen.getByText('Usuários Ativos')).toBeTruthy()
-    expect(screen.getByText('Usuários Inativos')).toBeTruthy()
-    expect(screen.getByText('Administradores')).toBeTruthy()
   })
 
-  it('calculates app metrics correctly', async () => {
-    vi.mocked(listUsers).mockResolvedValue({ data: [], pagination: { limit: 500, offset: 0, total: 0 } })
-    vi.mocked(listAllApps).mockResolvedValue([
-      makeApp('a-1', true), makeApp('a-2', true), makeApp('a-3', false),
-    ])
-    vi.mocked(listAllAccessRequests).mockResolvedValue(emptyPaginated)
-    vi.mocked(listAuditLogs).mockResolvedValue(emptyPaginated)
+  it('renders app metrics correctly', async () => {
+    vi.mocked(useAdminDashboard).mockReturnValue({
+      ...baseDashboardData,
+      metrics: {
+        ...baseDashboardData.metrics,
+        activeApps: 2,
+        inactiveApps: 1,
+      },
+    })
 
-    render(<AdminDashboard />, { wrapper: createWrapper() })
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByText('Apps Ativos')).toBeTruthy()
+      expect(screen.getByText('Apps Inativos')).toBeTruthy()
     })
-    expect(screen.getByText('Apps Inativos')).toBeTruthy()
   })
 
   it('renders pending requests in the list', async () => {
-    vi.mocked(listUsers).mockResolvedValue({ data: [], pagination: { limit: 500, offset: 0, total: 0 } })
-    vi.mocked(listAllApps).mockResolvedValue([])
-    vi.mocked(listAllAccessRequests).mockResolvedValue({
-      data: [makeRequest('req-1', 'Portal RH')],
-      pagination: { limit: 50, offset: 0, total: 1 },
+    vi.mocked(useAdminDashboard).mockReturnValue({
+      ...baseDashboardData,
+      pendingRequests: [makeRequest('req-1', 'Portal RH')],
     })
-    vi.mocked(listAuditLogs).mockResolvedValue(emptyPaginated)
 
-    render(<AdminDashboard />, { wrapper: createWrapper() })
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByText('Alice')).toBeTruthy()
-      expect(screen.getByText('→ Portal RH')).toBeTruthy()
+      expect(screen.getByText('Portal RH')).toBeTruthy()
     })
   })
 
   it('shows pending requests count metric', async () => {
-    vi.mocked(listUsers).mockResolvedValue({ data: [], pagination: { limit: 500, offset: 0, total: 0 } })
-    vi.mocked(listAllApps).mockResolvedValue([])
-    vi.mocked(listAllAccessRequests).mockResolvedValue({
-      data: [makeRequest('req-1')],
-      pagination: { limit: 50, offset: 0, total: 5 }, // 5 total pending
+    vi.mocked(useAdminDashboard).mockReturnValue({
+      ...baseDashboardData,
+      metrics: {
+        ...baseDashboardData.metrics,
+        pendingRequests: 5,
+      },
     })
-    vi.mocked(listAuditLogs).mockResolvedValue(emptyPaginated)
 
-    render(<AdminDashboard />, { wrapper: createWrapper() })
+    renderPage()
 
     await waitFor(() => {
-      expect(screen.getByText('Solicitações Pendentes')).toBeTruthy()
+      expect(screen.getByText('Sol. Pendentes')).toBeTruthy()
+      expect(screen.getByText('5')).toBeTruthy()
     })
-    expect(screen.getByText('5')).toBeTruthy()
   })
 
   it('renders empty state when no pending requests', async () => {
-    vi.mocked(listUsers).mockResolvedValue({ data: [], pagination: { limit: 500, offset: 0, total: 0 } })
-    vi.mocked(listAllApps).mockResolvedValue([])
-    vi.mocked(listAllAccessRequests).mockResolvedValue(emptyPaginated)
-    vi.mocked(listAuditLogs).mockResolvedValue(emptyPaginated)
-
-    render(<AdminDashboard />, { wrapper: createWrapper() })
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByText('Nenhuma solicitação pendente')).toBeTruthy()
@@ -264,15 +228,12 @@ describe('AdminDashboard', () => {
   })
 
   it('renders recent audit log entries', async () => {
-    vi.mocked(listUsers).mockResolvedValue({ data: [], pagination: { limit: 500, offset: 0, total: 0 } })
-    vi.mocked(listAllApps).mockResolvedValue([])
-    vi.mocked(listAllAccessRequests).mockResolvedValue(emptyPaginated)
-    vi.mocked(listAuditLogs).mockResolvedValue({
-      data: [makeLog('log-1', 'Bob', 'USER_PROMOTE_ADMIN')],
-      pagination: { limit: 10, offset: 0, total: 1 },
+    vi.mocked(useAdminDashboard).mockReturnValue({
+      ...baseDashboardData,
+      recentAuditLogs: [makeLog('log-1', 'Bob', 'USER_PROMOTE_ADMIN')],
     })
 
-    render(<AdminDashboard />, { wrapper: createWrapper() })
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByText('Bob')).toBeTruthy()
@@ -281,52 +242,38 @@ describe('AdminDashboard', () => {
   })
 
   it('renders empty state when no audit logs', async () => {
-    vi.mocked(listUsers).mockResolvedValue({ data: [], pagination: { limit: 500, offset: 0, total: 0 } })
-    vi.mocked(listAllApps).mockResolvedValue([])
-    vi.mocked(listAllAccessRequests).mockResolvedValue(emptyPaginated)
-    vi.mocked(listAuditLogs).mockResolvedValue(emptyPaginated)
-
-    render(<AdminDashboard />, { wrapper: createWrapper() })
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByText('Sem atividade recente')).toBeTruthy()
     })
   })
 
-  it('shows error banner when a service fails', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('shows error banner when dashboard data fails', async () => {
+    vi.mocked(useAdminDashboard).mockReturnValue({
+      ...baseDashboardData,
+      hasError: true,
+    })
 
-    vi.mocked(listUsers).mockRejectedValue(new Error('Server error'))
-    vi.mocked(listAllApps).mockResolvedValue([])
-    vi.mocked(listAllAccessRequests).mockResolvedValue(emptyPaginated)
-    vi.mocked(listAuditLogs).mockResolvedValue(emptyPaginated)
-
-    render(<AdminDashboard />, { wrapper: createWrapper() })
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeTruthy()
       expect(screen.getByText(/Alguns dados não puderam ser carregados/)).toBeTruthy()
     })
-
-    consoleSpy.mockRestore()
   })
 
-  it('shows error state in list sections when all services fail', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('shows error state in list sections when dashboard data fails', async () => {
+    vi.mocked(useAdminDashboard).mockReturnValue({
+      ...baseDashboardData,
+      hasError: true,
+    })
 
-    vi.mocked(listUsers).mockRejectedValue(new Error('fail'))
-    vi.mocked(listAllApps).mockRejectedValue(new Error('fail'))
-    vi.mocked(listAllAccessRequests).mockRejectedValue(new Error('fail'))
-    vi.mocked(listAuditLogs).mockRejectedValue(new Error('fail'))
-
-    render(<AdminDashboard />, { wrapper: createWrapper() })
+    renderPage()
 
     await waitFor(() => {
-      // AdminErrorState "Ocorreu um erro ao carregar os dados." should appear in both sections
       const errors = screen.getAllByText('Ocorreu um erro ao carregar os dados.')
       expect(errors.length).toBeGreaterThanOrEqual(2)
     })
-
-    consoleSpy.mockRestore()
   })
 })
