@@ -60,6 +60,11 @@ export async function provisionUserOnFirstLogin(
   return rowToUserModel(row)
 }
 
+export async function updateMe(name: string): Promise<UserModel> {
+  const row = await api.patch<UserRow>('/users/me', { name })
+  return rowToUserModel(row)
+}
+
 export async function saveUser(
   _uid: string,
   data: Partial<Omit<UserModel, 'id' | 'createdAt' | 'updatedAt'>>

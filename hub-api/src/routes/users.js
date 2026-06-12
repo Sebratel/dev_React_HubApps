@@ -212,6 +212,37 @@ router.post('/create-external', requireAuth, requireAdmin, adminWriteLimiter, as
   res.status(201).json(rows[0])
 })
 
+// PATCH /users/me — usuário atualiza o próprio nome
+router.patch('/me', requireAuth, async (req, res, next) => {
+  const { name } = req.body
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ error: 'name é obrigatório' })
+  }
+  const trimmedName = name.trim().slice(0, 120)
+
+  const conn = await pool.getConnection()
+  try {
+    await conn.beginTransaction()
+    await conn.query('UPDATE users SET name = ? WHERE id = ?', [trimmedName, req.uid])
+    await logAudit({
+      uid:     req.uid,
+      action:  AUDIT_ACTIONS.USER_UPDATE,
+      details: { selfUpdate: true, fields: ['name'] },
+      req,
+      conn,
+    })
+    await conn.commit()
+  } catch (err) {
+    await conn.rollback()
+    return next(err)
+  } finally {
+    conn.release()
+  }
+
+  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM users WHERE id = ?`, [req.uid])
+  res.json(rows[0])
+})
+
 // GET /users/me/favorites
 router.get('/me/favorites', requireAuth, async (req, res, next) => {
   try {
