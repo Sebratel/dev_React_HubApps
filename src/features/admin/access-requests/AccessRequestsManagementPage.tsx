@@ -3,6 +3,7 @@ import { RefreshCw, Search, CheckCircle, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { canAccessAdminDashboard } from '@/utils/permissions'
 import { ApiError } from '@/types/api'
@@ -117,7 +118,7 @@ export function AccessRequestsManagementPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Solicitações de Acesso</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -133,7 +134,7 @@ export function AccessRequestsManagementPage() {
           disabled={isLoading}
           aria-label="Atualizar lista"
         >
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={cn('h-4 w-4 mr-1.5', isLoading && 'animate-spin')} aria-hidden />
           Atualizar
         </Button>
       </div>
