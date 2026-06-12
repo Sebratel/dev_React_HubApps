@@ -112,10 +112,14 @@ router.get('/', requireAuth, requireAdmin, async (req, res, next) => {
 
 // PATCH /access-requests/:id — aprova ou rejeita (admin only)
 router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
-  const { status } = req.body
+  const { status, review_note } = req.body
   if (!['approved', 'rejected'].includes(status)) {
     return res.status(400).json({ error: 'status deve ser approved ou rejected' })
   }
+  if (review_note !== undefined && typeof review_note !== 'string') {
+    return res.status(400).json({ error: 'review_note deve ser uma string' })
+  }
+  const trimmedNote = review_note ? review_note.trim().slice(0, 1000) || null : null
 
   try {
     const [existing] = await pool.query(
@@ -132,8 +136,8 @@ router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, r
       await conn.beginTransaction()
 
       await conn.query(
-        `UPDATE access_requests SET status = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?`,
-        [status, req.uid, req.params.id]
+        `UPDATE access_requests SET status = ?, reviewed_by = ?, reviewed_at = NOW(), review_note = ? WHERE id = ?`,
+        [status, req.uid, trimmedNote, req.params.id]
       )
 
       // Aprovação: adiciona o usuário ao allowed_users do app na mesma transação

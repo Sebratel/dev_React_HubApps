@@ -81,6 +81,13 @@ export function AccessRequestDetailsDialog({
               )}
             </div>
           )}
+
+          {request.status === 'rejected' && request.reviewNote && (
+            <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 flex flex-col gap-1">
+              <p className="text-xs text-muted-foreground">Motivo da rejeição</p>
+              <p className="text-sm text-foreground">{request.reviewNote}</p>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2">

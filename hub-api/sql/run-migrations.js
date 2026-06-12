@@ -24,6 +24,7 @@ const MIGRATIONS = [
   { file: '07_create_suggestions.sql',    label: 'Tabela de sugestões'               },
   { file: '08_add_heartbeat.sql',         label: 'Coluna last_heartbeat em users'    },
   { file: '09_add_favorites.sql',         label: 'Coluna favorites em users'         },
+  { file: '10_add_review_note.sql',       label: 'Coluna review_note em access_requests' },
 ]
 
 // Errors that mean "already exists" — safe to skip for idempotency

@@ -56,7 +56,8 @@ export function useAccessRequestsPage() {
   })
 
   const rejectMutation = useMutation({
-    mutationFn: rejectRequest,
+    mutationFn: ({ id, reviewNote }: { id: string; reviewNote?: string }) =>
+      rejectRequest(id, reviewNote),
     onSuccess: invalidateRequests,
   })
 

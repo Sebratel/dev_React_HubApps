@@ -14,6 +14,7 @@ interface AccessRequestRow {
   status: 'pending' | 'approved' | 'rejected'
   reviewed_by: string | null
   reviewed_at: string | null
+  review_note: string | null
   created_at: string
   updated_at: string
   // From JOIN users ON user_id
@@ -41,7 +42,7 @@ function rowToModel(row: AccessRequestRow): AccessRequestModel {
     reviewedByUserId: row.reviewed_by,
     reviewedByName: row.reviewer_name ?? null,
     reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : null,
-    reviewNote: null,
+    reviewNote: row.review_note ?? null,
   }
 }
 
@@ -72,9 +73,10 @@ export async function approveRequest(requestId: string): Promise<AccessRequestMo
   return rowToModel(row)
 }
 
-export async function rejectRequest(requestId: string): Promise<AccessRequestModel> {
+export async function rejectRequest(requestId: string, reviewNote?: string): Promise<AccessRequestModel> {
   const row = await api.patch<AccessRequestRow>(`/access-requests/${requestId}`, {
     status: 'rejected',
+    ...(reviewNote?.trim() ? { review_note: reviewNote.trim() } : {}),
   })
   return rowToModel(row)
 }

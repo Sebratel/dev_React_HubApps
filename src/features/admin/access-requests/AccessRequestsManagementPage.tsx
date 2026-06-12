@@ -290,9 +290,9 @@ export function AccessRequestsManagementPage() {
         open={dialog === 'reject'}
         isPending={rejectMutation.isPending}
         error={rejectMutation.isError ? formatMutationError(rejectMutation.error) : null}
-        onConfirm={() => {
+        onConfirm={(reviewNote) => {
           if (!selectedRequest) return
-          rejectMutation.mutate(selectedRequest.id, { onSuccess: closeDialog })
+          rejectMutation.mutate({ id: selectedRequest.id, reviewNote }, { onSuccess: closeDialog })
         }}
         onClose={closeDialog}
       />
