@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { Bell } from 'lucide-react'
 import { useAnnouncements } from './hooks/useAnnouncements'
 import { AnnouncementCard } from './components/AnnouncementCard'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useNotificationsStore } from '@/stores/notifications.store'
 
 function AnnouncementsSkeleton() {
   return (
@@ -23,6 +25,11 @@ function AnnouncementsSkeleton() {
 
 export function AnnouncementsPage() {
   const { data: announcements = [], isLoading, isError } = useAnnouncements()
+  const markAnnouncementsRead = useNotificationsStore((s) => s.markAnnouncementsRead)
+
+  useEffect(() => {
+    if (!isLoading) markAnnouncementsRead()
+  }, [isLoading, markAnnouncementsRead])
 
   return (
     <div className="flex flex-col gap-6">
