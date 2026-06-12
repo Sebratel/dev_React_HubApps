@@ -9,47 +9,55 @@ const AUDIT_ACTIONS  = require('../utils/auditActions')
 const USER_FIELDS = 'id, email, name, photo_url, profile, team, is_active, is_admin, last_login, created_at'
 
 // GET /users/me
-router.get('/me', requireAuth, async (req, res) => {
-  const [rows] = await pool.query(
-    `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
-    [req.uid]
-  )
-  if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' })
-  res.json(rows[0])
+router.get('/me', requireAuth, async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+      [req.uid]
+    )
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' })
+    res.json(rows[0])
+  } catch (err) { next(err) }
 })
 
 // POST /users/provision — cria ou atualiza usuário no primeiro login (sem race condition)
-router.post('/provision', requireAuth, provisionLimiter, async (req, res) => {
+router.post('/provision', requireAuth, provisionLimiter, async (req, res, next) => {
   const { name, email, photoUrl } = req.body
   if (!name || !email) return res.status(400).json({ error: 'name e email obrigatórios' })
 
-  await pool.query(
-    `INSERT INTO users (id, email, name, photo_url, profile, is_active, is_admin, permissions, last_login, online)
-     VALUES (?, ?, ?, ?, '', 0, 0, '[]', NOW(), 1)
-     ON DUPLICATE KEY UPDATE last_login = NOW(), online = 1`,
-    [req.uid, email, name, photoUrl || null]
-  )
+  try {
+    await pool.query(
+      `INSERT INTO users (id, email, name, photo_url, profile, is_active, is_admin, permissions, last_login, online)
+       VALUES (?, ?, ?, ?, '', 0, 0, '[]', NOW(), 1)
+       ON DUPLICATE KEY UPDATE last_login = NOW(), online = 1`,
+      [req.uid, email, name, photoUrl || null]
+    )
 
-  const [rows] = await pool.query(
-    `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
-    [req.uid]
-  )
-  res.json(rows[0])
+    const [rows] = await pool.query(
+      `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+      [req.uid]
+    )
+    res.json(rows[0])
+  } catch (err) { next(err) }
 })
 
 // PATCH /users/me/offline
-router.patch('/me/offline', requireAuth, async (req, res) => {
-  await pool.query('UPDATE users SET online = 0 WHERE id = ?', [req.uid])
-  res.json({ ok: true })
+router.patch('/me/offline', requireAuth, async (req, res, next) => {
+  try {
+    await pool.query('UPDATE users SET online = 0 WHERE id = ?', [req.uid])
+    res.json({ ok: true })
+  } catch (err) { next(err) }
 })
 
 // PATCH /users/me/heartbeat — atualiza presença online
-router.patch('/me/heartbeat', requireAuth, async (req, res) => {
-  await pool.query(
-    'UPDATE users SET last_heartbeat = NOW(), online = 1 WHERE id = ?',
-    [req.uid]
-  )
-  res.json({ ok: true })
+router.patch('/me/heartbeat', requireAuth, async (req, res, next) => {
+  try {
+    await pool.query(
+      'UPDATE users SET last_heartbeat = NOW(), online = 1 WHERE id = ?',
+      [req.uid]
+    )
+    res.json({ ok: true })
+  } catch (err) { next(err) }
 })
 
 // GET /users/online — admin: usuários ativos nos últimos 2 minutos
@@ -70,17 +78,19 @@ router.get('/online', requireAuth, requireAdmin, async (_req, res, next) => {
 })
 
 // GET /users — lista todos (admin only) com paginação
-router.get('/', requireAuth, requireAdmin, async (req, res) => {
-  const limit  = Math.min(Math.max(Number(req.query.limit)  || 50, 1), 200)
-  const offset = Math.max(Number(req.query.offset) || 0, 0)
+router.get('/', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const limit  = Math.min(Math.max(Number(req.query.limit)  || 50, 1), 200)
+    const offset = Math.max(Number(req.query.offset) || 0, 0)
 
-  const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users')
-  const [data] = await pool.query(
-    `SELECT ${USER_FIELDS} FROM users ORDER BY name LIMIT ? OFFSET ?`,
-    [limit, offset]
-  )
+    const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users')
+    const [data] = await pool.query(
+      `SELECT ${USER_FIELDS} FROM users ORDER BY name LIMIT ? OFFSET ?`,
+      [limit, offset]
+    )
 
-  res.json({ data, pagination: { limit, offset, total } })
+    res.json({ data, pagination: { limit, offset, total } })
+  } catch (err) { next(err) }
 })
 
 // PATCH /users/:id — atualiza usuário (admin only)
