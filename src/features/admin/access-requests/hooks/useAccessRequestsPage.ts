@@ -6,6 +6,8 @@ import {
   rejectRequest,
 } from '@/services/admin/admin-access-request.service'
 
+export interface BulkResult { success: number; failed: number }
+
 export interface AccessRequestFilters {
   search: string
   status: 'all' | 'pending' | 'approved' | 'rejected'
@@ -58,6 +60,30 @@ export function useAccessRequestsPage() {
     onSuccess: invalidateRequests,
   })
 
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false)
+
+  async function bulkApprove(ids: string[]): Promise<BulkResult> {
+    setIsBulkProcessing(true)
+    let success = 0, failed = 0
+    await Promise.allSettled(
+      ids.map((id) => approveRequest(id).then(() => { success++ }).catch(() => { failed++ }))
+    )
+    setIsBulkProcessing(false)
+    invalidateRequests()
+    return { success, failed }
+  }
+
+  async function bulkReject(ids: string[]): Promise<BulkResult> {
+    setIsBulkProcessing(true)
+    let success = 0, failed = 0
+    await Promise.allSettled(
+      ids.map((id) => rejectRequest(id).then(() => { success++ }).catch(() => { failed++ }))
+    )
+    setIsBulkProcessing(false)
+    invalidateRequests()
+    return { success, failed }
+  }
+
   const hasFilters = filters.search !== '' || filters.status !== 'all'
 
   return {
@@ -71,5 +97,8 @@ export function useAccessRequestsPage() {
     hasFilters,
     approveMutation,
     rejectMutation,
+    isBulkProcessing,
+    bulkApprove,
+    bulkReject,
   }
 }

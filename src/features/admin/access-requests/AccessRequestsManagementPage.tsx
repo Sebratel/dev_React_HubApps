@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { RefreshCw, Search } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { RefreshCw, Search, CheckCircle, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -43,12 +43,64 @@ export function AccessRequestsManagementPage() {
     hasFilters,
     approveMutation,
     rejectMutation,
+    isBulkProcessing,
+    bulkApprove,
+    bulkReject,
   } = useAccessRequestsPage()
 
   const [selectedRequest, setSelectedRequest] = useState<AccessRequestModel | null>(null)
   const [dialog, setDialog] = useState<DialogKind>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkNotice, setBulkNotice] = useState<string | null>(null)
+
+  // Clear selection when filters change
+  useEffect(() => { setSelectedIds(new Set()) }, [filters])
+
+  // Auto-dismiss bulk notice
+  useEffect(() => {
+    if (!bulkNotice) return
+    const t = setTimeout(() => setBulkNotice(null), 4000)
+    return () => clearTimeout(t)
+  }, [bulkNotice])
 
   if (!currentUser || !canAccessAdminDashboard(currentUser)) return null
+
+  const pendingIds = new Set(requests.filter((r) => r.status === 'pending').map((r) => r.id))
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    const allSelected = [...pendingIds].every((id) => selectedIds.has(id))
+    setSelectedIds(allSelected ? new Set() : new Set(pendingIds))
+  }
+
+  async function handleBulkApprove() {
+    const ids = [...selectedIds]
+    setSelectedIds(new Set())
+    const { success, failed } = await bulkApprove(ids)
+    setBulkNotice(
+      failed === 0
+        ? `${success} solicitaç${success !== 1 ? 'ões aprovadas' : 'ão aprovada'} com sucesso.`
+        : `${success} aprovadas, ${failed} falharam.`
+    )
+  }
+
+  async function handleBulkReject() {
+    const ids = [...selectedIds]
+    setSelectedIds(new Set())
+    const { success, failed } = await bulkReject(ids)
+    setBulkNotice(
+      failed === 0
+        ? `${success} solicitaç${success !== 1 ? 'ões rejeitadas' : 'ão rejeitada'} com sucesso.`
+        : `${success} rejeitadas, ${failed} falharam.`
+    )
+  }
 
   function openDialog(kind: DialogKind, request: AccessRequestModel) {
     setSelectedRequest(request)
@@ -139,6 +191,48 @@ export function AccessRequestsManagementPage() {
         )}
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <span className="text-sm font-medium text-foreground">
+            {selectedIds.size} selecionada{selectedIds.size !== 1 ? 's' : ''}
+          </span>
+          <Button
+            size="sm"
+            className="h-7 gap-1.5 text-green-800 bg-green-100 hover:bg-green-200 border-0"
+            onClick={handleBulkApprove}
+            disabled={isBulkProcessing}
+          >
+            <CheckCircle className="h-3.5 w-3.5" />
+            Aprovar selecionadas
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1.5 text-red-700 border-red-200 hover:bg-red-50"
+            onClick={handleBulkReject}
+            disabled={isBulkProcessing}
+          >
+            <XCircle className="h-3.5 w-3.5" />
+            Rejeitar selecionadas
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="ml-auto h-7 text-muted-foreground"
+            onClick={() => setSelectedIds(new Set())}
+            disabled={isBulkProcessing}
+          >
+            Cancelar
+          </Button>
+        </div>
+      )}
+
+      {/* Bulk notice */}
+      {bulkNotice && (
+        <p className="text-sm text-foreground bg-muted rounded-lg px-4 py-2.5">{bulkNotice}</p>
+      )}
+
       {/* Table */}
       {isLoading ? (
         <AccessRequestsTableSkeleton />
@@ -150,6 +244,9 @@ export function AccessRequestsManagementPage() {
           onDetails={(req) => openDialog('details', req)}
           onApprove={(req) => openDialog('approve', req)}
           onReject={(req) => openDialog('reject', req)}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleAll={toggleAll}
         />
       )}
 

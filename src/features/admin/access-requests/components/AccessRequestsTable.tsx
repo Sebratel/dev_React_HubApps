@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react'
 import { Eye, CheckCircle, XCircle, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -12,6 +13,9 @@ interface AccessRequestsTableProps {
   onApprove: (request: AccessRequestModel) => void
   onReject: (request: AccessRequestModel) => void
   onDetails: (request: AccessRequestModel) => void
+  selectedIds?: Set<string>
+  onToggleSelect?: (id: string) => void
+  onToggleAll?: () => void
 }
 
 // ─── Main Table ───────────────────────────────────────────────────────────────
@@ -21,14 +25,47 @@ export function AccessRequestsTable({
   onApprove,
   onReject,
   onDetails,
+  selectedIds,
+  onToggleSelect,
+  onToggleAll,
 }: AccessRequestsTableProps) {
+  const pendingRequests = requests.filter((r) => r.status === 'pending')
+  const selectedPendingCount = selectedIds
+    ? pendingRequests.filter((r) => selectedIds.has(r.id)).length
+    : 0
+  const allPendingSelected = pendingRequests.length > 0 && selectedPendingCount === pendingRequests.length
+  const somePendingSelected = selectedPendingCount > 0 && !allPendingSelected
+
+  const headerCheckRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (headerCheckRef.current) {
+      headerCheckRef.current.indeterminate = somePendingSelected
+    }
+  }, [somePendingSelected])
+
+  const selectable = !!selectedIds && !!onToggleSelect && !!onToggleAll
+
   return (
     <div role="table" className="rounded-xl border border-border overflow-hidden">
       {/* Header */}
       <div
         role="row"
-        className="hidden sm:grid grid-cols-[2fr_2fr_1fr_1fr_auto] gap-4 px-4 py-2.5 bg-muted/40 text-xs font-medium text-muted-foreground uppercase tracking-wide"
+        className="hidden sm:grid gap-4 px-4 py-2.5 bg-muted/40 text-xs font-medium text-muted-foreground uppercase tracking-wide"
+        style={{ gridTemplateColumns: selectable ? 'auto 2fr 2fr 1fr 1fr auto' : '2fr 2fr 1fr 1fr auto' }}
       >
+        {selectable && (
+          <span className="flex items-center">
+            <input
+              ref={headerCheckRef}
+              type="checkbox"
+              className="h-4 w-4 cursor-pointer rounded"
+              checked={allPendingSelected}
+              disabled={pendingRequests.length === 0}
+              onChange={onToggleAll}
+              aria-label="Selecionar todas pendentes"
+            />
+          </span>
+        )}
         <span>Usuário</span>
         <span>Aplicativo</span>
         <span>Status</span>
@@ -42,8 +79,26 @@ export function AccessRequestsTable({
           <div
             key={req.id}
             role="row"
-            className="grid grid-cols-1 sm:grid-cols-[2fr_2fr_1fr_1fr_auto] gap-2 sm:gap-4 px-4 py-3 items-center hover:bg-muted/30 transition-colors"
+            className="grid grid-cols-1 gap-2 sm:gap-4 px-4 py-3 items-center hover:bg-muted/30 transition-colors"
+            style={{ gridTemplateColumns: selectable ? 'auto 2fr 2fr 1fr 1fr auto' : '2fr 2fr 1fr 1fr auto' }}
           >
+            {/* Checkbox (pending only) */}
+            {selectable && (
+              <span className="hidden sm:flex items-center">
+                {req.status === 'pending' ? (
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 cursor-pointer rounded"
+                    checked={selectedIds!.has(req.id)}
+                    onChange={() => onToggleSelect!(req.id)}
+                    aria-label={`Selecionar ${req.appName}`}
+                  />
+                ) : (
+                  <span className="h-4 w-4" />
+                )}
+              </span>
+            )}
+
             {/* User */}
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{req.userName || req.userId}</p>
