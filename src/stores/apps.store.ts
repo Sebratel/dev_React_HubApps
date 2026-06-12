@@ -25,6 +25,7 @@ interface AppsActions {
   setAllApps: (apps: AppItemModel[]) => void
   setUserApps: (apps: AppItemModel[]) => void
   setLoading: (loading: boolean) => void
+  setFavorites: (favorites: string[]) => void
   toggleFavorite: (appId: string) => void
   markRecent: (appId: string) => void
   pruneStoredAppRefs: (validAppIds: Set<string>) => void
@@ -46,6 +47,8 @@ export const useAppsStore = create<AppsState & AppsActions>()(
       setAllApps: (allApps) => set({ allApps }),
       setUserApps: (userApps) => set({ userApps }),
       setLoading: (isLoading) => set({ isLoading }),
+
+      setFavorites: (favorites) => set({ favorites }),
 
       toggleFavorite: (appId) => {
         const { favorites } = get()

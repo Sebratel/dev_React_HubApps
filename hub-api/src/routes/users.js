@@ -212,4 +212,25 @@ router.post('/create-external', requireAuth, requireAdmin, adminWriteLimiter, as
   res.status(201).json(rows[0])
 })
 
+// GET /users/me/favorites
+router.get('/me/favorites', requireAuth, async (req, res, next) => {
+  try {
+    const [[row]] = await pool.query('SELECT favorites FROM users WHERE id = ?', [req.uid])
+    if (!row) return res.status(404).json({ error: 'Usuário não encontrado' })
+    res.json({ favorites: JSON.parse(row.favorites || '[]') })
+  } catch (err) { next(err) }
+})
+
+// PATCH /users/me/favorites
+router.patch('/me/favorites', requireAuth, async (req, res, next) => {
+  const { favorites } = req.body
+  if (!Array.isArray(favorites) || !favorites.every((f) => typeof f === 'string')) {
+    return res.status(400).json({ error: 'favorites deve ser um array de strings' })
+  }
+  try {
+    await pool.query('UPDATE users SET favorites = ? WHERE id = ?', [JSON.stringify(favorites), req.uid])
+    res.json({ favorites })
+  } catch (err) { next(err) }
+})
+
 module.exports = router

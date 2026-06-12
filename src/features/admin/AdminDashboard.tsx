@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
   RefreshCw, Users, LayoutGrid, Clock, ShieldCheck,
-  UsersRound, Bell, MessageSquare, AlertTriangle,
+  UsersRound, Bell, MessageSquare, AlertTriangle, UserX,
 } from 'lucide-react'
 
 export function AdminDashboard() {
@@ -33,6 +33,7 @@ export function AdminDashboard() {
   if (!user || !canAccessAdminDashboard(user)) return null
 
   const hasPendingSuggestions = metrics.pendingSuggestions > 0
+  const hasPendingUsers = metrics.inactiveUsers > 0
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,6 +67,23 @@ export function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* Alerta — usuários inativos aguardando ativação */}
+      {!isLoading && hasPendingUsers && (
+        <Link
+          to="/admin/users"
+          className="flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 hover:bg-amber-100 transition-colors"
+        >
+          <UserX className="h-4 w-4 shrink-0" aria-hidden />
+          <span>
+            <span className="font-semibold">{metrics.inactiveUsers}</span>{' '}
+            {metrics.inactiveUsers === 1 ? 'usuário inativo aguarda' : 'usuários inativos aguardam'} ativação.
+          </span>
+          <span className="ml-auto text-xs font-medium underline underline-offset-2">
+            Gerenciar usuários →
+          </span>
+        </Link>
+      )}
 
       {/* Alerta — sugestões pendentes */}
       {!isLoading && hasPendingSuggestions && (

@@ -7,12 +7,14 @@ import { AccessRequestModal } from './components/AccessRequestModal'
 import { Input } from '@/components/ui/input'
 import { buildAppUrl, requestAppLaunchToken } from '@/services/app.service'
 import { logAppOpen } from '@/services/audit-log.service'
+import { useFavoritesSync } from './hooks/useFavoritesSync'
 import { cn } from '@/lib/utils'
 import type { AppItemModel } from '@/types/models'
 
 type DashboardTab = 'all' | 'favorites' | 'recent'
 
 export function DashboardPage() {
+  useFavoritesSync()
   const user = useAuthStore((s) => s.user)
   const favorites = useAppsStore((s) => s.favorites)
   const toggleFavorite = useAppsStore((s) => s.toggleFavorite)
