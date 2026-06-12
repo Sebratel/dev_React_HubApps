@@ -38,7 +38,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
         err.code === 'auth/popup-closed-by-user' ||
         err.code === 'auth/cancelled-popup-request'
       ) {
-        return { success: false, error: null }
+        return { success: false, error: undefined }
       }
       console.error('[auth] Firebase error:', err.code, err.message)
       return { success: false, error: `Erro ao entrar com Google (${err.code}).` }
