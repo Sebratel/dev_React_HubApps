@@ -1,5 +1,5 @@
-import { Badge } from '@/components/ui/badge'
 import { AdminEmptyState } from './AdminEmptyState'
+import { cn } from '@/lib/utils'
 import type { AccessRequestModel } from '@/types/models'
 import { formatRelativeTime } from '@/utils/relative-time'
 
@@ -20,16 +20,24 @@ export function AdminPendingRequestsList({ requests }: AdminPendingRequestsListP
   }
 
   return (
-    <ul className="divide-y divide-border">
+    <ul className="flex flex-col -mx-1">
       {requests.slice(0, MAX_VISIBLE).map((req) => (
-        <li key={req.id} className="py-3 flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-medium truncate">{req.userName || req.userId}</p>
-            <p className="text-xs text-muted-foreground truncate">→ {req.appName}</p>
+        <li
+          key={req.id}
+          className={cn(
+            'flex items-center justify-between gap-3 px-2 py-2.5 rounded-lg',
+            'hover:bg-muted/50 transition-colors cursor-default',
+          )}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground truncate">
+              {req.userName || req.userId}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">{req.appName}</p>
           </div>
-          <Badge variant="outline" className="text-xs shrink-0 whitespace-nowrap">
+          <span className="shrink-0 text-[11px] text-muted-foreground/70 whitespace-nowrap tabular-nums">
             {formatRelativeTime(req.requestedAt.toISOString())}
-          </Badge>
+          </span>
         </li>
       ))}
     </ul>

@@ -181,6 +181,7 @@ export function AdminDashboard() {
             title="Usuários Inativos"
             value={metrics.inactiveUsers}
             variant={metrics.inactiveUsers > 0 ? 'warning' : 'default'}
+            size="sm"
             isLoading={isLoading}
             delay={180}
           />
@@ -188,6 +189,7 @@ export function AdminDashboard() {
             title="Administradores"
             value={metrics.adminUsers}
             icon={<ShieldCheck className="h-4 w-4" />}
+            size="sm"
             isLoading={isLoading}
             delay={210}
           />
@@ -195,6 +197,7 @@ export function AdminDashboard() {
             title="Apps Inativos"
             value={metrics.inactiveApps}
             variant={metrics.inactiveApps > 0 ? 'warning' : 'default'}
+            size="sm"
             isLoading={isLoading}
             delay={240}
           />
@@ -202,6 +205,7 @@ export function AdminDashboard() {
             title="Times Ativos"
             value={metrics.activeTeams}
             icon={<UsersRound className="h-4 w-4" />}
+            size="sm"
             isLoading={isLoading}
             delay={270}
           />
@@ -209,6 +213,7 @@ export function AdminDashboard() {
             title="Avisos Ativos"
             value={metrics.activeAnnouncements}
             icon={<Bell className="h-4 w-4" />}
+            size="sm"
             isLoading={isLoading}
             delay={300}
           />
@@ -217,6 +222,7 @@ export function AdminDashboard() {
             value={metrics.pendingSuggestions}
             icon={<MessageSquare className="h-4 w-4" />}
             variant={hasPendingSuggestions ? 'warning' : 'default'}
+            size="sm"
             isLoading={isLoading}
             delay={330}
           />
@@ -244,33 +250,75 @@ export function AdminDashboard() {
         className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in"
         style={zone(430)}
       >
+        {/* Solicitações pendentes */}
         <section
-          className="rounded-xl border border-border bg-card p-4"
+          className="rounded-xl border border-border bg-card shadow-sm p-4 flex flex-col"
           aria-label="Solicitações pendentes"
         >
-          <h2 className="text-sm font-semibold text-foreground mb-3">
-            Últimas Solicitações Pendentes
-          </h2>
-          {isLoading ? (
-            <AdminListSkeleton rows={4} />
-          ) : hasError ? (
-            <AdminErrorState onRetry={refetchAll} />
-          ) : (
-            <AdminPendingRequestsList requests={pendingRequests} />
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-foreground">Solicitações Pendentes</h2>
+            {!isLoading && pendingRequests.length > 0 && (
+              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">
+                {pendingRequests.length}
+              </span>
+            )}
+          </div>
+
+          <div className="flex-1">
+            {isLoading ? (
+              <AdminListSkeleton rows={4} />
+            ) : hasError ? (
+              <AdminErrorState onRetry={refetchAll} />
+            ) : (
+              <AdminPendingRequestsList requests={pendingRequests} />
+            )}
+          </div>
+
+          {!isLoading && !hasError && (
+            <div className="mt-3 pt-2.5 border-t border-border">
+              <Link
+                to="/admin/access-requests"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Ver todas as solicitações →
+              </Link>
+            </div>
           )}
         </section>
 
+        {/* Atividade recente */}
         <section
-          className="rounded-xl border border-border bg-card p-4"
+          className="rounded-xl border border-border bg-card shadow-sm p-4 flex flex-col"
           aria-label="Atividade recente"
         >
-          <h2 className="text-sm font-semibold text-foreground mb-3">Atividade Recente</h2>
-          {isLoading ? (
-            <AdminListSkeleton rows={4} />
-          ) : hasError ? (
-            <AdminErrorState onRetry={refetchAll} />
-          ) : (
-            <AdminRecentActivityList logs={recentAuditLogs} />
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-foreground">Atividade Recente</h2>
+            {!isLoading && recentAuditLogs.length > 0 && (
+              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">
+                {recentAuditLogs.length}
+              </span>
+            )}
+          </div>
+
+          <div className="flex-1">
+            {isLoading ? (
+              <AdminListSkeleton rows={4} />
+            ) : hasError ? (
+              <AdminErrorState onRetry={refetchAll} />
+            ) : (
+              <AdminRecentActivityList logs={recentAuditLogs} />
+            )}
+          </div>
+
+          {!isLoading && !hasError && (
+            <div className="mt-3 pt-2.5 border-t border-border">
+              <Link
+                to="/admin/audit-logs"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Ver log completo →
+              </Link>
+            </div>
           )}
         </section>
       </div>

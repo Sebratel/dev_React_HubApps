@@ -85,25 +85,23 @@ export function AdminRecentActivityList({ logs }: AdminRecentActivityListProps) 
   }
 
   return (
-    <ul className="flex flex-col">
+    <ul className="flex flex-col -mx-1">
       {logs.map((log, i) => {
-        const label   = ACTION_LABELS[log.action] ?? log.action
-        const detail  = parseDetails(log.details)
-        const cat     = ACTION_CATEGORY[log.action] ?? 'neutral'
+        const label  = ACTION_LABELS[log.action] ?? log.action
+        const detail = parseDetails(log.details)
+        const cat    = ACTION_CATEGORY[log.action] ?? 'neutral'
 
         return (
           <li
             key={log.id}
             className={cn(
-              'flex items-start gap-3 px-1 py-2.5 rounded-lg transition-colors',
-              i % 2 === 0 ? 'bg-transparent' : 'bg-muted/30',
+              'flex items-start gap-3 px-2 py-2.5 rounded-lg transition-colors cursor-default',
+              'hover:bg-muted/50',
+              i % 2 !== 0 && 'bg-muted/20',
             )}
           >
             <span
-              className={cn(
-                'mt-[5px] h-2 w-2 rounded-full shrink-0',
-                DOT_CLASS[cat],
-              )}
+              className={cn('mt-[6px] h-1.5 w-1.5 rounded-full shrink-0', DOT_CLASS[cat])}
               aria-hidden
             />
             <div className="min-w-0 flex-1">
@@ -112,7 +110,9 @@ export function AdminRecentActivityList({ logs }: AdminRecentActivityListProps) 
               </p>
               <p className="text-xs text-muted-foreground truncate">
                 {label}
-                {detail ? <span className="text-muted-foreground/70"> · {detail}</span> : null}
+                {detail
+                  ? <span className="text-muted-foreground/70"> · {detail}</span>
+                  : null}
               </p>
             </div>
             <span className="shrink-0 text-[11px] text-muted-foreground/70 whitespace-nowrap tabular-nums pt-0.5">

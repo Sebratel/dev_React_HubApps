@@ -9,6 +9,7 @@ interface AdminMetricCardProps {
   description?: string
   icon?: ReactNode
   variant?: 'default' | 'warning' | 'success' | 'danger'
+  size?: 'default' | 'sm'
   isLoading?: boolean
   delay?: number
 }
@@ -58,10 +59,24 @@ const valueColor: Record<string, string> = {
   danger:  'text-red-700',
 }
 
-function AnimatedNumber({ value, variant }: { value: number; variant: string }) {
+function AnimatedNumber({
+  value,
+  variant,
+  size,
+}: {
+  value: number
+  variant: string
+  size: string
+}) {
   const animated = useCountUp(value)
   return (
-    <p className={cn('text-2xl font-bold tabular-nums', valueColor[variant])}>
+    <p
+      className={cn(
+        'font-bold tabular-nums',
+        size === 'sm' ? 'text-xl' : 'text-3xl',
+        valueColor[variant],
+      )}
+    >
       {animated}
     </p>
   )
@@ -73,6 +88,7 @@ export function AdminMetricCard({
   description,
   icon,
   variant = 'default',
+  size = 'default',
   isLoading = false,
   delay = 0,
 }: AdminMetricCardProps) {
@@ -81,18 +97,23 @@ export function AdminMetricCard({
     animationFillMode: 'both' as const,
   }
 
+  const isPrimary = size === 'default'
+
   if (isLoading) {
     return (
       <div
-        className="rounded-xl border border-border bg-card p-4 animate-fade-in"
+        className={cn(
+          'rounded-xl border border-border bg-card shadow-sm animate-fade-in',
+          isPrimary ? 'p-5' : 'p-3.5',
+        )}
         style={animStyle}
       >
         <div className="flex items-center justify-between mb-3">
           <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-7 w-7 rounded-lg" />
+          {isPrimary && <Skeleton className="h-7 w-7 rounded-lg" />}
         </div>
-        <Skeleton className="h-8 w-12 mb-1.5" />
-        <Skeleton className="h-3 w-24" />
+        <Skeleton className={cn('mb-1.5', isPrimary ? 'h-9 w-14' : 'h-7 w-10')} />
+        {isPrimary && <Skeleton className="h-3 w-24" />}
       </div>
     )
   }
@@ -100,16 +121,17 @@ export function AdminMetricCard({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-card p-4',
+        'rounded-xl border border-border bg-card shadow-sm',
         'hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 cursor-default',
         'animate-fade-in',
+        isPrimary ? 'p-5' : 'p-3.5',
         accentLeft[variant],
       )}
       style={animStyle}
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className={cn('flex items-center justify-between', isPrimary ? 'mb-3' : 'mb-2')}>
         <p className="text-xs font-medium text-muted-foreground">{title}</p>
-        {icon && (
+        {icon && isPrimary && (
           <span className={cn('rounded-lg p-1.5', iconPill[variant])}>
             {icon}
           </span>
@@ -117,12 +139,20 @@ export function AdminMetricCard({
       </div>
 
       {typeof value === 'number' ? (
-        <AnimatedNumber value={value} variant={variant} />
+        <AnimatedNumber value={value} variant={variant} size={size} />
       ) : (
-        <p className={cn('text-2xl font-bold', valueColor[variant])}>{value}</p>
+        <p
+          className={cn(
+            'font-bold',
+            isPrimary ? 'text-3xl' : 'text-xl',
+            valueColor[variant],
+          )}
+        >
+          {value}
+        </p>
       )}
 
-      {description && (
+      {description && isPrimary && (
         <p className="text-xs text-muted-foreground mt-1.5">{description}</p>
       )}
     </div>

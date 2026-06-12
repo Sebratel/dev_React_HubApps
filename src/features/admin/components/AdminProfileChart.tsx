@@ -27,7 +27,10 @@ export function AdminProfileChart({ data, isLoading }: AdminProfileChartProps) {
   }, [])
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4" aria-label="Distribuição por perfil">
+    <section
+      className="rounded-xl border border-border bg-card shadow-sm p-4"
+      aria-label="Distribuição por perfil"
+    >
       <h2 className="text-sm font-semibold text-foreground mb-4">Distribuição por Perfil</h2>
 
       {isLoading ? (
@@ -35,7 +38,7 @@ export function AdminProfileChart({ data, isLoading }: AdminProfileChartProps) {
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3">
               <div className="w-20 h-3 bg-muted rounded animate-pulse shrink-0" />
-              <div className="flex-1 h-2.5 bg-muted rounded-full animate-pulse" />
+              <div className="flex-1 h-2 bg-muted rounded-full animate-pulse" />
               <div className="w-5 h-3 bg-muted rounded animate-pulse shrink-0" />
             </div>
           ))}

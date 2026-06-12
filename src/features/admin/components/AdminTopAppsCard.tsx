@@ -16,7 +16,10 @@ export function AdminTopAppsCard({ data, isLoading }: AdminTopAppsCardProps) {
   }, [])
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4" aria-label="Apps mais acessados">
+    <section
+      className="rounded-xl border border-border bg-card shadow-sm p-4"
+      aria-label="Apps mais acessados"
+    >
       <div className="flex items-baseline justify-between mb-4">
         <h2 className="text-sm font-semibold text-foreground">Top Apps</h2>
         <span className="text-[11px] text-muted-foreground">Últimos 30 dias</span>
@@ -28,7 +31,7 @@ export function AdminTopAppsCard({ data, isLoading }: AdminTopAppsCardProps) {
             <div key={i} className="flex items-center gap-3">
               <div className="w-3 h-3 bg-muted rounded animate-pulse shrink-0" />
               <div className="w-20 h-3 bg-muted rounded animate-pulse shrink-0" />
-              <div className="flex-1 h-2.5 bg-muted rounded-full animate-pulse" />
+              <div className="flex-1 h-2 bg-muted rounded-full animate-pulse" />
               <div className="w-6 h-3 bg-muted rounded animate-pulse shrink-0" />
             </div>
           ))}
