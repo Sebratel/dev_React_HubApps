@@ -44,6 +44,9 @@ async function request<T>(
     throw new ApiError(message, res.status)
   }
 
+  // 204 No Content — sem corpo para parsear
+  if (res.status === 204) return undefined as T
+
   return res.json() as Promise<T>
 }
 
