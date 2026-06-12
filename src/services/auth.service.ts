@@ -1,11 +1,11 @@
 import {
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword,
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth'
+import { FirebaseError } from 'firebase/app'
 import { auth } from '@/firebase'
 import { isCorporateEmail, isThirdPartyEmail } from '@/utils/email-domain'
 import type { AuthResult } from '@/types/models'
@@ -13,27 +13,37 @@ import type { AuthResult } from '@/types/models'
 const googleProvider = new GoogleAuthProvider()
 googleProvider.addScope('email')
 googleProvider.addScope('profile')
+// Força a seleção de conta mesmo que já exista sessão Google ativa no browser
+googleProvider.setCustomParameters({ prompt: 'select_account' })
 
-// Inicia o fluxo de login com Google via redirect (mais confiável que popup em ambientes corporativos)
-export async function signInWithGoogle(): Promise<void> {
-  await signInWithRedirect(auth, googleProvider)
-}
+export async function signInWithGoogle(): Promise<AuthResult> {
+  try {
+    const result = await signInWithPopup(auth, googleProvider)
+    const email = result.user.email ?? ''
 
-// Deve ser chamado uma vez ao carregar o LoginPage para processar o retorno do redirect
-export async function checkGoogleRedirectResult(): Promise<AuthResult | null> {
-  const result = await getRedirectResult(auth)
-  if (!result) return null
-
-  const email = result.user.email ?? ''
-  if (!isCorporateEmail(email) && !isThirdPartyEmail(email)) {
-    await firebaseSignOut(auth)
-    return {
-      success: false,
-      error: 'Acesso permitido apenas para e-mails corporativos (@sebratel.com.br) ou parceiros autorizados.',
+    if (!isCorporateEmail(email) && !isThirdPartyEmail(email)) {
+      await firebaseSignOut(auth)
+      return {
+        success: false,
+        error: 'Acesso permitido apenas para e-mails corporativos (@sebratel.com.br) ou parceiros autorizados.',
+      }
     }
-  }
 
-  return { success: true }
+    return { success: true }
+  } catch (err) {
+    if (err instanceof FirebaseError) {
+      // Usuário fechou o popup manualmente — não é erro
+      if (
+        err.code === 'auth/popup-closed-by-user' ||
+        err.code === 'auth/cancelled-popup-request'
+      ) {
+        return { success: false, error: null }
+      }
+      console.error('[auth] Firebase error:', err.code, err.message)
+      return { success: false, error: `Erro ao entrar com Google (${err.code}).` }
+    }
+    throw err
+  }
 }
 
 export async function signInWithEmailAndPassword(

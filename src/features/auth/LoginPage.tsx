@@ -1,47 +1,32 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useAuthStore } from '@/stores/auth.store'
-import { signInWithGoogle, checkGoogleRedirectResult, signInWithEmailAndPassword } from '@/services/auth.service'
+import { signInWithGoogle, signInWithEmailAndPassword } from '@/services/auth.service'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: Location })?.from?.pathname ?? '/'
-  const user = useAuthStore((s) => s.user)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Navega automaticamente se o usuário já estiver autenticado (ex: retorno do redirect Google)
-  useEffect(() => {
-    if (user) navigate(from, { replace: true })
-  }, [user, from, navigate])
-
-  // Processa o resultado do redirect Google ao montar a página
-  useEffect(() => {
-    checkGoogleRedirectResult()
-      .then((result) => {
-        if (result && !result.success) {
-          setError(result.error ?? 'Acesso negado.')
-        }
-        // sucesso: onAuthStateChanged em useAuthSession trata a navegação via o efeito acima
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Erro ao entrar com Google.')
-      })
-  }, [])
-
   async function handleGoogleSignIn() {
     setError(null)
     setIsLoading(true)
     try {
-      await signInWithGoogle() // redireciona a página — código abaixo não é executado
+      const result = await signInWithGoogle()
+      if (!result.success) {
+        if (result.error) setError(result.error)
+        return
+      }
+      navigate(from, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao entrar com Google.')
+    } finally {
       setIsLoading(false)
     }
   }
@@ -56,7 +41,7 @@ export function LoginPage() {
         setError(result.error ?? 'E-mail ou senha incorretos.')
         return
       }
-      // navegação tratada pelo useEffect acima quando user é definido em useAuthSession
+      navigate(from, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'E-mail ou senha incorretos.')
     } finally {
