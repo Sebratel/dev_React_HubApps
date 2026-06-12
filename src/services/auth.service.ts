@@ -1,6 +1,7 @@
 import {
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword,
   signOut as firebaseSignOut,
   type User,
@@ -13,20 +14,25 @@ const googleProvider = new GoogleAuthProvider()
 googleProvider.addScope('email')
 googleProvider.addScope('profile')
 
-export async function signInWithGoogle(): Promise<AuthResult> {
-  const result = await signInWithPopup(auth, googleProvider)
-  const email = result.user.email ?? ''
+// Inicia o fluxo de login com Google via redirect (mais confiável que popup em ambientes corporativos)
+export async function signInWithGoogle(): Promise<void> {
+  await signInWithRedirect(auth, googleProvider)
+}
 
+// Deve ser chamado uma vez ao carregar o LoginPage para processar o retorno do redirect
+export async function checkGoogleRedirectResult(): Promise<AuthResult | null> {
+  const result = await getRedirectResult(auth)
+  if (!result) return null
+
+  const email = result.user.email ?? ''
   if (!isCorporateEmail(email) && !isThirdPartyEmail(email)) {
     await firebaseSignOut(auth)
     return {
       success: false,
-      error:
-        'Acesso permitido apenas para e-mails corporativos (@sebratel.com.br) ou parceiros autorizados.',
+      error: 'Acesso permitido apenas para e-mails corporativos (@sebratel.com.br) ou parceiros autorizados.',
     }
   }
 
-  // onAuthStateChanged (useAuthSession) fetches / provisions the UserModel from Firestore
   return { success: true }
 }
 
