@@ -11,6 +11,8 @@ router.get('/stats', requireAuth, requireAdmin, async (_req, res, next) => {
       [[{ count: suggCount }]],
       [[teamsRow]],
       [[annoRow]],
+      [[{ count: pendingReqCount }]],
+      [[{ count: inactiveUsersCount }]],
     ] = await Promise.all([
       pool.query(
         `SELECT COALESCE(NULLIF(profile,''), 'sem perfil') AS profile, COUNT(*) AS count
@@ -43,6 +45,8 @@ router.get('/stats', requireAuth, requireAdmin, async (_req, res, next) => {
            COUNT(*) AS total
          FROM announcements`
       ),
+      pool.query("SELECT COUNT(*) AS count FROM access_requests WHERE status = 'pending'"),
+      pool.query("SELECT COUNT(*) AS count FROM users WHERE is_active = 0"),
     ])
 
     res.json({
@@ -54,7 +58,9 @@ router.get('/stats', requireAuth, requireAdmin, async (_req, res, next) => {
         appName:   r.app_name,
         openCount: Number(r.open_count),
       })),
-      pendingSuggestions: Number(suggCount),
+      pendingSuggestions:  Number(suggCount),
+      pendingRequests:     Number(pendingReqCount),
+      inactiveUsers:       Number(inactiveUsersCount),
       teams: {
         active: Number(teamsRow?.active ?? 0),
         total:  Number(teamsRow?.total  ?? 0),

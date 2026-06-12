@@ -19,8 +19,10 @@ export function useApps() {
     queryKey: ['apps', user?.id],
     queryFn: getApps,
     enabled: !!user,
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
     gcTime: 10 * 60_000,
+    refetchInterval: 60_000,      // detecta aprovação de acesso em até 1 min
+    refetchIntervalInBackground: false,
   })
 
   const userApps = useMemo(() => (user ? getUserApps(user, allApps) : []), [user, allApps])

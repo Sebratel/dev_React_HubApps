@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Search, UserPlus } from 'lucide-react'
+import { RefreshCw, Search, UserPlus, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -59,6 +59,29 @@ export function UsersManagementPage() {
 
   if (!currentUser || !canAccessAdminDashboard(currentUser)) return null
 
+  function handleExportCsv() {
+    const headers = ['Nome', 'E-mail', 'Perfil', 'Time', 'Status', 'Admin', 'Criado em']
+    const rows = users.map((u) => [
+      u.name,
+      u.email,
+      u.profile || '',
+      u.team || '',
+      u.isActive ? 'Ativo' : 'Inativo',
+      u.isAdmin ? 'Sim' : 'Não',
+      u.createdAt.toLocaleDateString('pt-BR'),
+    ])
+    const csv = [headers, ...rows]
+      .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `usuarios-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function openDialog(kind: DialogKind, user: UserModel) {
     setSelectedUser(user)
     setDialog(kind)
@@ -101,6 +124,16 @@ export function UsersManagementPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={isLoading || users.length === 0}
+            aria-label="Exportar CSV"
+          >
+            <Download className="h-4 w-4 mr-1.5" />
+            Exportar CSV
+          </Button>
           <Button
             variant="outline"
             size="sm"

@@ -14,6 +14,8 @@ export interface AdminStats {
   profileDistribution: ProfileDistributionItem[]
   topApps: TopAppItem[]
   pendingSuggestions: number
+  pendingRequests: number
+  inactiveUsers: number
   teams: { active: number; total: number }
   announcements: { active: number; total: number }
 }

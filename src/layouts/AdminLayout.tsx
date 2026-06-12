@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Outlet, NavLink, Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
   Menu,
   X,
@@ -14,6 +15,7 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getAdminStats } from '@/services/admin/admin-stats.service'
 
 const NAV_ITEMS = [
   { to: '/admin',                  label: 'Dashboard',    icon: LayoutDashboard, end: true },
@@ -26,7 +28,22 @@ const NAV_ITEMS = [
   { to: '/admin/audit-logs',       label: 'Auditoria',    icon: BookOpen         },
 ]
 
-function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
+function NavBadge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <span className="ml-auto text-[10px] font-bold leading-none bg-amber-100 text-amber-800 rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
+
+function SidebarContent({
+  onNavClick,
+  badges,
+}: {
+  onNavClick?: () => void
+  badges: Record<string, number>
+}) {
   return (
     <nav className="flex flex-col flex-1 p-3 gap-0.5 overflow-y-auto" aria-label="Menu administrativo">
       {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
@@ -46,6 +63,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         >
           <Icon className="h-4 w-4 shrink-0" aria-hidden />
           {label}
+          <NavBadge count={badges[to] ?? 0} />
         </NavLink>
       ))}
 
@@ -65,6 +83,19 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
 
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const { data: stats } = useQuery({
+    queryKey: ['admin', 'stats'],
+    queryFn: getAdminStats,
+    staleTime: 60_000,
+    refetchInterval: 2 * 60_000,
+  })
+
+  const badges: Record<string, number> = {
+    '/admin/access-requests': stats?.pendingRequests   ?? 0,
+    '/admin/suggestions':     stats?.pendingSuggestions ?? 0,
+    '/admin/users':           stats?.inactiveUsers      ?? 0,
+  }
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -100,7 +131,7 @@ export function AdminLayout() {
           </span>
         </div>
 
-        <SidebarContent onNavClick={() => setSidebarOpen(false)} />
+        <SidebarContent onNavClick={() => setSidebarOpen(false)} badges={badges} />
       </aside>
 
       {/* Área principal */}
