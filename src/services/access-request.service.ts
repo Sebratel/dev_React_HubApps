@@ -20,6 +20,7 @@ interface AccessRequestRow {
   status: 'pending' | 'approved' | 'rejected'
   reviewed_by: string | null
   reviewed_at: string | null
+  review_note: string | null
   created_at: string
   updated_at: string
 }
@@ -41,7 +42,7 @@ function rowToAccessRequest(row: AccessRequestRow): AccessRequestModel {
     reviewedByUserId: row.reviewed_by,
     reviewedByName: null,
     reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : null,
-    reviewNote: null,
+    reviewNote: row.review_note ?? null,
   }
 }
 

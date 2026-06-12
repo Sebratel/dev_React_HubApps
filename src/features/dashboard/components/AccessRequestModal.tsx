@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, CheckCircle2, Clock3 } from 'lucide-react'
 import {
   Dialog,
@@ -29,6 +29,7 @@ interface AccessRequestModalProps {
 
 export function AccessRequestModal({ app, open, onClose }: AccessRequestModalProps) {
   const user = useAuthStore((s) => s.user)
+  const queryClient = useQueryClient()
   const [reason, setReason] = useState('')
   const [reasonError, setReasonError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -72,6 +73,7 @@ export function AccessRequestModal({ app, open, onClose }: AccessRequestModalPro
     setSubmitError(null)
     try {
       await createAccessRequest(user, app, reason)
+      void queryClient.invalidateQueries({ queryKey: ['access-requests', 'me'] })
       setSubmitSuccess(true)
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'Erro ao enviar solicitação.')

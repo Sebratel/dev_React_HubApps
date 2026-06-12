@@ -1,4 +1,4 @@
-import { Star, Lock } from 'lucide-react'
+import { Star, Lock, Clock3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -8,6 +8,7 @@ interface AppCardProps {
   app: AppItemModel
   hasAccess: boolean
   isFavorite: boolean
+  isPending?: boolean
   onOpen: (app: AppItemModel) => void
   onRequestAccess: (app: AppItemModel) => void
   onToggleFavorite: (appId: string) => void
@@ -17,6 +18,7 @@ export function AppCard({
   app,
   hasAccess,
   isFavorite,
+  isPending = false,
   onOpen,
   onRequestAccess,
   onToggleFavorite,
@@ -26,7 +28,8 @@ export function AppCard({
       className={cn(
         'group relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm',
         'transition-all duration-200 hover:shadow-md hover:border-border/80',
-        !hasAccess && 'opacity-70'
+        !hasAccess && !isPending && 'opacity-70',
+        isPending && 'border-amber-200 bg-amber-50/40'
       )}
     >
       {/* Icon + badge + favorite */}
@@ -80,6 +83,11 @@ export function AppCard({
         <Button size="sm" className="mt-auto w-full" onClick={() => onOpen(app)}>
           Abrir
         </Button>
+      ) : isPending ? (
+        <div className="mt-auto flex items-center justify-center gap-1.5 rounded-md border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800">
+          <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          Aguardando aprovação
+        </div>
       ) : (
         <Button
           size="sm"

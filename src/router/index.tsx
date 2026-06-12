@@ -19,6 +19,8 @@ import { AdminTeamsPage } from '@/features/admin/teams/AdminTeamsPage'
 import { AdminSuggestionsPage } from '@/features/admin/suggestions/AdminSuggestionsPage'
 import { AuditLogsManagementPage } from '@/features/admin/audit-logs/AuditLogsManagementPage'
 import { SuggestionsPage } from '@/features/suggestions/SuggestionsPage'
+import { ProfilePage } from '@/features/profile/ProfilePage'
+import { MyRequestsPage } from '@/features/my-requests/MyRequestsPage'
 
 export const router = createBrowserRouter(
   [
@@ -59,6 +61,14 @@ export const router = createBrowserRouter(
                 {
                   path: '/sugestoes',
                   element: <SuggestionsPage />,
+                },
+                {
+                  path: '/perfil',
+                  element: <ProfilePage />,
+                },
+                {
+                  path: '/minhas-solicitacoes',
+                  element: <MyRequestsPage />,
                 },
               ],
             },
