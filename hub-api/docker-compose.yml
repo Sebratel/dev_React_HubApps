@@ -35,6 +35,7 @@ services:
         VITE_RECAPTCHA_V3_SITE_KEY: ${VITE_RECAPTCHA_V3_SITE_KEY:-}
         VITE_FCM_VAPID_KEY: ${VITE_FCM_VAPID_KEY:-}
         VITE_USE_EMULATOR: ${VITE_USE_EMULATOR:-false}
+        VITE_SKIP_APP_CHECK: ${VITE_SKIP_APP_CHECK:-false}
         VITE_API_URL: ${VITE_API_URL}
     container_name: hub-web
     restart: unless-stopped

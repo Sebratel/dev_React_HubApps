@@ -22,6 +22,11 @@ export function initAppCheck(): void {
     return
   }
 
+  if (import.meta.env.VITE_SKIP_APP_CHECK === 'true') {
+    console.warn('[AppCheck] Skipped via VITE_SKIP_APP_CHECK.')
+    return
+  }
+
   const siteKey =
     import.meta.env.VITE_RECAPTCHA_V3_SITE_KEY || '6LcawJMsAAAAADYYkDvNkzyOpb92hhOPuJ-Xd87G'
 
