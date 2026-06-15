@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Loader2, CheckCircle2, Clock3 } from 'lucide-react'
 import {
   Dialog,
@@ -30,6 +31,8 @@ interface AccessRequestModalProps {
 export function AccessRequestModal({ app, open, onClose }: AccessRequestModalProps) {
   const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
+  const reduced = useReducedMotion()
+
   const [reason, setReason] = useState('')
   const [reasonError, setReasonError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -84,6 +87,18 @@ export function AccessRequestModal({ app, open, onClose }: AccessRequestModalPro
 
   if (!app) return null
 
+  // Determina qual "estado" o corpo do modal está
+  const bodyState = checkingPending
+    ? 'loading'
+    : submitSuccess
+    ? 'success'
+    : pendingRequest
+    ? 'pending'
+    : 'form'
+
+  const enterTransition = { duration: reduced ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }
+  const exitTransition = { duration: reduced ? 0 : 0.14, ease: [0.4, 0, 1, 1] }
+
   return (
     <Dialog
       open={open}
@@ -99,70 +114,119 @@ export function AccessRequestModal({ app, open, onClose }: AccessRequestModalPro
           </DialogDescription>
         </DialogHeader>
 
-        {checkingPending ? (
-          <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            Verificando solicitações...
-          </div>
-        ) : submitSuccess ? (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <CheckCircle2 className="h-10 w-10 text-green-500" aria-hidden />
-            <p className="text-sm font-medium">Solicitação enviada com sucesso!</p>
-            <p className="text-xs text-muted-foreground">
-              Aguarde a aprovação de um administrador.
-            </p>
-          </div>
-        ) : pendingRequest ? (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <Clock3 className="h-10 w-10 text-amber-500" aria-hidden />
-            <p className="text-sm font-medium">Solicitação pendente</p>
-            <p className="text-xs text-muted-foreground">
-              Você já possui uma solicitação em análise para este aplicativo.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="access-reason" className="text-sm font-medium">
-                Por que você precisa de acesso?
-              </label>
-              <Textarea
-                id="access-reason"
-                placeholder="Descreva brevemente o motivo..."
-                value={reason}
-                onChange={(e) => {
-                  if (e.target.value.length <= MAX_REASON_LENGTH) {
-                    setReason(e.target.value)
-                    setReasonError(null)
-                  }
-                }}
-                rows={4}
-                disabled={isSubmitting}
-                aria-describedby={reasonError ? 'reason-error' : 'reason-count'}
-              />
-              <div className="flex items-center justify-between">
-                {reasonError ? (
-                  <p id="reason-error" className="text-xs text-destructive" role="alert">
-                    {reasonError}
-                  </p>
-                ) : (
-                  <span />
-                )}
-                <span
-                  id="reason-count"
-                  className="text-xs text-muted-foreground tabular-nums ml-auto"
-                >
-                  {reason.length}/{MAX_REASON_LENGTH}
-                </span>
-              </div>
-            </div>
-            {submitError && (
-              <p className="text-xs text-destructive" role="alert">
-                {submitError}
+        {/* Corpo animado entre estados */}
+        <AnimatePresence mode="wait" initial={false}>
+          {bodyState === 'loading' && (
+            <motion.div
+              key="loading"
+              initial={reduced ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={enterTransition}
+              className="flex items-center gap-2 py-4 text-sm text-muted-foreground"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              Verificando solicitações...
+            </motion.div>
+          )}
+
+          {bodyState === 'success' && (
+            <motion.div
+              key="success"
+              initial={reduced ? false : { opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={enterTransition}
+              className="flex flex-col items-center gap-3 py-6 text-center"
+            >
+              <motion.div
+                initial={reduced ? false : { scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.22, delay: 0.04, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <CheckCircle2 className="h-10 w-10 text-green-500" aria-hidden />
+              </motion.div>
+              <p className="text-sm font-medium">Solicitação enviada com sucesso!</p>
+              <p className="text-xs text-muted-foreground">
+                Aguarde a aprovação de um administrador.
               </p>
-            )}
-          </div>
-        )}
+            </motion.div>
+          )}
+
+          {bodyState === 'pending' && (
+            <motion.div
+              key="pending"
+              initial={reduced ? false : { opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={enterTransition}
+              className="flex flex-col items-center gap-3 py-6 text-center"
+            >
+              <motion.div
+                initial={reduced ? false : { scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.2, delay: 0.04, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <Clock3 className="h-10 w-10 text-amber-500" aria-hidden />
+              </motion.div>
+              <p className="text-sm font-medium">Solicitação pendente</p>
+              <p className="text-xs text-muted-foreground">
+                Você já possui uma solicitação em análise para este aplicativo.
+              </p>
+            </motion.div>
+          )}
+
+          {bodyState === 'form' && (
+            <motion.div
+              key="form"
+              initial={reduced ? false : { opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduced ? undefined : { opacity: 0 }}
+              transition={{ ...enterTransition, exit: exitTransition }}
+              className="flex flex-col gap-3"
+            >
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="access-reason" className="text-sm font-medium">
+                  Por que você precisa de acesso?
+                </label>
+                <Textarea
+                  id="access-reason"
+                  placeholder="Descreva brevemente o motivo..."
+                  value={reason}
+                  onChange={(e) => {
+                    if (e.target.value.length <= MAX_REASON_LENGTH) {
+                      setReason(e.target.value)
+                      setReasonError(null)
+                    }
+                  }}
+                  rows={4}
+                  disabled={isSubmitting}
+                  aria-describedby={reasonError ? 'reason-error' : 'reason-count'}
+                />
+                <div className="flex items-center justify-between">
+                  {reasonError ? (
+                    <p id="reason-error" className="text-xs text-destructive" role="alert">
+                      {reasonError}
+                    </p>
+                  ) : (
+                    <span />
+                  )}
+                  <span
+                    id="reason-count"
+                    className="text-xs text-muted-foreground tabular-nums ml-auto"
+                  >
+                    {reason.length}/{MAX_REASON_LENGTH}
+                  </span>
+                </div>
+              </div>
+              {submitError && (
+                <p className="text-xs text-destructive" role="alert">
+                  {submitError}
+                </p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <DialogFooter>
           {submitSuccess || pendingRequest ? (

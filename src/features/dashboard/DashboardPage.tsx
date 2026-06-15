@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Search, PackageOpen } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
 import { useAppsStore } from '@/stores/apps.store'
@@ -11,12 +12,79 @@ import { buildAppUrl, requestAppLaunchToken } from '@/services/app.service'
 import { logAppOpen } from '@/services/audit-log.service'
 import { useFavoritesSync } from './hooks/useFavoritesSync'
 import { usePendingRequestAppIds } from './hooks/usePendingRequestAppIds'
+import { cn } from '@/lib/utils'
 import type { AppItemModel } from '@/types/models'
 
 const GRID = 'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4'
 
+// Header de seção com linha divisória animada
+function SectionHeader({
+  title,
+  count,
+  variant = 'primary',
+  delay = 0,
+}: {
+  title: string
+  count: number
+  variant?: 'primary' | 'secondary'
+  delay?: number
+}) {
+  const reduced = useReducedMotion()
+  return (
+    <div
+      className={cn('mb-4', !reduced && 'animate-fade-in')}
+      style={reduced ? undefined : { animationDelay: `${delay}ms`, animationFillMode: 'both' }}
+    >
+      <div className="flex items-baseline justify-between pb-2">
+        <span
+          className={cn(
+            'text-sm font-semibold',
+            variant === 'primary' ? 'text-foreground' : 'text-muted-foreground',
+          )}
+        >
+          {title}
+        </span>
+        <span className={cn('text-xs', variant === 'primary' ? 'text-muted-foreground' : 'text-muted-foreground/70')}>
+          {count} app{count !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <motion.div
+        className="h-px bg-border"
+        style={{ originX: 0 }}
+        initial={reduced ? false : { scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 0.28, delay: reduced ? 0 : delay / 1000 + 0.04, ease: [0.22, 1, 0.36, 1] }}
+      />
+    </div>
+  )
+}
+
+// Skeleton grid para estado de loading (usado diretamente na página)
+function LoadingGrid() {
+  return (
+    <div className={cn(GRID)}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 min-h-[180px]">
+          <div className="flex items-start justify-between">
+            <div className="h-12 w-12 rounded-xl bg-muted animate-pulse" />
+            <div className="h-4 w-4 rounded-full bg-muted animate-pulse mt-0.5" />
+          </div>
+          <div className="flex flex-1 flex-col gap-1.5">
+            <div className="h-3.5 w-3/4 rounded bg-muted animate-pulse" />
+            <div className="h-3 w-full rounded bg-muted animate-pulse" />
+            <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="h-9 w-full rounded-md bg-muted animate-pulse mt-auto" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function DashboardPage() {
   useFavoritesSync()
+  const reduced = useReducedMotion()
+
   const user = useAuthStore((s) => s.user)
   const favorites = useAppsStore((s) => s.favorites)
   const toggleFavorite = useAppsStore((s) => s.toggleFavorite)
@@ -116,23 +184,35 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Zona 1 — Header integrado: título + busca */}
-      <div className="flex items-center gap-4">
+      {/* Zona 1 — Header: título + busca */}
+      <motion.div
+        className="flex flex-col sm:flex-row items-start sm:items-center gap-3"
+        initial={reduced ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+      >
         <h1 className="text-2xl font-bold text-foreground shrink-0">Aplicativos</h1>
-        <div className="relative flex-1 min-w-[200px]">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"
-            aria-hidden
-          />
+        <div className="relative w-full sm:flex-1">
+          {/* Input first for peer-focus CSS trick */}
           <Input
             placeholder="Buscar aplicativo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 w-full"
+            className="peer pl-9 w-full transition-colors duration-[160ms]"
             aria-label="Buscar aplicativo"
+            aria-live="polite"
+          />
+          <Search
+            className={cn(
+              'absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none',
+              'text-muted-foreground/65',
+              'transition-[opacity,transform] duration-[160ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
+              'peer-focus:text-muted-foreground peer-focus:translate-x-px',
+            )}
+            aria-hidden
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Error banner */}
       {error && (
@@ -141,123 +221,143 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* SSO / passToken notice (auto-dismiss em 4s) */}
+      {/* SSO / passToken notice */}
       {notice && (
         <div
           role="status"
-          className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400"
+          className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-700"
         >
           {notice}
         </div>
       )}
 
-      {/* Loading */}
-      {isLoading && (
-        <AppGrid
-          apps={[]}
-          blockedApps={[]}
-          {...sharedGridProps}
-          isLoading={true}
-        />
-      )}
+      {/* Conteúdo principal */}
+      <AnimatePresence mode="wait" initial={false}>
+        {isLoading ? (
+          <motion.div
+            key="loading"
+            exit={reduced ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <LoadingGrid />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="content"
+            initial={reduced ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.24, ease: [0.4, 0, 0.2, 1] }}
+          >
+            {/* Transição entre modo normal e modo de busca — sem AnimatePresence para não bloquear unmount */}
+              {isSearching && searchResults ? (
+                /* Modo busca */
+                <motion.div
+                  key="search"
+                  className="flex flex-col gap-4"
+                  initial={reduced ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <SectionHeader
+                    title="Resultados da busca"
+                    count={searchResults.total}
+                    variant="primary"
+                  />
 
-      {/* Modo de busca — seção única consolidada */}
-      {!isLoading && isSearching && searchResults && (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-baseline justify-between pb-2 border-b border-border">
-            <span className="text-sm font-semibold text-foreground">Resultados da busca</span>
-            <span className="text-xs text-muted-foreground">
-              {searchResults.total} app{searchResults.total !== 1 ? 's' : ''}
-            </span>
-          </div>
-          {searchResults.total === 0 ? (
-            <div
-              className="flex flex-col items-center justify-center gap-3 py-20 text-center"
-              role="status"
-            >
-              <PackageOpen className="h-12 w-12 text-muted-foreground/40" aria-hidden />
-              <p className="text-sm text-muted-foreground">
-                Nenhum resultado para &ldquo;{search}&rdquo;.
-              </p>
-            </div>
-          ) : (
-            <div className={GRID}>
-              {searchResults.accessible.map((app) => (
-                <AppCard
-                  key={app.id}
-                  app={app}
-                  hasAccess={true}
-                  isFavorite={favorites.includes(app.id)}
-                  isPending={false}
-                  {...sharedCardProps}
-                />
-              ))}
-              {searchResults.blocked.map((app) => (
-                <AppCard
-                  key={app.id}
-                  app={app}
-                  hasAccess={false}
-                  isFavorite={false}
-                  isPending={pendingAppIds.has(app.id)}
-                  {...sharedCardProps}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                  {searchResults.total === 0 ? (
+                    <div
+                      className="flex flex-col items-center justify-center gap-3 py-20 text-center"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <PackageOpen className="h-12 w-12 text-muted-foreground/40" aria-hidden />
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Nenhum aplicativo encontrado
+                      </p>
+                      <p className="text-xs text-muted-foreground/70">
+                        Tente buscar por outro nome ou descrição.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={GRID} aria-live="polite">
+                      {searchResults.accessible.map((app, i) => (
+                        <AppCard
+                          key={app.id}
+                          app={app}
+                          hasAccess={true}
+                          isFavorite={favorites.includes(app.id)}
+                          isPending={false}
+                          index={i}
+                          {...sharedCardProps}
+                        />
+                      ))}
+                      {searchResults.blocked.map((app, i) => (
+                        <AppCard
+                          key={app.id}
+                          app={app}
+                          hasAccess={false}
+                          isFavorite={false}
+                          isPending={pendingAppIds.has(app.id)}
+                          index={searchResults.accessible.length + i}
+                          {...sharedCardProps}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              ) : (
+                /* Modo normal */
+                <motion.div
+                  key="normal"
+                  className="flex flex-col gap-6"
+                  initial={reduced ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                >
+                  {/* Favoritos */}
+                  {favoritesSection.length > 0 && (
+                    <section aria-label="Favoritos">
+                      <SectionHeader title="Favoritos" count={favoritesSection.length} delay={40} />
+                      <AppGrid apps={favoritesSection} blockedApps={[]} {...sharedGridProps} />
+                    </section>
+                  )}
 
-      {/* Seções permanentes (modo normal, sem busca ativa) */}
-      {!isLoading && !isSearching && (
-        <>
-          {/* Favoritos — apenas quando houver itens, limitado a 4 */}
-          {favoritesSection.length > 0 && (
-            <section aria-label="Favoritos">
-              <div className="flex items-baseline justify-between pb-2 border-b border-border mb-4">
-                <span className="text-sm font-semibold text-foreground">Favoritos</span>
-                <span className="text-xs text-muted-foreground">
-                  {favoritesSection.length} app{favoritesSection.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              <AppGrid apps={favoritesSection} blockedApps={[]} {...sharedGridProps} />
-            </section>
-          )}
+                  {/* Recentes */}
+                  {recentsSection.length > 0 && (
+                    <section aria-label="Recentes">
+                      <SectionHeader title="Recentes" count={recentsSection.length} delay={favoritesSection.length > 0 ? 80 : 40} />
+                      <AppGrid apps={recentsSection} blockedApps={[]} {...sharedGridProps} />
+                    </section>
+                  )}
 
-          {/* Recentes — apenas quando houver itens, excluindo favoritos, limitado a 4 */}
-          {recentsSection.length > 0 && (
-            <section aria-label="Recentes">
-              <div className="flex items-baseline justify-between pb-2 border-b border-border mb-4">
-                <span className="text-sm font-semibold text-foreground">Recentes</span>
-                <span className="text-xs text-muted-foreground">
-                  {recentsSection.length} app{recentsSection.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              <AppGrid apps={recentsSection} blockedApps={[]} {...sharedGridProps} />
-            </section>
-          )}
+                  {/* Todos os aplicativos */}
+                  <section aria-label="Todos os aplicativos">
+                    <SectionHeader
+                      title="Todos os aplicativos"
+                      count={userApps.length}
+                      delay={
+                        (favoritesSection.length > 0 ? 40 : 0) +
+                        (recentsSection.length > 0 ? 40 : 0) +
+                        40
+                      }
+                    />
+                    <AppGrid
+                      apps={userApps}
+                      blockedApps={[]}
+                      {...sharedGridProps}
+                      emptyMessage="Nenhum aplicativo disponível."
+                    />
+                  </section>
 
-          {/* Todos os aplicativos — sempre visível */}
-          <section aria-label="Todos os aplicativos">
-            <div className="flex items-baseline justify-between pb-2 border-b border-border mb-4">
-              <span className="text-sm font-semibold text-foreground">Todos os aplicativos</span>
-              <span className="text-xs text-muted-foreground">
-                {userApps.length} app{userApps.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <AppGrid
-              apps={userApps}
-              blockedApps={[]}
-              {...sharedGridProps}
-              emptyMessage="Nenhum aplicativo disponível."
-            />
-          </section>
-
-          {/* Solicitar acesso — apenas quando houver apps bloqueados */}
-          {blockedApps.length > 0 && (
-            <AppGrid apps={[]} blockedApps={blockedApps} {...sharedGridProps} />
-          )}
-        </>
-      )}
+                  {/* Solicitar acesso */}
+                  {blockedApps.length > 0 && (
+                    <AppGrid apps={[]} blockedApps={blockedApps} {...sharedGridProps} />
+                  )}
+                </motion.div>
+              )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Modal de solicitação de acesso */}
       <AccessRequestModal
