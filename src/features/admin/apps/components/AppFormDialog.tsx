@@ -1,5 +1,15 @@
 import { useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
+import { AppIcon } from '@/components/app-icon'
+import {
+  appIconRegistry,
+  iconColorMap,
+  isRegistryIcon,
+  encodeIconValue,
+  parseIconValue,
+  type IconColorKey,
+} from '@/components/app-icon-registry'
+import { cn } from '@/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
@@ -25,6 +35,13 @@ const STATUS_OPTIONS = [
   { value: 'maintenance', label: 'Manutenção'    },
 ] as const
 
+const CARD_COLOR_OPTIONS = [
+  { value: 'dark',  label: 'Escuro', swatch: 'bg-foreground' },
+  { value: 'muted', label: 'Claro',  swatch: 'bg-muted border border-border' },
+  { value: 'white', label: 'Branco', swatch: 'bg-card border border-border' },
+  { value: 'amber', label: 'Âmbar',  swatch: 'bg-primary' },
+] as const
+
 const appFormSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(255),
   url: z
@@ -33,6 +50,7 @@ const appFormSchema = z.object({
     .url('URL inválida. Use o formato https://exemplo.com'),
   description: z.string().max(500).optional(),
   iconUrl: z.string().optional(),
+  cardColor: z.enum(['dark', 'muted', 'white', 'amber']).nullable().optional(),
   passToken: z.boolean(),
   passUser: z.boolean(),
   status: z.enum(['active', 'maintenance', 'novo']),
@@ -88,6 +106,7 @@ export function AppFormDialog({
       url: app?.url ?? '',
       description: app?.description ?? '',
       iconUrl: app?.icon ?? '',
+      cardColor: (app?.cardColor as 'dark' | 'muted' | 'white' | 'amber' | null) ?? null,
       passToken: app?.passToken ?? false,
       passUser: app?.passUser ?? false,
       status: (app?.status as 'active' | 'maintenance' | 'novo') ?? 'active',
@@ -105,6 +124,7 @@ export function AppFormDialog({
         url: app?.url ?? '',
         description: app?.description ?? '',
         iconUrl: app?.icon ?? '',
+        cardColor: (app?.cardColor as 'dark' | 'muted' | 'white' | 'amber' | null) ?? null,
         passToken: app?.passToken ?? false,
         passUser: app?.passUser ?? false,
         status: (app?.status as 'active' | 'maintenance' | 'novo') ?? 'active',
@@ -131,17 +151,18 @@ export function AppFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl p-0 flex flex-col max-h-[90vh] overflow-hidden gap-0">
+        <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
+        <div className="flex-1 min-h-0 overflow-y-auto px-6">
         <form
           id="app-form"
           onSubmit={(e) => {
             void handleSubmit(onSubmit)(e)
           }}
-          className="flex flex-col gap-4 py-1"
+          className="flex flex-col gap-4 pb-2"
           noValidate
         >
           {/* Name */}
@@ -191,15 +212,158 @@ export function AppFormDialog({
             />
           </div>
 
-          {/* Icon URL */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="app-icon" className="text-sm font-medium">
-              Ícone (emoji ou URL)
-            </label>
-            <Input
-              id="app-icon"
-              placeholder="📦 ou https://cdn.exemplo.com/icon.png"
-              {...register('iconUrl')}
+          {/* Icon */}
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Ícone</span>
+            <Controller
+              name="iconUrl"
+              control={control}
+              render={({ field }) => {
+                const currentVal = field.value ?? ''
+                const { iconName: currentIconName, colorKey: currentColor } = parseIconValue(currentVal)
+                const fromRegistry = isRegistryIcon(currentVal)
+
+                function setIcon(name: string) {
+                  if (currentIconName === name) {
+                    // deselect — clear icon, keep color irrelevant
+                    field.onChange('')
+                  } else {
+                    field.onChange(encodeIconValue(name, currentColor))
+                  }
+                }
+
+                function setColor(color: IconColorKey) {
+                  if (fromRegistry) {
+                    field.onChange(encodeIconValue(currentIconName, color))
+                  }
+                  // for emoji/URL, color has no effect yet
+                }
+
+                return (
+                  <div className="flex flex-col gap-3">
+                    {/* Preview + Lucide picker */}
+                    <div className="flex gap-3 items-start">
+                      {/* Live preview */}
+                      <AppIcon icon={currentVal || '📦'} name="preview" size="lg" className="mt-5 shrink-0" />
+
+                      <div className="flex-1 flex flex-col gap-2">
+                        {/* Icon grid */}
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1.5">Biblioteca de ícones</p>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(appIconRegistry).map(([iconName, IconComp]) => (
+                              <button
+                                key={iconName}
+                                type="button"
+                                onClick={() => setIcon(iconName)}
+                                className={cn(
+                                  'flex items-center justify-center h-9 w-9 rounded-lg border transition-colors',
+                                  currentIconName === iconName && fromRegistry
+                                    ? 'border-primary bg-primary/10 text-primary'
+                                    : 'border-border bg-background hover:bg-muted text-muted-foreground',
+                                )}
+                                aria-pressed={currentIconName === iconName && fromRegistry}
+                                aria-label={`Selecionar ícone ${iconName}`}
+                              >
+                                <IconComp size={18} aria-hidden />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Color swatches — only relevant when a registry icon is selected */}
+                        {fromRegistry && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1.5">Cor</p>
+                            <div className="flex flex-wrap gap-2">
+                              {(Object.entries(iconColorMap) as [IconColorKey, typeof iconColorMap[string]][]).map(([key, cfg]) => (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  onClick={() => setColor(key)}
+                                  className={cn(
+                                    'h-7 w-7 rounded-full border-2 transition-transform',
+                                    cfg.dot,
+                                    currentColor === key
+                                      ? 'border-foreground scale-110'
+                                      : 'border-transparent hover:scale-105',
+                                  )}
+                                  aria-pressed={currentColor === key}
+                                  aria-label={cfg.label}
+                                  title={cfg.label}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Emoji / URL input */}
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="app-icon" className="text-xs text-muted-foreground">
+                        Emoji ou URL de imagem
+                      </label>
+                      <Input
+                        id="app-icon"
+                        placeholder="📦 ou https://cdn.exemplo.com/icon.png"
+                        value={fromRegistry ? '' : currentVal}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )
+              }}
+            />
+          </div>
+
+          {/* Card Color */}
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Cor do card</span>
+            <Controller
+              name="cardColor"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-wrap gap-3">
+                  {/* Auto option */}
+                  <button
+                    type="button"
+                    onClick={() => field.onChange(null)}
+                    className={cn(
+                      'flex flex-col items-center gap-1.5 rounded-xl p-2 transition-colors',
+                      field.value == null
+                        ? 'bg-primary/10 ring-2 ring-primary'
+                        : 'hover:bg-muted',
+                    )}
+                    aria-pressed={field.value == null}
+                    aria-label="Cor automática"
+                  >
+                    <div className="h-8 w-8 rounded-full border-2 border-dashed border-border bg-background flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-muted-foreground">A</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">Auto</span>
+                  </button>
+
+                  {CARD_COLOR_OPTIONS.map(({ value, label, swatch }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => field.onChange(value)}
+                      className={cn(
+                        'flex flex-col items-center gap-1.5 rounded-xl p-2 transition-colors',
+                        field.value === value
+                          ? 'bg-primary/10 ring-2 ring-primary'
+                          : 'hover:bg-muted',
+                      )}
+                      aria-pressed={field.value === value}
+                      aria-label={label}
+                    >
+                      <div className={cn('h-8 w-8 rounded-full', swatch)} />
+                      <span className="text-[10px] text-muted-foreground">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             />
           </div>
 
@@ -355,8 +519,9 @@ export function AppFormDialog({
             </p>
           )}
         </form>
+        </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 border-t border-border px-6 py-4">
           <Button variant="outline" onClick={onClose} disabled={isPending}>
             Cancelar
           </Button>

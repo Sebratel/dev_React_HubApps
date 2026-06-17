@@ -1,4 +1,4 @@
-import { MoreVertical, Pencil, Power, PowerOff } from 'lucide-react'
+import { MoreVertical, Pencil, Power, PowerOff, Trash2 } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import type { AppItemModel } from '@/types/models'
 
@@ -7,9 +7,10 @@ interface AppActionsMenuProps {
   onEdit: () => void
   onDeactivate: () => void
   onReactivate: () => void
+  onDelete: () => void
 }
 
-export function AppActionsMenu({ app, onEdit, onDeactivate, onReactivate }: AppActionsMenuProps) {
+export function AppActionsMenu({ app, onEdit, onDeactivate, onReactivate, onDelete }: AppActionsMenuProps) {
   const isActive = app.status === 'active'
 
   return (
@@ -54,6 +55,16 @@ export function AppActionsMenu({ app, onEdit, onDeactivate, onReactivate }: AppA
               Reativar
             </DropdownMenu.Item>
           )}
+
+          <DropdownMenu.Separator className="my-1 h-px bg-border" />
+
+          <DropdownMenu.Item
+            className="flex items-center gap-2 rounded-md px-3 py-1.5 cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 focus:outline-none"
+            onSelect={onDelete}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Excluir
+          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

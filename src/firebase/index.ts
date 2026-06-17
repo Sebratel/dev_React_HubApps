@@ -7,6 +7,7 @@ import { initializeApp, getApps } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getDatabase } from 'firebase/database'
 import { getFunctions } from 'firebase/functions'
+import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -21,8 +22,9 @@ const firebaseConfig = {
 // Guard against double-initialization in hot-reload dev environments
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
-export const auth = getAuth(app)
-export const rtdb = getDatabase(app)
+export const auth      = getAuth(app)
+export const rtdb      = getDatabase(app)
 export const functions = getFunctions(app, 'us-central1')
+export const storage   = getStorage(app)
 
 export default app

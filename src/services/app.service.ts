@@ -7,6 +7,7 @@ interface AppRow {
   description: string | null
   url: string
   icon_url: string | null
+  card_color: string | null
   pass_token: number
   pass_user: number
   is_active: number
@@ -46,6 +47,7 @@ function rowToApp(row: AppRow): AppItemModel {
     allowedUsers: parseJson(row.allowed_users),
     allowedTeams: parseJson(row.allowed_teams),
     status: (row.status as import('@/types/enums').AppStatus) ?? (row.is_active ? 'active' : 'maintenance'),
+    cardColor: row.card_color ?? null,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   }

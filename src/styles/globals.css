@@ -53,11 +53,68 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  /* Only skip decorative entrance/exit animations — preserve functional animate-spin, animate-pulse */
+  .animate-fade-in,
+  .animate-dialog-enter,
+  .animate-dialog-exit,
+  .animate-overlay-enter,
+  .animate-overlay-exit,
+  .animate-sheet-in-right,
+  .animate-sheet-out-right {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
   }
+}
+
+/* ─── Sebratel official logo — subtle non-destructive animation ───────────── */
+/* The brand artwork is NEVER redrawn or distorted — only floated + glowed. */
+@keyframes sebratel-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2.5px); }
+}
+@keyframes sebratel-logo-glow {
+  0%, 100% { opacity: 0.35; transform: scale(0.92); }
+  50%      { opacity: 0.7;  transform: scale(1.08); }
+}
+
+.sebratel-logo { position: relative; display: grid; place-items: center; }
+.sebratel-logo__glow {
+  position: absolute;
+  inset: -18%;
+  border-radius: 9999px;
+  background: hsl(var(--primary) / 0.30);
+  filter: blur(9px);
+  animation: sebratel-logo-glow 4s ease-in-out infinite;
+}
+.sebratel-logo__img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: sebratel-logo-float 4s ease-in-out infinite;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.18));
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sebratel-logo:hover .sebratel-logo__img { transform: scale(1.08); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sebratel-logo__img,
+  .sebratel-logo__glow { animation: none; }
+}
+
+/* ─── Sidebar nav icon — playful hover animation ──────────────────────────── */
+@keyframes sidebar-icon-hop {
+  0%   { transform: scale(1) translateY(0) rotate(0deg); }
+  35%  { transform: scale(1.22) translateY(-3px) rotate(-9deg); }
+  65%  { transform: scale(1.08) translateY(1px) rotate(6deg); }
+  100% { transform: scale(1.12) translateY(0) rotate(0deg); }
+}
+.sidebar-nav-icon { transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
+.group\/item:hover .sidebar-nav-icon {
+  animation: sidebar-icon-hop 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group\/item:hover .sidebar-nav-icon { animation: none; }
 }

@@ -2,84 +2,25 @@ import { useState } from 'react'
 import { Outlet, NavLink, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Menu,
-  X,
-  LayoutDashboard,
-  Users,
-  ClipboardList,
-  AppWindow,
-  BookOpen,
-  Bell,
-  UsersRound,
-  MessageSquare,
-  ArrowLeft,
+  Menu, X, LayoutDashboard, Users, ClipboardList, LayoutGrid,
+  Bell, UsersRound, MessageSquare, ArrowLeft, ScrollText, Sparkles, BookOpen,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SebratelLogo } from '@/components/SebratelLogo'
 import { getAdminStats } from '@/services/admin/admin-stats.service'
 
 const NAV_ITEMS = [
-  { to: '/admin',                  label: 'Dashboard',    icon: LayoutDashboard, end: true },
-  { to: '/admin/users',            label: 'Usuários',     icon: Users            },
-  { to: '/admin/teams',            label: 'Times',        icon: UsersRound       },
-  { to: '/admin/access-requests',  label: 'Solicitações', icon: ClipboardList    },
-  { to: '/admin/apps',             label: 'Aplicativos',  icon: AppWindow        },
-  { to: '/admin/announcements',    label: 'Avisos',       icon: Bell             },
-  { to: '/admin/suggestions',      label: 'Sugestões',    icon: MessageSquare    },
-  { to: '/admin/audit-logs',       label: 'Auditoria',    icon: BookOpen         },
+  { to: '/admin',                 label: 'Dashboard',    icon: LayoutDashboard, end: true  },
+  { to: '/admin/users',           label: 'Usuários',     icon: Users,           end: false },
+  { to: '/admin/teams',           label: 'Times',        icon: UsersRound,      end: false },
+  { to: '/admin/access-requests', label: 'Solicitações', icon: ClipboardList,   end: false },
+  { to: '/admin/apps',            label: 'Aplicativos',  icon: LayoutGrid,      end: false },
+  { to: '/admin/highlights',      label: 'Destaques',    icon: Sparkles,        end: false },
+  { to: '/admin/announcements',   label: 'Avisos',       icon: Bell,            end: false },
+  { to: '/admin/suggestions',     label: 'Sugestões',    icon: MessageSquare,   end: false },
+  { to: '/admin/manuals',          label: 'Manuais',      icon: BookOpen,        end: false },
+  { to: '/admin/audit-logs',      label: 'Auditoria',    icon: ScrollText,      end: false },
 ]
-
-function NavBadge({ count }: { count: number }) {
-  if (count <= 0) return null
-  return (
-    <span className="ml-auto text-[10px] font-bold leading-none bg-amber-100 text-amber-800 rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">
-      {count > 99 ? '99+' : count}
-    </span>
-  )
-}
-
-function SidebarContent({
-  onNavClick,
-  badges,
-}: {
-  onNavClick?: () => void
-  badges: Record<string, number>
-}) {
-  return (
-    <nav className="flex flex-col flex-1 p-3 gap-0.5 overflow-y-auto" aria-label="Menu administrativo">
-      {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          onClick={onNavClick}
-          className={({ isActive }) =>
-            cn(
-              'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-              isActive
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-            )
-          }
-        >
-          <Icon className="h-4 w-4 shrink-0" aria-hidden />
-          {label}
-          <NavBadge count={badges[to] ?? 0} />
-        </NavLink>
-      ))}
-
-      <div className="mt-auto pt-3 border-t border-border">
-        <Link
-          to="/"
-          onClick={onNavClick}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
-          Voltar ao Hub
-        </Link>
-      </div>
-    </nav>
-  )
-}
 
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -92,13 +33,13 @@ export function AdminLayout() {
   })
 
   const badges: Record<string, number> = {
-    '/admin/access-requests': stats?.pendingRequests   ?? 0,
+    '/admin/access-requests': stats?.pendingRequests    ?? 0,
     '/admin/suggestions':     stats?.pendingSuggestions ?? 0,
     '/admin/users':           stats?.inactiveUsers      ?? 0,
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="h-screen overflow-hidden flex bg-background">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -108,35 +49,106 @@ export function AdminLayout() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* ── Sidebar — always fixed/overlay, never pushes content ─────────── */}
       <aside
         className={cn(
-          'fixed md:static inset-y-0 left-0 z-30 w-64 bg-card border-r border-border flex flex-col shrink-0',
-          'transition-transform duration-200 ease-in-out',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          'group fixed inset-y-0 left-0 z-30',
+          'flex flex-col bg-card border-r border-border overflow-hidden shrink-0',
+          // Desktop: collapsed 60px, expands on hover as overlay
+          'md:w-[60px] md:hover:w-56',
+          'md:transition-[width] md:duration-200 md:ease-in-out',
+          // Mobile: full-width drawer (slide in/out)
+          'w-64',
+          'transition-transform md:transition-[width] duration-200 ease-in-out',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
         )}
         aria-label="Navegação admin"
       >
         {/* Brand */}
-        <div className="h-14 flex items-center px-5 border-b border-border shrink-0 gap-2">
+        <div className="h-16 flex items-center gap-3 px-[14px] border-b border-border/70 shrink-0 overflow-hidden">
           <Link
             to="/"
-            className="font-bold text-base text-foreground tracking-tight hover:opacity-75 transition-opacity"
             onClick={() => setSidebarOpen(false)}
+            className="flex items-center gap-3 min-w-0 rounded-xl transition-transform duration-150 active:scale-95"
           >
-            Sebratel Hub
+            <SebratelLogo size={34} />
+            <span className="flex flex-col leading-none whitespace-nowrap opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150">
+              <span className="font-extrabold text-[15px] text-foreground tracking-tight">Sebratel</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary mt-0.5">Admin</span>
+            </span>
           </Link>
-          <span className="text-xs font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">
-            Admin
-          </span>
         </div>
 
-        <SidebarContent onNavClick={() => setSidebarOpen(false)} badges={badges} />
+        {/* Navigation */}
+        <nav className="flex-1 px-2 py-3 flex flex-col gap-0.5 overflow-hidden" aria-label="Menu administrativo">
+          {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => {
+            const count = badges[to] ?? 0
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    'group/item relative flex items-center gap-3 px-[10px] py-2.5 rounded-xl text-sm',
+                    'transition-all duration-150 overflow-hidden whitespace-nowrap',
+                    isActive
+                      ? 'bg-primary/12 font-semibold text-primary'
+                      : 'font-medium text-muted-foreground hover:bg-accent hover:text-foreground',
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary" aria-hidden />
+                    )}
+
+                    <div className="relative shrink-0">
+                      <Icon className="sidebar-nav-icon h-[18px] w-[18px]" aria-hidden />
+                      {count > 0 && (
+                        <span
+                          className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-card md:group-hover:opacity-0 transition-opacity duration-150"
+                          aria-hidden
+                        />
+                      )}
+                    </div>
+
+                    <span className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150 flex-1 leading-none">
+                      {label}
+                    </span>
+
+                    {count > 0 && (
+                      <span className="ml-auto text-[10px] font-bold leading-none bg-primary/15 text-primary rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center whitespace-nowrap opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150">
+                        {count > 99 ? '99+' : count}
+                      </span>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            )
+          })}
+
+          {/* Back to Hub */}
+          <div className="mt-auto pt-2 border-t border-border">
+            <Link
+              to="/"
+              onClick={() => setSidebarOpen(false)}
+              className="group/item flex items-center gap-3 px-[10px] py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors overflow-hidden whitespace-nowrap"
+            >
+              <ArrowLeft className="sidebar-nav-icon h-[18px] w-[18px] shrink-0" aria-hidden />
+              <span className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150">
+                Voltar ao Hub
+              </span>
+            </Link>
+          </div>
+        </nav>
       </aside>
 
-      {/* Área principal */}
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Topbar mobile */}
+      {/* ── Main column — offset by collapsed sidebar width on desktop ──────── */}
+      <div className="flex flex-col flex-1 min-w-0 h-full md:pl-[60px]">
+        {/* Topbar — mobile only */}
         <header className="h-14 bg-primary flex items-center px-4 shadow-sm gap-3 shrink-0 md:hidden">
           <button
             className="text-black/80 hover:text-black p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30"

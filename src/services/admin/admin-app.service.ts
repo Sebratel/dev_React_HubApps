@@ -9,6 +9,7 @@ interface AdminAppRow {
   description: string | null
   url: string
   icon_url: string | null
+  card_color: string | null
   pass_token: number
   pass_user: number
   is_active: number
@@ -48,6 +49,7 @@ function rowToAppModel(row: AdminAppRow): AppItemModel {
     allowedUsers: parseJson(row.allowed_users),
     allowedTeams: parseJson(row.allowed_teams),
     status: (row.status as import('@/types/enums').AppStatus) ?? (row.is_active ? 'active' : 'maintenance'),
+    cardColor: row.card_color ?? null,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   }
@@ -60,6 +62,7 @@ export interface CreateAppPayload {
   url: string
   description?: string
   iconUrl?: string
+  cardColor?: string | null
   passToken?: boolean
   passUser?: boolean
   status?: 'active' | 'maintenance' | 'novo'
@@ -73,6 +76,7 @@ export interface UpdateAppPayload {
   url?: string
   description?: string
   icon_url?: string
+  card_color?: string | null
   pass_token?: boolean
   pass_user?: boolean
   is_active?: boolean
@@ -107,4 +111,8 @@ export async function deactivateApp(appId: string): Promise<AppItemModel> {
 export async function reactivateApp(appId: string): Promise<AppItemModel> {
   const row = await api.patch<AdminAppRow>(`/apps/${appId}`, { is_active: true, status: 'active' })
   return rowToAppModel(row)
+}
+
+export async function deleteApp(appId: string): Promise<void> {
+  await api.delete(`/apps/${appId}`)
 }

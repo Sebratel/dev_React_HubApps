@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
   updateProfile,
   updatePassword,
@@ -30,6 +31,8 @@ export function ProfilePage() {
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const passwordSuccessTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const reduced = useReducedMotion()
 
   if (!user) return null
 
@@ -112,10 +115,15 @@ export function ProfilePage() {
 
   return (
     <div className="max-w-lg">
-      <div className="mb-6">
+      <motion.div
+        className="mb-6"
+        initial={reduced ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+      >
         <h1 className="text-2xl font-bold text-foreground">Meu perfil</h1>
         <p className="text-sm text-muted-foreground mt-1">Gerencie suas informações pessoais.</p>
-      </div>
+      </motion.div>
 
       {/* Avatar + identidade */}
       <div className="flex items-center gap-4 mb-8 p-4 rounded-xl bg-card border border-border">
@@ -176,7 +184,7 @@ export function ProfilePage() {
         {success && (
           <div
             role="status"
-            className="flex items-center gap-2 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800"
+            className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary"
           >
             <CheckCircle className="h-4 w-4 shrink-0" aria-hidden />
             Perfil atualizado com sucesso.
@@ -257,7 +265,7 @@ export function ProfilePage() {
             {passwordSuccess && (
               <div
                 role="status"
-                className="flex items-center gap-2 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800"
+                className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary"
               >
                 <CheckCircle className="h-4 w-4 shrink-0" aria-hidden />
                 Senha alterada com sucesso.

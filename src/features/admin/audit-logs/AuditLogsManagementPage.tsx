@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Search, Download } from 'lucide-react'
+import { RefreshCw, Search, Download, ScrollText } from 'lucide-react'
 import { listAuditLogs } from '@/services/admin/admin-audit-log.service'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { canAccessAdminDashboard } from '@/utils/permissions'
 import { AUDIT_ACTION } from '@/types/api'
+import { PageHero, type HeroStat } from '@/components/PageHero'
 import { useAuditLogsPage, PAGE_SIZE } from './hooks/useAuditLogsPage'
 import {
   AuditLogsTable,
@@ -18,6 +19,7 @@ import { AuditLogDetailsDialog } from './components/AuditLogDetailsDialog'
 import { AuditLogsPagination } from './components/AuditLogsPagination'
 import type { AuditLogModel } from '@/types/models'
 import type { AuditAction } from '@/types/api'
+import { useReducedMotion } from 'framer-motion'
 
 // ─── Action options for <select> ─────────────────────────────────────────────
 
@@ -60,6 +62,7 @@ export function AuditLogsManagementPage() {
 
   const [selectedLog, setSelectedLog] = useState<AuditLogModel | null>(null)
   const [isExporting, setIsExporting] = useState(false)
+  const reduced = useReducedMotion()
 
   async function handleExportCsv() {
     setIsExporting(true)
@@ -110,18 +113,24 @@ export function AuditLogsManagementPage() {
     setFilters((f) => ({ ...f, [field]: value, period: 'all', page: 1 }))
   }
 
+  const heroStats: HeroStat[] = [
+    { icon: ScrollText, value: totalLogs, label: 'eventos registrados', tone: 'muted' },
+  ]
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Logs de Auditoria</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isLoading
-              ? 'Carregando...'
-              : `${totalLogs} evento${totalLogs !== 1 ? 's' : ''} no total`}
-          </p>
-        </div>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <PageHero
+        icon={ScrollText}
+        title="Logs de Auditoria"
+        subtitle="Histórico completo de ações realizadas no sistema."
+        stats={!isLoading && totalLogs > 0 ? heroStats : undefined}
+      />
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          {isLoading ? 'Carregando...' : `${totalLogs} evento${totalLogs !== 1 ? 's' : ''} no total`}
+        </p>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

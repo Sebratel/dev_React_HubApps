@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createApp,
   deactivateApp,
+  deleteApp,
   listAllApps,
   reactivateApp,
   updateApp,
@@ -80,12 +81,25 @@ export function useAppsPage() {
     onSuccess: invalidateApps,
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteApp,
+    onSuccess: invalidateApps,
+  })
+
   const hasFilters =
     filters.search !== '' || filters.status !== 'all' || filters.passToken !== 'all'
 
+  const activeAppsCount   = useMemo(() => apps.filter((a) => a.status === 'active').length, [apps])
+  const inactiveAppsCount = useMemo(() => apps.filter((a) => a.status !== 'active').length, [apps])
+  const passTokenCount    = useMemo(() => apps.filter((a) => a.passToken).length, [apps])
+
   return {
     apps: filteredApps,
+    allApps: apps,
     totalApps: apps.length,
+    activeAppsCount,
+    inactiveAppsCount,
+    passTokenCount,
     isLoading,
     isError,
     refetch,
@@ -96,5 +110,6 @@ export function useAppsPage() {
     updateMutation,
     deactivateMutation,
     reactivateMutation,
+    deleteMutation,
   }
 }

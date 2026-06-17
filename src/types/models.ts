@@ -62,6 +62,7 @@ export interface AppItemModel {
   allowedUsers: string[] // UIDs with direct access
   allowedTeams: string[] // team IDs with access
   status: AppStatus
+  cardColor?: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -146,6 +147,43 @@ export interface AnnouncementModel {
   isActive: boolean
   createdBy: string
   allowedProfiles: string[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+// ─── HighlightModel ───────────────────────────────────────────────────────────
+// MySQL table: highlights
+
+export interface HighlightModel {
+  id: string
+  title: string
+  description: string | null
+  badgeText: string | null
+  ctaLabel: string | null
+  ctaUrl: string | null
+  imageUrl: string
+  objectFit: 'cover' | 'contain'
+  objectPosition: string
+  isActive: boolean
+  sortOrder: number
+  createdBy: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+// ─── AppManualModel ───────────────────────────────────────────────────────────
+// MySQL table: app_manuals
+
+export interface AppManualModel {
+  id: string
+  appId: string
+  appName: string
+  appIcon: string | null
+  wikiUrl: string | null
+  pdfUrl: string | null
+  description: string | null
+  isActive: boolean
+  createdBy: string
   createdAt: Date
   updatedAt: Date
 }

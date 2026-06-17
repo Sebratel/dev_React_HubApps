@@ -59,12 +59,12 @@ const config: Config = {
           '50%': { opacity: '0.5' },
         },
         'dialog-enter': {
-          '0%': { opacity: '0', transform: 'translateY(8px) scale(0.985)' },
-          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+          '0%': { opacity: '0', transform: 'translate(-50%, calc(-50% + 8px)) scale(0.985)' },
+          '100%': { opacity: '1', transform: 'translate(-50%, -50%) scale(1)' },
         },
         'dialog-exit': {
-          '0%': { opacity: '1', transform: 'translateY(0) scale(1)' },
-          '100%': { opacity: '0', transform: 'translateY(4px) scale(0.99)' },
+          '0%': { opacity: '1', transform: 'translate(-50%, -50%) scale(1)' },
+          '100%': { opacity: '0', transform: 'translate(-50%, calc(-50% + 4px)) scale(0.99)' },
         },
         'overlay-enter': {
           '0%': { opacity: '0' },
@@ -74,6 +74,14 @@ const config: Config = {
           '0%': { opacity: '1' },
           '100%': { opacity: '0' },
         },
+        'sheet-in-right': {
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+        'sheet-out-right': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.3s ease-out',
@@ -82,6 +90,8 @@ const config: Config = {
         'dialog-exit': 'dialog-exit 160ms cubic-bezier(0.4, 0, 1, 1) both',
         'overlay-enter': 'overlay-enter 180ms ease both',
         'overlay-exit': 'overlay-exit 160ms ease both',
+        'sheet-in-right': 'sheet-in-right 240ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        'sheet-out-right': 'sheet-out-right 200ms cubic-bezier(0.4, 0, 1, 1) both',
       },
     },
   },

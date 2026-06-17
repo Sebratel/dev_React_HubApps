@@ -87,9 +87,17 @@ export function useAccessRequestsPage() {
 
   const hasFilters = filters.search !== '' || filters.status !== 'all'
 
+  const pendingCount  = useMemo(() => allRequests.filter((r) => r.status === 'pending').length, [allRequests])
+  const approvedCount = useMemo(() => allRequests.filter((r) => r.status === 'approved').length, [allRequests])
+  const rejectedCount = useMemo(() => allRequests.filter((r) => r.status === 'rejected').length, [allRequests])
+
   return {
     requests: filteredRequests,
+    allRequests,
     totalRequests: data?.pagination.total ?? 0,
+    pendingCount,
+    approvedCount,
+    rejectedCount,
     isLoading,
     isError,
     refetch,

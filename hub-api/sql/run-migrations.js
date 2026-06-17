@@ -25,6 +25,11 @@ const MIGRATIONS = [
   { file: '08_add_heartbeat.sql',         label: 'Coluna last_heartbeat em users'    },
   { file: '09_add_favorites.sql',         label: 'Coluna favorites em users'         },
   { file: '10_add_review_note.sql',       label: 'Coluna review_note em access_requests' },
+  { file: '11_add_card_color.sql',        label: 'Coluna card_color em apps'             },
+  { file: '12_create_highlights.sql',     label: 'Tabela de destaques'                   },
+  { file: '13_add_highlight_image_options.sql', label: 'Opções de imagem em highlights'  },
+  { file: '14_create_suggestion_engagement.sql', label: 'Engajamento de sugestões'       },
+  { file: '15_create_app_manuals.sql',    label: 'Tabela de manuais de aplicativos'      },
 ]
 
 // Errors that mean "already exists" — safe to skip for idempotency

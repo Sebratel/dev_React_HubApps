@@ -41,6 +41,12 @@ app.use(helmet())
 app.use(morgan('combined'))
 app.use(express.json({ limit: '64kb' }))
 
+// Static uploads — cross-origin allowed so React app (different port/domain) can display images
+app.use('/uploads', (_req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+  next()
+}, express.static(path.join(__dirname, '..', 'public', 'uploads')))
+
 // CORS
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim())
 app.use(cors({
@@ -69,6 +75,9 @@ app.use('/announcements',   require('./routes/announcements'))
 app.use('/teams',           require('./routes/teams'))
 app.use('/suggestions',     require('./routes/suggestions'))
 app.use('/admin',           require('./routes/admin'))
+app.use('/highlights',      require('./routes/highlights'))
+app.use('/manuals',         require('./routes/manuals'))
+app.use('/upload',          require('./routes/upload'))
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 

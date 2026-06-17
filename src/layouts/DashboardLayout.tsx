@@ -3,15 +3,22 @@ import { Outlet, NavLink, Link } from 'react-router-dom'
 import { LayoutGrid, Bell, MessageSquare, ShieldCheck, Menu, X, LogOut, ClipboardList } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth.store'
+import { SebratelLogo } from '@/components/SebratelLogo'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { canAccessAdminDashboard } from '@/utils/permissions'
 import { UserAvatar } from '@/components/UserAvatar'
-import { Button } from '@/components/ui/button'
 import { useSecureSignOut } from '@/hooks/useSecureSignOut'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
 import { cn } from '@/lib/utils'
 import { getAnnouncements } from '@/services/announcement.service'
 import { getUserAccessRequests } from '@/services/access-request.service'
+
+const NAV_ITEMS = [
+  { to: '/',                    label: 'Aplicativos',  icon: LayoutGrid,    end: true  },
+  { to: '/avisos',              label: 'Avisos',       icon: Bell,          end: false },
+  { to: '/sugestoes',           label: 'Sugestões',    icon: MessageSquare, end: false },
+  { to: '/minhas-solicitacoes', label: 'Solicitações', icon: ClipboardList, end: false },
+]
 
 export function DashboardLayout() {
   const user = useAuthStore((s) => s.user)
@@ -19,14 +26,14 @@ export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   useHeartbeat()
 
-  const lastReadAt = useNotificationsStore((s) => s.announcementsLastReadAt)
+  const readIds = useNotificationsStore((s) => s.readAnnouncementIds)
   const { data: announcements = [] } = useQuery({
     queryKey: ['announcements'],
     queryFn: getAnnouncements,
     staleTime: 5 * 60_000,
     enabled: !!user,
   })
-  const unreadCount = announcements.filter((a) => a.createdAt.getTime() > lastReadAt).length
+  const unreadCount = announcements.filter((a) => !readIds.includes(a.id)).length
 
   const { data: myRequests = [] } = useQuery({
     queryKey: ['access-requests', 'me'],
@@ -36,134 +43,137 @@ export function DashboardLayout() {
   })
   const pendingRequestsCount = myRequests.filter((r) => r.status === 'pending').length
 
-  const closeSidebar = () => setSidebarOpen(false)
+  const badges: Record<string, number> = {
+    '/avisos':              unreadCount,
+    '/minhas-solicitacoes': pendingRequestsCount,
+  }
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="h-screen overflow-hidden flex bg-background">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-20 lg:hidden"
           aria-hidden
-          onClick={closeSidebar}
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* ── Sidebar — always fixed/overlay, never pushes content ────────────── */}
       <aside
         className={cn(
-          'fixed lg:static inset-y-0 left-0 z-30 w-64 bg-card border-r border-border flex flex-col shrink-0',
-          'transition-transform duration-200 ease-in-out',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          'group fixed inset-y-0 left-0 z-30',
+          'flex flex-col bg-card border-r border-border overflow-hidden shrink-0',
+          // Desktop: collapsed 60px, expands on hover as overlay
+          'lg:w-[60px] lg:hover:w-56',
+          'lg:transition-[width] lg:duration-200 lg:ease-in-out',
+          // Mobile: full-width drawer (slide in/out)
+          'w-64',
+          'transition-transform lg:transition-[width] duration-200 ease-in-out',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
         aria-label="Navegação principal"
       >
         {/* Brand */}
-        <div className="h-14 flex items-center px-5 border-b border-border shrink-0">
+        <div className="h-16 flex items-center gap-3 px-[14px] border-b border-border/70 shrink-0 overflow-hidden">
           <Link
             to="/"
-            className="font-bold text-base text-foreground tracking-tight hover:opacity-75 transition-opacity"
-            onClick={closeSidebar}
+            onClick={() => setSidebarOpen(false)}
+            className="flex items-center gap-3 min-w-0 rounded-xl transition-transform duration-150 active:scale-95"
           >
-            Sebratel Hub
+            {/* Official Sebratel logo — animated, art untouched */}
+            <SebratelLogo size={34} />
+            {/* Wordmark — hidden on desktop until hover */}
+            <span className="flex flex-col leading-none whitespace-nowrap opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150">
+              <span className="font-extrabold text-[15px] text-foreground tracking-tight">Sebratel</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary mt-0.5">Hub</span>
+            </span>
           </Link>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 flex flex-col gap-0.5 overflow-y-auto" aria-label="Menu principal">
-          <NavLink
-            to="/"
-            end
-            onClick={closeSidebar}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              )
-            }
-          >
-            <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden />
-            Aplicativos
-          </NavLink>
-
-          <NavLink
-            to="/avisos"
-            onClick={closeSidebar}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              )
-            }
-          >
-            <Bell className="h-4 w-4 shrink-0" aria-hidden />
-            Avisos
-            {unreadCount > 0 && (
-              <span className="ml-auto text-[10px] font-bold leading-none bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </NavLink>
-
-          <NavLink
-            to="/sugestoes"
-            onClick={closeSidebar}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              )
-            }
-          >
-            <MessageSquare className="h-4 w-4 shrink-0" aria-hidden />
-            Sugestões
-          </NavLink>
-
-          <NavLink
-            to="/minhas-solicitacoes"
-            onClick={closeSidebar}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              )
-            }
-          >
-            <ClipboardList className="h-4 w-4 shrink-0" aria-hidden />
-            Solicitações
-            {pendingRequestsCount > 0 && (
-              <span className="ml-auto text-[10px] font-bold leading-none bg-amber-100 text-amber-800 rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">
-                {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
-              </span>
-            )}
-          </NavLink>
-
-          {/* Admin link — somente para admins */}
-          {user && canAccessAdminDashboard(user) && (
-            <>
-              <div className="my-2 h-px bg-border" />
+        <nav className="flex-1 px-2 py-3 flex flex-col gap-0.5 overflow-hidden" aria-label="Menu principal">
+          {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => {
+            const count = badges[to] ?? 0
+            return (
               <NavLink
-                to="/admin"
-                onClick={closeSidebar}
+                key={to}
+                to={to}
+                end={end}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                    'group/item relative flex items-center gap-3 px-[10px] py-2.5 rounded-xl text-sm',
+                    'transition-all duration-150 overflow-hidden whitespace-nowrap',
                     isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                      ? 'bg-primary/12 font-semibold text-primary'
+                      : 'font-medium text-muted-foreground hover:bg-accent hover:text-foreground',
                   )
                 }
               >
-                <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
-                Administração
+                {({ isActive }) => (
+                  <>
+                    {/* Active indicator bar — visible collapsed & expanded */}
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary" aria-hidden />
+                    )}
+
+                    {/* Icon with dot badge when collapsed */}
+                    <div className="relative shrink-0">
+                      <Icon className="sidebar-nav-icon h-[18px] w-[18px]" aria-hidden />
+                      {count > 0 && (
+                        <span
+                          className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-card lg:group-hover:opacity-0 transition-opacity duration-150"
+                          aria-hidden
+                        />
+                      )}
+                    </div>
+
+                    {/* Label */}
+                    <span className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150 flex-1 leading-none">
+                      {label}
+                    </span>
+
+                    {/* Full count badge */}
+                    {count > 0 && (
+                      <span className="ml-auto text-[10px] font-bold leading-none bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center whitespace-nowrap opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150">
+                        {count > 99 ? '99+' : count}
+                      </span>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            )
+          })}
+
+          {/* Admin link */}
+          {user && canAccessAdminDashboard(user) && (
+            <>
+              <div className="my-2 mx-1 h-px bg-border" />
+              <NavLink
+                to="/admin"
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    'group/item relative flex items-center gap-3 px-[10px] py-2.5 rounded-xl text-sm',
+                    'transition-all duration-150 overflow-hidden whitespace-nowrap',
+                    isActive
+                      ? 'bg-primary/12 font-semibold text-primary'
+                      : 'font-medium text-muted-foreground hover:bg-accent hover:text-foreground',
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary" aria-hidden />
+                    )}
+                    <ShieldCheck className="sidebar-nav-icon h-[18px] w-[18px] shrink-0" aria-hidden />
+                    <span className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150">
+                      Administração
+                    </span>
+                  </>
+                )}
               </NavLink>
             </>
           )}
@@ -171,40 +181,39 @@ export function DashboardLayout() {
 
         {/* User section */}
         {user && (
-          <div className="border-t border-border p-4 shrink-0">
-            <div className="flex items-center gap-3">
-              <Link
-                to="/perfil"
-                onClick={closeSidebar}
-                className="flex items-center gap-3 flex-1 min-w-0 rounded-md hover:bg-accent transition-colors -mx-1 px-1 py-0.5"
-                title="Editar perfil"
-              >
-                <UserAvatar name={user.name || user.email} photoUrl={user.photoUrl} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate leading-tight">
-                    {user.name || user.email}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                </div>
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={secureSignOut}
-                title="Encerrar sessão"
-                aria-label="Encerrar sessão"
-              >
-                <LogOut className="h-4 w-4" aria-hidden />
-              </Button>
-            </div>
+          <div className="border-t border-border p-2 shrink-0 flex flex-col gap-0.5">
+            <Link
+              to="/perfil"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-3 rounded-xl px-[10px] py-2 hover:bg-accent transition-colors overflow-hidden"
+              title="Editar perfil"
+            >
+              <UserAvatar name={user.name || user.email} photoUrl={user.photoUrl} size="sm" className="shrink-0" />
+              <div className="min-w-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150">
+                <p className="text-sm font-medium text-foreground truncate whitespace-nowrap leading-tight">
+                  {user.name || user.email}
+                </p>
+                <p className="text-xs text-muted-foreground truncate whitespace-nowrap">{user.email}</p>
+              </div>
+            </Link>
+            <button
+              onClick={secureSignOut}
+              className="flex items-center gap-3 w-full rounded-xl px-[10px] py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors overflow-hidden whitespace-nowrap"
+              title="Encerrar sessão"
+              aria-label="Encerrar sessão"
+            >
+              <LogOut className="h-[18px] w-[18px] shrink-0" aria-hidden />
+              <span className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150">
+                Sair
+              </span>
+            </button>
           </div>
         )}
       </aside>
 
-      {/* Área principal */}
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Topbar mobile */}
+      {/* ── Main column — offset by collapsed sidebar width on desktop ──────── */}
+      <div className="flex flex-col flex-1 min-w-0 h-full lg:pl-[60px]">
+        {/* Topbar — mobile only */}
         <header className="h-14 bg-primary flex items-center px-4 gap-3 shrink-0 lg:hidden shadow-sm">
           <button
             className="text-black/80 hover:text-black p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30"
@@ -222,7 +231,7 @@ export function DashboardLayout() {
           )}
         </header>
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-6 overflow-y-auto min-w-0">
           <Outlet />
         </main>
       </div>

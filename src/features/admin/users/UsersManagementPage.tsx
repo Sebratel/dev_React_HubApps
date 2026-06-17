@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Search, UserPlus, Download } from 'lucide-react'
+import { RefreshCw, Search, UserPlus, Download, Users, UserCheck, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { canAccessAdminDashboard } from '@/utils/permissions'
 import { ApiError } from '@/types/api'
+import { PageHero, type HeroStat } from '@/components/PageHero'
 import { useUsersPage } from './hooks/useUsersPage'
 import { UsersTable, UsersTableEmpty, UsersTableSkeleton } from './components/UsersTable'
 import { UserActivateDialog } from './components/UserActivateDialog'
@@ -22,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { UserModel } from '@/types/models'
+import { useReducedMotion } from 'framer-motion'
 
 type DialogKind = 'activate' | 'deactivate' | 'edit' | 'promoteAdmin' | 'revokeAdmin' | 'createExternal' | null
 
@@ -41,6 +43,8 @@ export function UsersManagementPage() {
   const {
     users,
     totalUsers,
+    activeCount,
+    adminCount,
     isLoading,
     isError,
     refetch,
@@ -55,10 +59,18 @@ export function UsersManagementPage() {
     createExternalMutation,
   } = useUsersPage()
 
+  const heroStats: HeroStat[] = [
+    { icon: Users,        value: totalUsers,   label: 'cadastrados',  tone: 'muted'    },
+    { icon: UserCheck,    value: activeCount,  label: 'ativos',       tone: 'green'    },
+    { icon: ShieldCheck,  value: adminCount,   label: 'admins',       tone: 'amber'    },
+  ]
+
   const [selectedUser, setSelectedUser] = useState<UserModel | null>(null)
   const [dialog, setDialog] = useState<DialogKind>(null)
 
   if (!currentUser || !canAccessAdminDashboard(currentUser)) return null
+
+  const reduced = useReducedMotion()
 
   function handleExportCsv() {
     const headers = ['Nome', 'E-mail', 'Perfil', 'Time', 'Status', 'Admin', 'Criado em']
@@ -113,18 +125,20 @@ export function UsersManagementPage() {
       : `Tem certeza que deseja revogar as permissões de administrador de ${selectedUser?.name}?`
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Usuários</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isLoading
-              ? 'Carregando...'
-              : `${totalUsers} usuário${totalUsers !== 1 ? 's' : ''} cadastrado${totalUsers !== 1 ? 's' : ''}`}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <PageHero
+        icon={Users}
+        title="Usuários"
+        subtitle="Gerencie os usuários, perfis e permissões de acesso."
+        stats={!isLoading ? heroStats : undefined}
+      />
+
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          {isLoading ? 'Carregando...' : `${totalUsers} usuário${totalUsers !== 1 ? 's' : ''} no total`}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"

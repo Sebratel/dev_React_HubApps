@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Loader2, CheckCircle2, Clock3 } from 'lucide-react'
+import { AppIcon } from '@/components/app-icon'
 import {
   Dialog,
   DialogContent,
@@ -109,8 +110,11 @@ export function AccessRequestModal({ app, open, onClose }: AccessRequestModalPro
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Solicitar acesso</DialogTitle>
-          <DialogDescription>
-            {app.icon} {app.name}
+          <DialogDescription asChild>
+            <div className="flex items-center gap-2 mt-0.5">
+              <AppIcon icon={app.icon} name={app.name} size="sm" />
+              <span>{app.name}</span>
+            </div>
           </DialogDescription>
         </DialogHeader>
 

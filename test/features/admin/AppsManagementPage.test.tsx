@@ -41,6 +41,7 @@ vi.mock('@/services/admin/admin-app.service', () => ({
   updateApp:     vi.fn(),
   deactivateApp: vi.fn(),
   reactivateApp: vi.fn(),
+  deleteApp:     vi.fn(),
 }))
 
 // Radix DropdownMenu does not render its portal in jsdom via fireEvent.

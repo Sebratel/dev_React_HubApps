@@ -101,6 +101,10 @@ vi.mock('@/services/access-request.service', () => ({
   validateReason: vi.fn().mockReturnValue(null),
 }))
 
+vi.mock('@/services/manual.service', () => ({
+  getManuals: vi.fn().mockResolvedValue([]),
+}))
+
 function Wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -120,19 +124,23 @@ describe('DashboardPage', () => {
 
   it('renders dashboard header and search', () => {
     render(<DashboardPage />, { wrapper: Wrapper })
-    expect(screen.getByText('Aplicativos')).toBeTruthy()
+    // Hero redesign replaced the "Aplicativos" heading with a welcome + subtitle.
+    expect(screen.getByText('Sua biblioteca de aplicativos, tudo em um só lugar.')).toBeTruthy()
     expect(screen.getByPlaceholderText('Buscar aplicativo...')).toBeTruthy()
   })
 
   it('renders accessible app with Abrir button', () => {
     render(<DashboardPage />, { wrapper: Wrapper })
     expect(screen.getByText('Financeiro')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Abrir' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Abrir Financeiro/ })).toBeTruthy()
   })
 
-  it('renders blocked app with Solicitar acesso button', () => {
+  it('renders blocked app in "Sem acesso" tab', async () => {
     render(<DashboardPage />, { wrapper: Wrapper })
-    expect(screen.getByText('RH Portal')).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: /Sem acesso/ }))
+    await waitFor(() => {
+      expect(screen.getAllByText('RH Portal').length).toBeGreaterThan(0)
+    })
     expect(screen.getByRole('button', { name: /Solicitar acesso/ })).toBeTruthy()
   })
 
@@ -146,6 +154,10 @@ describe('DashboardPage', () => {
 
   it('opens access request modal when Solicitar acesso is clicked', async () => {
     render(<DashboardPage />, { wrapper: Wrapper })
+    fireEvent.click(screen.getByRole('tab', { name: /Sem acesso/ }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Solicitar acesso/ })).toBeTruthy()
+    })
     fireEvent.click(screen.getByRole('button', { name: /Solicitar acesso/ }))
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Descreva brevemente o motivo...')).toBeTruthy()

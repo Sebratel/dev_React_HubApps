@@ -48,7 +48,7 @@ router.get('/all', requireAuth, requireAdmin, async (_req, res) => {
 
 // POST /apps — cria app (admin only)
 router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
-  const { name, url, description, iconUrl, passToken, passUser, status, allowedProfiles, allowedUsers, allowedTeams } = req.body
+  const { name, url, description, iconUrl, cardColor, passToken, passUser, status, allowedProfiles, allowedUsers, allowedTeams } = req.body
   if (!name || !url) return res.status(400).json({ error: 'name e url obrigatórios' })
 
   const validStatuses = ['active', 'maintenance', 'novo']
@@ -62,12 +62,13 @@ router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, 
     await conn.beginTransaction()
 
     await conn.query(
-      `INSERT INTO apps (id, name, url, description, icon_url, pass_token, pass_user, is_active, status, allowed_profiles, allowed_users, allowed_teams)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO apps (id, name, url, description, icon_url, card_color, pass_token, pass_user, is_active, status, allowed_profiles, allowed_users, allowed_teams)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id, name, url,
         description || null,
         iconUrl     || null,
+        cardColor   || null,
         passToken   ? 1 : 0,
         passUser    ? 1 : 0,
         isActive,
@@ -94,7 +95,7 @@ router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, 
 
 // PATCH /apps/:id — atualiza app (admin only)
 router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
-  const allowed = ['name', 'url', 'description', 'icon_url', 'pass_token', 'pass_user',
+  const allowed = ['name', 'url', 'description', 'icon_url', 'card_color', 'pass_token', 'pass_user',
                    'is_active', 'status', 'allowed_profiles', 'allowed_users', 'allowed_teams']
   const fields  = Object.keys(req.body).filter(k => allowed.includes(k))
   if (!fields.length) return res.status(400).json({ error: 'Nenhum campo válido' })
@@ -138,6 +139,39 @@ router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, r
 
   const [rows] = await pool.query('SELECT * FROM apps WHERE id = ?', [req.params.id])
   res.json(rows[0])
+})
+
+// DELETE /apps/:id — exclui app permanentemente (admin only)
+router.delete('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
+  const conn = await pool.getConnection()
+  try {
+    await conn.beginTransaction()
+
+    const [existing] = await conn.query('SELECT id, name FROM apps WHERE id = ?', [req.params.id])
+    if (!existing.length) {
+      conn.release()
+      return res.status(404).json({ error: 'App não encontrado' })
+    }
+
+    await conn.query('DELETE FROM apps WHERE id = ?', [req.params.id])
+
+    await logAudit({
+      uid: req.uid,
+      action: AUDIT_ACTIONS.APP_DELETE,
+      details: { appId: req.params.id, name: existing[0].name },
+      req,
+      conn,
+    })
+
+    await conn.commit()
+  } catch (err) {
+    await conn.rollback()
+    return next(err)
+  } finally {
+    conn.release()
+  }
+
+  res.status(204).end()
 })
 
 // POST /apps/:id/launch-token — emite JWT SSO de curta duração para apps com pass_token=1

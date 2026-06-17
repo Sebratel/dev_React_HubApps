@@ -3,7 +3,7 @@ import { getIdToken } from 'firebase/auth'
 import { ApiError, type PaginatedResponse, type QueryParams } from '@/types/api'
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
-const API_URL = configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:3000' : '')
+export const API_URL = configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:3000' : '')
 
 async function getToken(): Promise<string> {
   const user = auth.currentUser
@@ -56,6 +56,48 @@ async function request<T>(
   if (res.status === 204) return undefined as T
 
   return res.json() as Promise<T>
+}
+
+// Upload a file with progress tracking. Returns the full public URL.
+export async function uploadFile(
+  path: string,
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<string> {
+  const user = auth.currentUser
+  if (!user) throw new ApiError('Usuário não autenticado', 401)
+  const token = await getIdToken(user)
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    const fd  = new FormData()
+    fd.append('image', file)
+
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+      }
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const data = JSON.parse(xhr.responseText) as { path: string }
+        resolve(`${API_URL}${data.path}`)
+      } else {
+        const errMsg = (() => {
+          try { return (JSON.parse(xhr.responseText) as { error?: string }).error ?? `Erro ${xhr.status}` }
+          catch { return `Erro ${xhr.status}` }
+        })()
+        reject(new ApiError(errMsg, xhr.status))
+      }
+    }
+
+    xhr.onerror = () => reject(new ApiError('Erro de rede ao enviar o arquivo', 0))
+
+    xhr.open('POST', `${API_URL}${path}`)
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+    xhr.send(fd)
+  })
 }
 
 export const api = {

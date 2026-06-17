@@ -101,9 +101,14 @@ export function useUsersPage() {
     onSuccess: invalidateUsers,
   })
 
+  const activeCount = useMemo(() => allUsers.filter((u) => u.isActive).length, [allUsers])
+  const adminCount  = useMemo(() => allUsers.filter((u) => u.isAdmin).length, [allUsers])
+
   return {
     users: filteredUsers,
     totalUsers: data?.pagination.total ?? 0,
+    activeCount,
+    adminCount,
     isLoading,
     isError,
     refetch,
