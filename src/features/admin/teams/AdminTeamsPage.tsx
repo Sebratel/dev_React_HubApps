@@ -139,7 +139,7 @@ export function AdminTeamsPage() {
 
       {/* Skeleton */}
       {isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {skeletonCards.map((_, i) => (
             <div key={i} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
               <div className="flex items-center gap-3">
@@ -178,7 +178,7 @@ export function AdminTeamsPage() {
 
       {/* Card grid */}
       {!isLoading && teams.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {teams.map((t, i) => {
             const colors = getTeamColors(t.name)
             const initials = getInitials(t.name)
