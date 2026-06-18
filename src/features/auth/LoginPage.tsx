@@ -102,12 +102,11 @@ export function LoginPage() {
   const displayError = error ?? authError
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 lg:p-8">
-      <div className="flex w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl border border-border">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 lg:p-10">
+      <div className="flex w-full max-w-5xl rounded-3xl overflow-hidden shadow-[0_32px_80px_-16px_rgba(0,0,0,0.22)]">
 
         {/* ── Esquerda: capa ─────────────────────────────────────────────── */}
-        <div className="hidden lg:block w-[58%] shrink-0 bg-primary">
-          {/* Imagem em tamanho natural — sem crop, sem sobra */}
+        <div className="hidden lg:flex lg:flex-col w-[56%] shrink-0 bg-primary">
           <img
             src="/login-cover.png"
             alt=""
@@ -115,126 +114,127 @@ export function LoginPage() {
             className="w-full h-auto block"
             draggable={false}
           />
-
-          {/* Rodapé de branding */}
-          <div className="bg-primary px-10 py-7">
-            <p className="text-[22px] font-extrabold text-black/90 leading-snug tracking-tight">
+          <div className="px-10 py-8 flex flex-col gap-2">
+            <div className="w-8 h-[3px] rounded-full bg-black/25 mb-1" />
+            <p className="text-[24px] font-black text-black/90 leading-tight tracking-tight">
               Tudo que você precisa,<br />em um só lugar.
             </p>
-            <p className="text-sm text-black/60 mt-1.5 font-medium">
+            <p className="text-[13px] text-black/55 font-medium leading-relaxed">
               Portal de aplicativos corporativos Sebratel
             </p>
           </div>
         </div>
 
         {/* ── Direita: formulário ────────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 bg-background">
-          <div className="w-full max-w-[320px] flex flex-col gap-7">
+        <div className="flex-1 flex flex-col bg-white relative">
+          {/* Faixa amber no topo */}
+          <div className="h-1 w-full bg-primary shrink-0" />
 
-          {/* Marca */}
-          <div className="flex flex-col items-center gap-4 text-center">
-            <SebratelLogo size={60} />
-            <div>
-              <h1 className="text-[26px] font-extrabold text-foreground tracking-tight leading-none">
-                Sebratel Hub
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1.5">
-                Acesso corporativo
-              </p>
+          <div className="flex-1 flex flex-col items-center justify-center px-10 py-10">
+            <div className="w-full max-w-[300px] flex flex-col gap-5">
+
+              {/* Marca */}
+              <div className="flex flex-col items-center gap-3 text-center mb-1">
+                <SebratelLogo size={52} />
+                <div>
+                  <h1 className="text-2xl font-black text-foreground tracking-tight">
+                    Sebratel Hub
+                  </h1>
+                  <p className="text-[13px] text-muted-foreground mt-1">
+                    Acesso corporativo
+                  </p>
+                </div>
+              </div>
+
+              {/* Google */}
+              <Button
+                variant="outline"
+                className="w-full h-11 gap-2.5 text-sm font-semibold border-border/70 hover:border-primary/50 hover:bg-primary/5 shadow-sm"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading}
+              >
+                {GOOGLE_SVG}
+                Continuar com Google
+              </Button>
+
+              {/* Divisor */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-border/60" />
+                <span className="text-[11px] font-semibold text-muted-foreground/50 tracking-widest">OU</span>
+                <div className="flex-1 h-px bg-border/60" />
+              </div>
+
+              {/* Formulário */}
+              <form onSubmit={handleEmailSignIn} className="flex flex-col gap-2.5">
+                <Input
+                  type="email"
+                  placeholder="E-mail corporativo"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  disabled={isLoading}
+                  className="h-11 bg-muted/30 border-border/60 focus:border-primary"
+                />
+                <Input
+                  type="password"
+                  placeholder="Senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  disabled={isLoading}
+                  className="h-11 bg-muted/30 border-border/60 focus:border-primary"
+                />
+
+                <button
+                  type="button"
+                  onClick={handlePasswordReset}
+                  disabled={resetState === 'sending' || resetState === 'sent' || isLoading}
+                  className="self-end text-[12px] text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-0.5"
+                >
+                  {resetState === 'sending'
+                    ? 'Enviando...'
+                    : resetState === 'sent'
+                      ? 'E-mail enviado ✓'
+                      : 'Esqueci minha senha'}
+                </button>
+
+                <Button
+                  type="submit"
+                  className="w-full h-11 text-sm font-bold mt-1"
+                  disabled={isLoading || !email || !password}
+                >
+                  {isLoading ? 'Entrando...' : 'Entrar'}
+                </Button>
+              </form>
+
+              {/* Feedback */}
+              {resetState === 'sent' && (
+                <p className="text-sm text-center rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-800">
+                  Se este e-mail estiver cadastrado, você receberá as instruções em breve.
+                </p>
+              )}
+              {resetError && (
+                <p className="text-sm text-destructive text-center rounded-xl bg-destructive/10 px-4 py-2.5">
+                  {resetError}
+                </p>
+              )}
+              {displayError && (
+                <p className="text-sm text-destructive text-center rounded-xl bg-destructive/10 px-4 py-2.5">
+                  {displayError}
+                </p>
+              )}
+
             </div>
           </div>
 
-          {/* Google */}
-          <Button
-            variant="outline"
-            className="w-full h-11 gap-2.5 text-sm font-medium"
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-          >
-            {GOOGLE_SVG}
-            Entrar com Google
-          </Button>
-
-          {/* Divisor */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              ou continue com e-mail
-            </span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          {/* Formulário */}
-          <form onSubmit={handleEmailSignIn} className="flex flex-col gap-3">
-            <Input
-              type="email"
-              placeholder="E-mail corporativo"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              disabled={isLoading}
-              className="h-11"
-            />
-            <Input
-              type="password"
-              placeholder="Senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              disabled={isLoading}
-              className="h-11"
-            />
-
-            <button
-              type="button"
-              onClick={handlePasswordReset}
-              disabled={resetState === 'sending' || resetState === 'sent' || isLoading}
-              className="self-end text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {resetState === 'sending'
-                ? 'Enviando...'
-                : resetState === 'sent'
-                  ? 'E-mail enviado ✓'
-                  : 'Esqueci minha senha'}
-            </button>
-
-            <Button
-              type="submit"
-              className="w-full h-11 text-sm font-semibold"
-              disabled={isLoading || !email || !password}
-            >
-              {isLoading ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
-
-          {/* Feedback states */}
-          {resetState === 'sent' && (
-            <p className="text-sm text-center rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-800">
-              Se este e-mail estiver cadastrado, você receberá as instruções em breve.
-            </p>
-          )}
-
-          {resetError && (
-            <p className="text-sm text-destructive text-center rounded-xl bg-destructive/10 px-4 py-3">
-              {resetError}
-            </p>
-          )}
-
-          {displayError && (
-            <p className="text-sm text-destructive text-center rounded-xl bg-destructive/10 px-4 py-3">
-              {displayError}
-            </p>
-          )}
-
-        </div>
-
-        {/* Rodapé */}
-          <p className="mt-10 text-[11px] text-muted-foreground/60 text-center select-none">
+          {/* Rodapé */}
+          <p className="text-[10px] text-muted-foreground/40 text-center pb-4 select-none">
             © {new Date().getFullYear()} Sebratel · Uso interno
           </p>
         </div>
+
       </div>
     </div>
   )
