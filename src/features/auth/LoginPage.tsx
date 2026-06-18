@@ -114,14 +114,35 @@ export function LoginPage() {
             className="w-full h-auto block"
             draggable={false}
           />
-          <div className="px-10 py-8 flex flex-col gap-2">
-            <div className="w-8 h-[3px] rounded-full bg-black/25 mb-1" />
-            <p className="text-[24px] font-black text-black/90 leading-tight tracking-tight">
-              Tudo que você precisa,<br />em um só lugar.
-            </p>
-            <p className="text-[13px] text-black/55 font-medium leading-relaxed">
-              Portal de aplicativos corporativos Sebratel
-            </p>
+          <div
+            className="relative px-10 py-8 overflow-hidden"
+            style={{
+              backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.09) 1.5px, transparent 1.5px)',
+              backgroundSize: '20px 20px',
+            }}
+          >
+            {/* Anéis decorativos */}
+            <div className="pointer-events-none absolute -right-10 -bottom-10 w-48 h-48 rounded-full border-[28px] border-black/8" />
+            <div className="pointer-events-none absolute right-16 -bottom-6 w-28 h-28 rounded-full border-[16px] border-black/6" />
+
+            {/* Logo watermark */}
+            <img
+              src="/logo-circular-sebratel.png"
+              aria-hidden
+              className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 w-14 h-14 opacity-10 select-none"
+              draggable={false}
+            />
+
+            {/* Conteúdo */}
+            <div className="relative">
+              <div className="w-8 h-[3px] rounded-full bg-black/30 mb-3" />
+              <p className="text-[24px] font-black text-black/90 leading-tight tracking-tight">
+                Tudo que você precisa,<br />em um só lugar.
+              </p>
+              <p className="text-[13px] text-black/55 font-medium leading-relaxed mt-2">
+                Portal de aplicativos corporativos Sebratel
+              </p>
+            </div>
           </div>
         </div>
 
