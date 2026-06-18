@@ -107,7 +107,7 @@ export function LoginPage() {
       {/* ── Esquerda: capa ───────────────────────────────────────────────── */}
       <div className="hidden lg:flex lg:w-[58%] relative overflow-hidden bg-primary shrink-0">
         <img
-          src="/login-cover.jpg"
+          src="/login-cover.png"
           alt=""
           aria-hidden
           className="absolute inset-0 h-full w-full object-cover object-center"
