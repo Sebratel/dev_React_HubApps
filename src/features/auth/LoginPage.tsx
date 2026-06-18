@@ -110,7 +110,7 @@ export function LoginPage() {
           src="/login-cover.png"
           alt=""
           aria-hidden
-          className="absolute inset-0 h-full w-full object-contain object-center"
+          className="absolute top-0 left-0 w-full h-auto"
           draggable={false}
         />
 
