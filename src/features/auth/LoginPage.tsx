@@ -102,32 +102,34 @@ export function LoginPage() {
   const displayError = error ?? authError
 
   return (
-    <div className="h-screen flex overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 lg:p-8">
+      <div className="flex w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl border border-border">
 
-      {/* ── Esquerda: capa ───────────────────────────────────────────────── */}
-      <div className="hidden lg:flex lg:w-[58%] relative overflow-hidden bg-primary shrink-0">
-        <img
-          src="/login-cover.png"
-          alt=""
-          aria-hidden
-          className="absolute top-0 left-0 w-full h-auto"
-          draggable={false}
-        />
+        {/* ── Esquerda: capa ─────────────────────────────────────────────── */}
+        <div className="hidden lg:block w-[58%] shrink-0 bg-primary">
+          {/* Imagem em tamanho natural — sem crop, sem sobra */}
+          <img
+            src="/login-cover.png"
+            alt=""
+            aria-hidden
+            className="w-full h-auto block"
+            draggable={false}
+          />
 
-        {/* Rodapé de branding sobre a imagem — faixa sólida amber */}
-        <div className="absolute bottom-0 left-0 right-0 bg-primary px-10 py-7">
-          <p className="text-[22px] font-extrabold text-black/90 leading-snug tracking-tight">
-            Tudo que você precisa,<br />em um só lugar.
-          </p>
-          <p className="text-sm text-black/60 mt-1.5 font-medium">
-            Portal de aplicativos corporativos Sebratel
-          </p>
+          {/* Rodapé de branding */}
+          <div className="bg-primary px-10 py-7">
+            <p className="text-[22px] font-extrabold text-black/90 leading-snug tracking-tight">
+              Tudo que você precisa,<br />em um só lugar.
+            </p>
+            <p className="text-sm text-black/60 mt-1.5 font-medium">
+              Portal de aplicativos corporativos Sebratel
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* ── Direita: formulário ──────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 py-10 overflow-y-auto bg-background">
-        <div className="w-full max-w-[340px] flex flex-col gap-7">
+        {/* ── Direita: formulário ────────────────────────────────────────── */}
+        <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 bg-background">
+          <div className="w-full max-w-[320px] flex flex-col gap-7">
 
           {/* Marca */}
           <div className="flex flex-col items-center gap-4 text-center">
@@ -229,9 +231,10 @@ export function LoginPage() {
         </div>
 
         {/* Rodapé */}
-        <p className="mt-10 text-[11px] text-muted-foreground/60 text-center select-none">
-          © {new Date().getFullYear()} Sebratel · Uso interno
-        </p>
+          <p className="mt-10 text-[11px] text-muted-foreground/60 text-center select-none">
+            © {new Date().getFullYear()} Sebratel · Uso interno
+          </p>
+        </div>
       </div>
     </div>
   )
