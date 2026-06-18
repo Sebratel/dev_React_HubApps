@@ -106,7 +106,7 @@ export function LoginPage() {
       <div className="flex w-full max-w-5xl rounded-3xl overflow-hidden shadow-[0_32px_80px_-16px_rgba(0,0,0,0.22)]">
 
         {/* ── Esquerda: capa ─────────────────────────────────────────────── */}
-        <div className="hidden lg:flex lg:flex-col w-[56%] shrink-0 bg-primary">
+        <div className="hidden lg:flex lg:flex-col w-[56%] shrink-0 bg-primary relative overflow-hidden">
           <img
             src="/login-cover.png"
             alt=""
@@ -114,32 +114,34 @@ export function LoginPage() {
             className="w-full h-auto block"
             draggable={false}
           />
+
+          {/* Texto sobreposto na parte inferior da imagem */}
           <div
-            className="relative px-10 py-5 overflow-hidden"
+            className="absolute bottom-0 left-0 right-0 px-10 py-6 overflow-hidden"
             style={{
               backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.09) 1.5px, transparent 1.5px)',
               backgroundSize: '20px 20px',
             }}
           >
             {/* Anéis decorativos */}
-            <div className="pointer-events-none absolute -right-10 -bottom-10 w-48 h-48 rounded-full border-[28px] border-black/8" />
-            <div className="pointer-events-none absolute right-16 -bottom-6 w-28 h-28 rounded-full border-[16px] border-black/6" />
+            <div className="pointer-events-none absolute -right-8 -bottom-8 w-44 h-44 rounded-full border-[24px] border-black/10" />
+            <div className="pointer-events-none absolute right-14 -bottom-4 w-24 h-24 rounded-full border-[14px] border-black/7" />
 
             {/* Logo watermark */}
             <img
               src="/logo-circular-sebratel.png"
               aria-hidden
-              className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 w-14 h-14 opacity-10 select-none"
+              className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 opacity-10 select-none"
               draggable={false}
             />
 
             {/* Conteúdo */}
             <div className="relative">
-              <div className="w-8 h-[3px] rounded-full bg-black/30 mb-3" />
-              <p className="text-[24px] font-black text-black/90 leading-tight tracking-tight">
+              <div className="w-7 h-[3px] rounded-full bg-black/30 mb-3" />
+              <p className="text-[22px] font-black text-black/90 leading-tight tracking-tight">
                 Tudo que você precisa,<br />em um só lugar.
               </p>
-              <p className="text-[13px] text-black/55 font-medium leading-relaxed mt-2">
+              <p className="text-[12px] text-black/60 font-medium leading-relaxed mt-1.5">
                 Portal de aplicativos corporativos Sebratel
               </p>
             </div>
