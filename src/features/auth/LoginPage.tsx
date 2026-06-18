@@ -115,7 +115,7 @@ export function LoginPage() {
             draggable={false}
           />
           <div
-            className="relative px-10 py-8 overflow-hidden"
+            className="relative px-10 py-5 overflow-hidden"
             style={{
               backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.09) 1.5px, transparent 1.5px)',
               backgroundSize: '20px 20px',
