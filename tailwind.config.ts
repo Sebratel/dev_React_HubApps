@@ -82,6 +82,10 @@ const config: Config = {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(100%)' },
         },
+        'icon-jump': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-12px)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.3s ease-out',
@@ -92,6 +96,7 @@ const config: Config = {
         'overlay-exit': 'overlay-exit 160ms ease both',
         'sheet-in-right': 'sheet-in-right 240ms cubic-bezier(0.22, 1, 0.36, 1) both',
         'sheet-out-right': 'sheet-out-right 200ms cubic-bezier(0.4, 0, 1, 1) both',
+        'icon-jump': 'icon-jump 0.6s ease-in-out infinite',
       },
     },
   },

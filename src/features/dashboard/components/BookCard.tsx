@@ -123,19 +123,6 @@ export function BookCard({
         {/* ── Content layer (NOT clipped) — elements project in 3D on hover ── */}
         <div className="absolute inset-[5px] z-10 flex flex-col [transform-style:preserve-3d]">
 
-          {/* Projector light halo */}
-          {canProject && (
-            <div
-              className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-[350ms] [transform:translateZ(18px)] group-hover:opacity-100"
-              style={{
-                background:
-                  'radial-gradient(55% 45% at 50% 40%, rgba(255,176,0,0.32) 0%, rgba(255,176,0,0.10) 40%, transparent 72%)',
-                filter: 'blur(10px)',
-              }}
-              aria-hidden
-            />
-          )}
-
           {/* Badge + favorite — top-right */}
           <div className="absolute right-2.5 top-[30px] z-20 flex flex-col items-end gap-1">
             {app.status === 'novo' && (
@@ -168,9 +155,7 @@ export function BookCard({
           <div className="flex justify-center" style={{ marginTop: '-2rem' }}>
             <div
               className={cn(
-                '[transform:translateZ(0px)] [transform-style:preserve-3d]',
-                'transition-transform duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
-                canProject && 'group-hover:[transform:translateZ(50px)]',
+                canProject && 'group-hover:animate-icon-jump',
               )}
               style={{ willChange: 'transform' }}
             >
