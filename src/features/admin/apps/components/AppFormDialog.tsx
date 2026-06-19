@@ -36,10 +36,10 @@ const STATUS_OPTIONS = [
 ] as const
 
 const CARD_COLOR_OPTIONS = [
-  { value: 'dark',  label: 'Escuro', swatch: 'bg-foreground' },
-  { value: 'muted', label: 'Claro',  swatch: 'bg-muted border border-border' },
-  { value: 'white', label: 'Branco', swatch: 'bg-card border border-border' },
-  { value: 'amber', label: 'Âmbar',  swatch: 'bg-primary' },
+  { value: 'amber', label: 'Âmbar',  swatch: 'bg-[#FFB000]' },
+  { value: 'dark',  label: 'Escuro', swatch: 'bg-[#2d1800]' },
+  { value: 'muted', label: 'Cinza',  swatch: 'bg-slate-400' },
+  { value: 'white', label: 'Creme',  swatch: 'bg-[#d1c9b8] border border-border' },
 ] as const
 
 const appFormSchema = z.object({
@@ -319,7 +319,7 @@ export function AppFormDialog({
 
           {/* Card Color */}
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">Cor do card</span>
+            <span className="text-sm font-medium">Cor da faixa</span>
             <Controller
               name="cardColor"
               control={control}
@@ -330,16 +330,17 @@ export function AppFormDialog({
                     type="button"
                     onClick={() => field.onChange(null)}
                     className={cn(
-                      'flex flex-col items-center gap-1.5 rounded-xl p-2 transition-colors',
+                      'flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 transition-colors w-16',
                       field.value == null
-                        ? 'bg-primary/10 ring-2 ring-primary'
-                        : 'hover:bg-muted',
+                        ? 'border-primary bg-primary/10'
+                        : 'border-transparent hover:bg-muted',
                     )}
                     aria-pressed={field.value == null}
-                    aria-label="Cor automática"
+                    aria-label="Cor automática (âmbar)"
                   >
-                    <div className="h-8 w-8 rounded-full border-2 border-dashed border-border bg-background flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-muted-foreground">A</span>
+                    <div className="w-full h-12 rounded-lg bg-background border border-dashed border-border relative overflow-hidden flex items-center justify-center">
+                      <div className="absolute top-0 left-0 right-0 h-1 rounded-t-lg bg-[#FFB000]" />
+                      <span className="text-[9px] font-bold text-muted-foreground">A</span>
                     </div>
                     <span className="text-[10px] text-muted-foreground">Auto</span>
                   </button>
@@ -350,15 +351,17 @@ export function AppFormDialog({
                       type="button"
                       onClick={() => field.onChange(value)}
                       className={cn(
-                        'flex flex-col items-center gap-1.5 rounded-xl p-2 transition-colors',
+                        'flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 transition-colors w-16',
                         field.value === value
-                          ? 'bg-primary/10 ring-2 ring-primary'
-                          : 'hover:bg-muted',
+                          ? 'border-primary bg-primary/10'
+                          : 'border-transparent hover:bg-muted',
                       )}
                       aria-pressed={field.value === value}
                       aria-label={label}
                     >
-                      <div className={cn('h-8 w-8 rounded-full', swatch)} />
+                      <div className="w-full h-12 rounded-lg bg-background border border-border relative overflow-hidden">
+                        <div className={cn('absolute top-0 left-0 right-0 h-1 rounded-t-lg', swatch)} />
+                      </div>
                       <span className="text-[10px] text-muted-foreground">{label}</span>
                     </button>
                   ))}

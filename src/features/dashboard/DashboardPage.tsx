@@ -59,7 +59,7 @@ function LoadingGrid() {
   return (
     <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(168px, 185px))' }}>
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="aspect-[10/19] w-full max-w-[185px] rounded-[2rem] bg-muted/60 animate-pulse" />
+        <div key={i} className="min-h-[200px] w-full rounded-3xl bg-muted/60 animate-pulse" />
       ))}
     </div>
   )
