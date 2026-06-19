@@ -102,7 +102,17 @@ export function LoginPage() {
   const displayError = error ?? authError
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 lg:p-10">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 lg:p-10 relative overflow-hidden">
+      {/* Arcos decorativos no fundo */}
+      <div className="pointer-events-none absolute -top-32 -right-32 w-[480px] h-[480px] rounded-full border-[48px] border-primary/10" />
+      <div className="pointer-events-none absolute -top-16 -right-16 w-[280px] h-[280px] rounded-full border-[32px] border-primary/7" />
+      <img src="/logo-circular-sebratel.png" aria-hidden draggable={false}
+        className="pointer-events-none absolute -top-6 -right-6 w-[200px] h-[200px] opacity-10 select-none" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 w-[520px] h-[520px] rounded-full border-[48px] border-primary/10" />
+      <div className="pointer-events-none absolute -bottom-20 -left-20 w-[300px] h-[300px] rounded-full border-[32px] border-primary/7" />
+      <img src="/logo-circular-sebratel.png" aria-hidden draggable={false}
+        className="pointer-events-none absolute -bottom-10 -left-10 w-[220px] h-[220px] opacity-10 select-none" />
+
       <div className="flex w-full max-w-5xl rounded-3xl overflow-hidden shadow-[0_32px_80px_-16px_rgba(0,0,0,0.22)]">
 
         {/* ── Esquerda: capa ─────────────────────────────────────────────── */}
@@ -111,37 +121,36 @@ export function LoginPage() {
             src="/login-cover.png"
             alt=""
             aria-hidden
-            className="absolute inset-0 w-full h-full object-cover object-top"
+            className="absolute inset-0 w-full h-full object-cover object-left-top"
             draggable={false}
           />
 
           {/* Texto sobreposto na parte inferior da imagem */}
           <div
-            className="absolute bottom-0 left-0 right-0 px-10 py-6 overflow-hidden"
+            className="absolute bottom-0 left-0 right-0 px-10 py-7 overflow-hidden bg-black/55"
             style={{
-              backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.09) 1.5px, transparent 1.5px)',
+              backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1.5px, transparent 1.5px)',
               backgroundSize: '20px 20px',
             }}
           >
             {/* Anéis decorativos */}
-            <div className="pointer-events-none absolute -right-8 -bottom-8 w-44 h-44 rounded-full border-[24px] border-black/10" />
-            <div className="pointer-events-none absolute right-14 -bottom-4 w-24 h-24 rounded-full border-[14px] border-black/7" />
-
-            {/* Logo watermark */}
+            <div className="pointer-events-none absolute -right-8 -bottom-8 w-44 h-44 rounded-full border-[24px] border-white/10" />
+            <div className="pointer-events-none absolute right-14 -bottom-4 w-24 h-24 rounded-full border-[14px] border-white/8" />
+            {/* Logo watermark — centrado no anel grande */}
             <img
               src="/logo-circular-sebratel.png"
               aria-hidden
-              className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 opacity-10 select-none"
+              className="pointer-events-none absolute right-20 bottom-2 w-12 h-12 opacity-25 select-none"
               draggable={false}
             />
 
             {/* Conteúdo */}
             <div className="relative">
-              <div className="w-7 h-[3px] rounded-full bg-black/30 mb-3" />
-              <p className="text-[22px] font-black text-black/90 leading-tight tracking-tight">
+              <div className="w-7 h-[3px] rounded-full bg-white/40 mb-3" />
+              <p className="text-[22px] font-black text-white leading-tight tracking-tight">
                 Tudo que você precisa,<br />em um só lugar.
               </p>
-              <p className="text-[12px] text-black/60 font-medium leading-relaxed mt-1.5">
+              <p className="text-[12px] text-white/65 font-medium leading-relaxed mt-1.5">
                 Portal de aplicativos corporativos Sebratel
               </p>
             </div>
