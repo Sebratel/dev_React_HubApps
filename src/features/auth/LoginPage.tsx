@@ -142,17 +142,19 @@ export function LoginPage() {
     <div className="h-screen w-screen flex overflow-hidden">
 
       {/* ── Esquerda: imagem escura + ícones hexagonais ─────────────────── */}
-      <div className="hidden lg:flex relative flex-col justify-end w-[62%] shrink-0 overflow-hidden bg-[#0d0a06]">
+      <div className="hidden lg:flex relative flex-col justify-end flex-1 overflow-hidden bg-[#0d0a06]">
         {/* Imagem de fundo */}
         <img
           src="/login-cover.png"
           alt=""
           aria-hidden
           draggable={false}
-          className="absolute inset-0 w-full h-full object-cover object-center opacity-50"
+          className="absolute inset-0 w-full h-full object-cover object-center opacity-80 animate-ken-burns"
         />
         {/* Overlay âmbar sutil */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#2d1800]/60 via-transparent to-[#0d0a06]/40" />
+        {/* Faixa escura inferior para legibilidade do texto */}
+        <div className="absolute bottom-0 left-0 right-0 h-52 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
         {/* Ícones hexagonais flutuantes */}
         <HexIcon style={{ top: '10%',  left: '10%'  }}><IconBolt /></HexIcon>
@@ -166,7 +168,7 @@ export function LoginPage() {
         <div className="relative z-10 px-12 py-10">
           {/* Badge */}
           <div className="flex items-center gap-2 mb-5">
-            <img src="/logo-circular-sebratel.png" alt="Sebratel" className="w-7 h-7 opacity-90" draggable={false} />
+            <img src="/logo-circular-sebratel.png" alt="Sebratel" className="w-10 h-10 opacity-90" draggable={false} />
             <span className="text-xs font-bold tracking-[0.18em] text-white/70 uppercase">Sebratel Hub</span>
           </div>
 
@@ -181,8 +183,11 @@ export function LoginPage() {
         </div>
       </div>
 
+      {/* ── Faixa divisória âmbar ───────────────────────────────────────── */}
+      <div className="hidden lg:block w-1.5 shrink-0 bg-[#FFB000] z-10" aria-hidden />
+
       {/* ── Direita: formulário ─────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col bg-[#f7f4ee] overflow-y-auto">
+      <div className="w-[35%] shrink-0 flex flex-col bg-[#f7f4ee] overflow-y-auto">
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
           <div className="w-full max-w-[340px] flex flex-col gap-6">
 

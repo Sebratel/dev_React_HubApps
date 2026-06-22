@@ -66,6 +66,17 @@
   }
 }
 
+/* ─── Login cover — Ken Burns slow zoom ──────────────────────────────────── */
+@keyframes ken-burns {
+  0%   { transform: scale(1)    translate(0, 0); }
+  50%  { transform: scale(1.03) translate(-0.5%, 0.5%); }
+  100% { transform: scale(1)    translate(0, 0); }
+}
+.animate-ken-burns {
+  animation: ken-burns 24s ease-in-out infinite;
+  transform-origin: center center;
+}
+
 /* ─── Sebratel official logo — subtle non-destructive animation ───────────── */
 /* The brand artwork is NEVER redrawn or distorted — only floated + glowed. */
 @keyframes sebratel-logo-float {
