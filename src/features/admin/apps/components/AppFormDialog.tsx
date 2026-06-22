@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
+import { useQuery } from '@tanstack/react-query'
 import { AppIcon } from '@/components/app-icon'
 import {
   appIconRegistry,
@@ -22,6 +23,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { AppItemModel } from '@/types/models'
+import { listUsers } from '@/services/admin/admin-user.service'
+import { adminGetAllTeams } from '@/services/team.service'
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -55,18 +58,11 @@ const appFormSchema = z.object({
   passUser: z.boolean(),
   status: z.enum(['active', 'maintenance', 'novo']),
   allowedProfiles: z.array(z.string()),
-  allowedUsersRaw: z.string(),
-  allowedTeamsRaw: z.string(),
+  allowedUsers: z.array(z.string()),
+  allowedTeams: z.array(z.string()),
 })
 
 export type AppFormValues = z.infer<typeof appFormSchema>
-
-function parseLines(raw: string): string[] {
-  return raw
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -92,6 +88,30 @@ export function AppFormDialog({
   const isEdit = !!app
   const title = isEdit ? 'Editar aplicativo' : 'Criar aplicativo'
 
+  const [userSearch, setUserSearch] = useState('')
+
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['admin', 'users', 'all'],
+    queryFn: () => listUsers({ limit: 1000 }).then((r) => r.data),
+    enabled: open,
+    staleTime: 2 * 60_000,
+  })
+
+  const { data: allTeams = [], isLoading: teamsLoading } = useQuery({
+    queryKey: ['teams', 'all'],
+    queryFn: adminGetAllTeams,
+    enabled: open,
+    staleTime: 5 * 60_000,
+  })
+
+  const filteredUsers = userSearch.trim()
+    ? allUsers.filter(
+        (u) =>
+          u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+          u.email.toLowerCase().includes(userSearch.toLowerCase()),
+      )
+    : allUsers
+
   const {
     register,
     handleSubmit,
@@ -111,14 +131,14 @@ export function AppFormDialog({
       passUser: app?.passUser ?? false,
       status: (app?.status as 'active' | 'maintenance' | 'novo') ?? 'active',
       allowedProfiles: app?.allowedProfiles ?? [],
-      allowedUsersRaw: (app?.allowedUsers ?? []).join('\n'),
-      allowedTeamsRaw: (app?.allowedTeams ?? []).join('\n'),
+      allowedUsers: app?.allowedUsers ?? [],
+      allowedTeams: app?.allowedTeams ?? [],
     },
   })
 
-  // Sync form when editing a different app
   useEffect(() => {
     if (open) {
+      setUserSearch('')
       reset({
         name: app?.name ?? '',
         url: app?.url ?? '',
@@ -129,21 +149,21 @@ export function AppFormDialog({
         passUser: app?.passUser ?? false,
         status: (app?.status as 'active' | 'maintenance' | 'novo') ?? 'active',
         allowedProfiles: app?.allowedProfiles ?? [],
-        allowedUsersRaw: (app?.allowedUsers ?? []).join('\n'),
-        allowedTeamsRaw: (app?.allowedTeams ?? []).join('\n'),
+        allowedUsers: app?.allowedUsers ?? [],
+        allowedTeams: app?.allowedTeams ?? [],
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, app?.id])
 
   const allowedProfiles = watch('allowedProfiles')
-  const allowedUsersRaw = watch('allowedUsersRaw')
-  const allowedTeamsRaw = watch('allowedTeamsRaw')
+  const allowedUsers = watch('allowedUsers')
+  const allowedTeams = watch('allowedTeams')
 
   const noAccessRules =
     allowedProfiles.length === 0 &&
-    parseLines(allowedUsersRaw).length === 0 &&
-    parseLines(allowedTeamsRaw).length === 0
+    allowedUsers.length === 0 &&
+    allowedTeams.length === 0
 
   function onSubmit(values: AppFormValues) {
     onConfirm(values)
@@ -225,7 +245,6 @@ export function AppFormDialog({
 
                 function setIcon(name: string) {
                   if (currentIconName === name) {
-                    // deselect — clear icon, keep color irrelevant
                     field.onChange('')
                   } else {
                     field.onChange(encodeIconValue(name, currentColor))
@@ -236,18 +255,14 @@ export function AppFormDialog({
                   if (fromRegistry) {
                     field.onChange(encodeIconValue(currentIconName, color))
                   }
-                  // for emoji/URL, color has no effect yet
                 }
 
                 return (
                   <div className="flex flex-col gap-3">
-                    {/* Preview + Lucide picker */}
                     <div className="flex gap-3 items-start">
-                      {/* Live preview */}
                       <AppIcon icon={currentVal || '📦'} name="preview" size="lg" className="mt-5 shrink-0" />
 
                       <div className="flex-1 flex flex-col gap-2">
-                        {/* Icon grid */}
                         <div>
                           <p className="text-xs text-muted-foreground mb-1.5">Biblioteca de ícones</p>
                           <div className="flex flex-wrap gap-2">
@@ -271,7 +286,6 @@ export function AppFormDialog({
                           </div>
                         </div>
 
-                        {/* Color swatches — only relevant when a registry icon is selected */}
                         {fromRegistry && (
                           <div>
                             <p className="text-xs text-muted-foreground mb-1.5">Cor</p>
@@ -299,7 +313,6 @@ export function AppFormDialog({
                       </div>
                     </div>
 
-                    {/* Emoji / URL input */}
                     <div className="flex flex-col gap-1">
                       <label htmlFor="app-icon" className="text-xs text-muted-foreground">
                         Emoji ou URL de imagem
@@ -325,7 +338,6 @@ export function AppFormDialog({
               control={control}
               render={({ field }) => (
                 <div className="flex flex-wrap gap-3">
-                  {/* Auto option */}
                   <button
                     type="button"
                     onClick={() => field.onChange(null)}
@@ -467,37 +479,103 @@ export function AppFormDialog({
             />
           </div>
 
-          {/* Allowed Users (UIDs) */}
+          {/* Allowed Users */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="app-users" className="text-sm font-medium">
-              Usuários específicos
-              <span className="ml-1 text-xs text-muted-foreground font-normal">
-                (um UID por linha)
-              </span>
-            </label>
-            <textarea
-              id="app-users"
-              rows={3}
-              placeholder={'uid-alice\nuid-bob'}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-              {...register('allowedUsersRaw')}
+            <span className="text-sm font-medium">Usuários específicos</span>
+            <Controller
+              name="allowedUsers"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-col gap-1.5">
+                  <Input
+                    placeholder="Buscar por nome ou e-mail..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                  />
+                  <div className="max-h-44 overflow-y-auto rounded-md border border-input bg-background divide-y divide-border">
+                    {usersLoading ? (
+                      <p className="px-3 py-2.5 text-sm text-muted-foreground">Carregando usuários...</p>
+                    ) : filteredUsers.length === 0 ? (
+                      <p className="px-3 py-2.5 text-sm text-muted-foreground">Nenhum usuário encontrado</p>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <label
+                          key={user.id}
+                          className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={field.value.includes(user.id)}
+                            onChange={(e) => {
+                              field.onChange(
+                                e.target.checked
+                                  ? [...field.value, user.id]
+                                  : field.value.filter((id) => id !== user.id),
+                              )
+                            }}
+                            className="h-4 w-4 rounded border-input shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium leading-tight truncate">{user.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                          </div>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                  {field.value.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {field.value.length} usuário{field.value.length !== 1 ? 's' : ''} selecionado{field.value.length !== 1 ? 's' : ''}
+                    </p>
+                  )}
+                </div>
+              )}
             />
           </div>
 
           {/* Allowed Teams */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="app-teams" className="text-sm font-medium">
-              Times com acesso
-              <span className="ml-1 text-xs text-muted-foreground font-normal">
-                (um nome por linha)
-              </span>
-            </label>
-            <textarea
-              id="app-teams"
-              rows={3}
-              placeholder={'Engenharia\nFinanceiro'}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-              {...register('allowedTeamsRaw')}
+            <span className="text-sm font-medium">Times com acesso</span>
+            <Controller
+              name="allowedTeams"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-col gap-1.5">
+                  <div className="max-h-44 overflow-y-auto rounded-md border border-input bg-background divide-y divide-border">
+                    {teamsLoading ? (
+                      <p className="px-3 py-2.5 text-sm text-muted-foreground">Carregando times...</p>
+                    ) : allTeams.length === 0 ? (
+                      <p className="px-3 py-2.5 text-sm text-muted-foreground">Nenhum time cadastrado</p>
+                    ) : (
+                      allTeams.map((team) => (
+                        <label
+                          key={team.id}
+                          className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={field.value.includes(team.name)}
+                            onChange={(e) => {
+                              field.onChange(
+                                e.target.checked
+                                  ? [...field.value, team.name]
+                                  : field.value.filter((n) => n !== team.name),
+                              )
+                            }}
+                            className="h-4 w-4 rounded border-input shrink-0"
+                          />
+                          <span className="text-sm">{team.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                  {field.value.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {field.value.length} time{field.value.length !== 1 ? 's' : ''} selecionado{field.value.length !== 1 ? 's' : ''}
+                    </p>
+                  )}
+                </div>
+              )}
             />
           </div>
 

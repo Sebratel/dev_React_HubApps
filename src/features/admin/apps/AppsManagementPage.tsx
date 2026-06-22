@@ -27,13 +27,6 @@ function formatMutationError(err: unknown): string {
   return 'Ocorreu um erro inesperado. Tente novamente.'
 }
 
-function parseLines(raw: string): string[] {
-  return raw
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
 // ─── Mini insights panel ──────────────────────────────────────────────────────
 
 function InsightBar({ label, value, total, color }: {
@@ -105,8 +98,6 @@ export function AppsManagementPage() {
   }
 
   function handleFormConfirm(values: AppFormValues) {
-    const users = parseLines(values.allowedUsersRaw)
-    const teams = parseLines(values.allowedTeamsRaw)
     const iconVal = values.iconUrl?.trim() || undefined
 
     if (dialog === 'create') {
@@ -121,8 +112,8 @@ export function AppsManagementPage() {
           passUser: values.passUser,
           status: values.status,
           allowedProfiles: values.allowedProfiles,
-          allowedUsers: users,
-          allowedTeams: teams,
+          allowedUsers: values.allowedUsers,
+          allowedTeams: values.allowedTeams,
         },
         { onSuccess: closeDialog }
       )
@@ -140,8 +131,8 @@ export function AppsManagementPage() {
             pass_user: values.passUser,
             status: values.status,
             allowed_profiles: values.allowedProfiles,
-            allowed_users: users,
-            allowed_teams: teams,
+            allowed_users: values.allowedUsers,
+            allowed_teams: values.allowedTeams,
           },
         },
         { onSuccess: closeDialog }
