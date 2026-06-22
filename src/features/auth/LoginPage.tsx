@@ -194,7 +194,7 @@ export function LoginPage() {
             {/* Badge topo */}
             <span
               className="inline-flex items-center rounded-full px-5 py-1.5 text-[11px] font-bold tracking-[0.18em] text-primary uppercase"
-              style={{ background: '#efefed', boxShadow: '4px 4px 10px rgba(0,0,0,0.13), -3px -3px 8px rgba(255,255,255,0.85)' }}
+              style={{ background: '#efefed', boxShadow: 'inset 3px 3px 7px rgba(0,0,0,0.12), inset -2px -2px 6px rgba(255,255,255,0.85)' }}
             >
               Sebratel Hub
             </span>
@@ -212,11 +212,11 @@ export function LoginPage() {
             {/* Info de domínio */}
             <div
               className="w-full flex items-center gap-4 rounded-2xl bg-[#efefed] px-5 py-4"
-              style={{ boxShadow: '6px 6px 14px rgba(0,0,0,0.12), -4px -4px 10px rgba(255,255,255,0.88)' }}
+              style={{ boxShadow: '6px 6px 14px rgba(0,0,0,0.11), -4px -4px 10px rgba(255,255,255,0.9)' }}
             >
               <div
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                style={{ background: '#efefed', boxShadow: '3px 3px 7px rgba(0,0,0,0.12), -2px -2px 6px rgba(255,255,255,0.85)' }}
+                style={{ background: '#efefed', boxShadow: 'inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgba(255,255,255,0.82)' }}
               >
                 <Lock className="h-5 w-5 text-primary" />
               </div>
@@ -233,7 +233,7 @@ export function LoginPage() {
               onClick={handleGoogleSignIn}
               disabled={isLoading}
               className="flex items-center justify-center gap-3 w-full h-14 rounded-2xl bg-primary text-[#1a0f00] font-bold text-sm active:scale-[0.98] transition-all disabled:opacity-60"
-              style={{ boxShadow: '4px 4px 12px rgba(255,176,0,0.45), -2px -2px 8px rgba(255,255,255,0.5)' }}
+              style={{ boxShadow: 'inset 3px 3px 8px rgba(180,120,0,0.25), inset -2px -2px 6px rgba(255,220,80,0.4)' }}
             >
               {GOOGLE_SVG}
               Entrar com Google
