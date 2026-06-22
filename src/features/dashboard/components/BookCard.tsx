@@ -80,16 +80,22 @@ export function BookCard({
       whileTap={reduced || !isInteractive ? undefined : { scale: 0.98 }}
       aria-label={`${hasAccess ? 'Abrir' : isPending ? 'Aguardando aprovação para' : 'Solicitar acesso a'} ${app.name}`}
     >
-      {/* Faixa colorida no topo */}
+      {/* Acento triangular no canto superior esquerdo */}
       <span
-        className="pointer-events-none absolute left-0 right-0 top-0 h-[3px] rounded-t-3xl"
-        style={{ background: isLocked ? '#ef4444' : resolveStripeColor(app.cardColor) }}
+        className="pointer-events-none absolute left-0 top-0"
+        style={{
+          width: 0,
+          height: 0,
+          borderStyle: 'solid',
+          borderWidth: '42px 42px 0 0',
+          borderColor: `${isLocked ? '#ef4444' : resolveStripeColor(app.cardColor)} transparent transparent transparent`,
+        }}
         aria-hidden
       />
 
       {/* Inicial em marca d'água */}
       <span
-        className="pointer-events-none absolute top-2 right-4 select-none font-black leading-none text-[#3d1a00]"
+        className="pointer-events-none absolute top-2 right-4 select-none font-black leading-none text-[#FFB000]"
         style={{ fontSize: '5.5rem', opacity: 0.12 }}
         aria-hidden
       >
