@@ -554,12 +554,12 @@ export function AppFormDialog({
                         >
                           <input
                             type="checkbox"
-                            checked={field.value.includes(team.name)}
+                            checked={field.value.includes(team.id)}
                             onChange={(e) => {
                               field.onChange(
                                 e.target.checked
-                                  ? [...field.value, team.name]
-                                  : field.value.filter((n) => n !== team.name),
+                                  ? [...field.value, team.id]
+                                  : field.value.filter((n) => n !== team.id),
                               )
                             }}
                             className="h-4 w-4 rounded border-input shrink-0"
