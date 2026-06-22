@@ -2,39 +2,93 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { SebratelLogo } from '@/components/SebratelLogo'
 import { useAuthStore } from '@/stores/auth.store'
 import {
   signInWithGoogle,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
 } from '@/services/auth.service'
+import { AlertCircle, Lock, ChevronDown, ChevronUp } from 'lucide-react'
+
+// ─── Google SVG ───────────────────────────────────────────────────────────────
 
 const GOOGLE_SVG = (
-  <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" aria-hidden="true">
-    <path
-      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-      fill="#4285F4"
-    />
-    <path
-      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-      fill="#34A853"
-    />
-    <path
-      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-      fill="#FBBC05"
-    />
-    <path
-      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-      fill="#EA4335"
-    />
+  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" aria-hidden>
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
   </svg>
 )
 
+// ─── Hexagonal floating icon ──────────────────────────────────────────────────
+
+function HexIcon({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div className="absolute pointer-events-none select-none" style={style} aria-hidden>
+      <svg width="64" height="72" viewBox="0 0 64 72">
+        <polygon
+          points="32,2 62,18 62,54 32,70 2,54 2,18"
+          fill="none"
+          stroke="rgba(255,176,0,0.45)"
+          strokeWidth="1.5"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-[#FFB000]/60">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// ─── Simple inline icons for the hex tiles ───────────────────────────────────
+
+const IconBolt = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+)
+const IconCloud = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+  </svg>
+)
+const IconBattery = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="6" width="18" height="12" rx="2" />
+    <line x1="23" y1="13" x2="23" y2="11" />
+  </svg>
+)
+const IconUsers = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+)
+const IconWifi = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+    <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+    <line x1="12" y1="20" x2="12.01" y2="20" />
+  </svg>
+)
+const IconBarChart = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="20" x2="18" y2="10" />
+    <line x1="12" y1="20" x2="12" y2="4" />
+    <line x1="6" y1="20" x2="6" y2="14" />
+  </svg>
+)
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export function LoginPage() {
-  const navigate   = useNavigate()
-  const location   = useLocation()
-  const authError  = useAuthStore((s) => s.error)
+  const navigate     = useNavigate()
+  const location     = useLocation()
+  const authError    = useAuthStore((s) => s.error)
   const setAuthError = useAuthStore((s) => s.setError)
   const from = (location.state as { from?: Location })?.from?.pathname ?? '/'
 
@@ -42,162 +96,155 @@ export function LoginPage() {
   const [password,  setPassword]  = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error,     setError]     = useState<string | null>(null)
-
+  const [showEmail, setShowEmail] = useState(false)
   const [resetState, setResetState] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [resetError, setResetError] = useState<string | null>(null)
 
   async function handleGoogleSignIn() {
-    setAuthError(null)
-    setError(null)
-    setIsLoading(true)
+    setAuthError(null); setError(null); setIsLoading(true)
     try {
       const result = await signInWithGoogle()
-      if (!result.success) {
-        if (result.error) setError(result.error)
-        return
-      }
+      if (!result.success) { if (result.error) setError(result.error); return }
       navigate(from, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao entrar com Google.')
-    } finally {
-      setIsLoading(false)
-    }
+    } finally { setIsLoading(false) }
   }
 
   async function handleEmailSignIn(e: React.FormEvent) {
     e.preventDefault()
-    setAuthError(null)
-    setError(null)
-    setIsLoading(true)
+    setAuthError(null); setError(null); setIsLoading(true)
     try {
       const result = await signInWithEmailAndPassword(email, password)
-      if (!result.success) {
-        setError(result.error ?? 'E-mail ou senha incorretos.')
-        return
-      }
+      if (!result.success) { setError(result.error ?? 'E-mail ou senha incorretos.'); return }
       navigate(from, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'E-mail ou senha incorretos.')
-    } finally {
-      setIsLoading(false)
-    }
+    } finally { setIsLoading(false) }
   }
 
   async function handlePasswordReset() {
     setResetError(null)
-    if (!email.trim()) {
-      setResetError('Preencha o e-mail acima antes de solicitar a recuperação.')
-      return
-    }
+    if (!email.trim()) { setResetError('Preencha o e-mail acima primeiro.'); return }
     setResetState('sending')
     try {
       await sendPasswordResetEmail(email.trim())
       setResetState('sent')
     } catch {
       setResetState('idle')
-      setResetError('Não foi possível enviar o e-mail. Verifique o endereço e tente novamente.')
+      setResetError('Não foi possível enviar o e-mail. Verifique e tente novamente.')
     }
   }
 
   const displayError = error ?? authError
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 lg:p-10 relative overflow-hidden">
-      {/* Arcos decorativos no fundo */}
-      <div className="pointer-events-none absolute -top-32 -right-32 w-[480px] h-[480px] rounded-full border-[48px] border-primary/10" />
-      <div className="pointer-events-none absolute -top-16 -right-16 w-[280px] h-[280px] rounded-full border-[32px] border-primary/7" />
-      <img src="/logo-circular-sebratel.png" aria-hidden draggable={false}
-        className="pointer-events-none absolute -top-6 -right-6 w-[200px] h-[200px] opacity-10 select-none" />
-      <div className="pointer-events-none absolute -bottom-40 -left-40 w-[520px] h-[520px] rounded-full border-[48px] border-primary/10" />
-      <div className="pointer-events-none absolute -bottom-20 -left-20 w-[300px] h-[300px] rounded-full border-[32px] border-primary/7" />
-      <img src="/logo-circular-sebratel.png" aria-hidden draggable={false}
-        className="pointer-events-none absolute -bottom-10 -left-10 w-[220px] h-[220px] opacity-10 select-none" />
+    <div className="h-screen w-screen flex overflow-hidden">
 
-      <div className="flex w-full max-w-5xl rounded-3xl overflow-hidden shadow-[0_32px_80px_-16px_rgba(0,0,0,0.22)]">
+      {/* ── Esquerda: imagem escura + ícones hexagonais ─────────────────── */}
+      <div className="hidden lg:flex relative flex-col justify-end w-[62%] shrink-0 overflow-hidden bg-[#0d0a06]">
+        {/* Imagem de fundo */}
+        <img
+          src="/login-cover.png"
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="absolute inset-0 w-full h-full object-cover object-center opacity-50"
+        />
+        {/* Overlay âmbar sutil */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#2d1800]/60 via-transparent to-[#0d0a06]/40" />
 
-        {/* ── Esquerda: capa ─────────────────────────────────────────────── */}
-        <div className="hidden lg:flex lg:flex-col w-[56%] shrink-0 bg-primary relative overflow-hidden">
-          <img
-            src="/login-cover.png"
-            alt=""
-            aria-hidden
-            className="absolute inset-0 w-full h-full object-cover object-left-top"
-            draggable={false}
-          />
+        {/* Ícones hexagonais flutuantes */}
+        <HexIcon style={{ top: '10%',  left: '10%'  }}><IconBolt /></HexIcon>
+        <HexIcon style={{ top: '8%',   left: '38%'  }}><IconCloud /></HexIcon>
+        <HexIcon style={{ top: '14%',  right: '12%' }}><IconUsers /></HexIcon>
+        <HexIcon style={{ top: '38%',  left: '5%'   }}><IconBattery /></HexIcon>
+        <HexIcon style={{ top: '42%',  right: '8%'  }}><IconWifi /></HexIcon>
+        <HexIcon style={{ bottom: '32%', left: '28%' }}><IconBarChart /></HexIcon>
 
-          {/* Texto sobreposto na parte inferior da imagem */}
-          <div
-            className="absolute bottom-0 left-0 right-0 px-10 py-7 overflow-hidden bg-black/55"
-            style={{
-              backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1.5px, transparent 1.5px)',
-              backgroundSize: '20px 20px',
-            }}
-          >
-            {/* Anéis decorativos */}
-            <div className="pointer-events-none absolute -right-8 -bottom-8 w-44 h-44 rounded-full border-[24px] border-white/10" />
-            <div className="pointer-events-none absolute right-14 -bottom-4 w-24 h-24 rounded-full border-[14px] border-white/8" />
-            {/* Logo watermark — centrado no anel grande */}
-            <img
-              src="/logo-circular-sebratel.png"
-              aria-hidden
-              className="pointer-events-none absolute right-20 bottom-2 w-12 h-12 opacity-25 select-none"
-              draggable={false}
-            />
+        {/* Texto inferior */}
+        <div className="relative z-10 px-12 py-10">
+          {/* Badge */}
+          <div className="flex items-center gap-2 mb-5">
+            <img src="/logo-circular-sebratel.png" alt="Sebratel" className="w-7 h-7 opacity-90" draggable={false} />
+            <span className="text-xs font-bold tracking-[0.18em] text-white/70 uppercase">Sebratel Hub</span>
+          </div>
 
-            {/* Conteúdo */}
-            <div className="relative">
-              <div className="w-7 h-[3px] rounded-full bg-white/40 mb-3" />
-              <p className="text-[22px] font-black text-white leading-tight tracking-tight">
-                Tudo que você precisa,<br />em um só lugar.
-              </p>
-              <p className="text-[12px] text-white/65 font-medium leading-relaxed mt-1.5">
-                Portal de aplicativos corporativos Sebratel
+          <h1 className="text-[2.4rem] font-black text-white leading-[1.15] tracking-tight">
+            A conexão que<br />
+            move{' '}
+            <span className="text-[#FFB000]">o que importa.</span>
+          </h1>
+          <p className="mt-3 text-sm text-white/50 font-medium leading-relaxed max-w-sm">
+            Tecnologia e pessoas conectadas para levar o melhor todos os dias.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Direita: formulário ─────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col bg-[#f7f4ee] overflow-y-auto">
+        <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
+          <div className="w-full max-w-[340px] flex flex-col gap-6">
+
+            {/* Badge topo */}
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-primary/15 px-3 py-1 text-[11px] font-bold tracking-widest text-primary uppercase">
+                Sebratel Hub
+              </span>
+            </div>
+
+            {/* Título */}
+            <div>
+              <h2 className="text-2xl font-black text-[#1a0f00] tracking-tight leading-tight">
+                Acessar plataforma
+              </h2>
+              <p className="mt-1.5 text-sm text-[#7a6a55]">
+                Acesso com conta Google para controle de permissões por módulo.
               </p>
             </div>
-          </div>
-        </div>
 
-        {/* ── Direita: formulário ────────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col bg-white relative">
-          {/* Faixa amber no topo */}
-          <div className="h-1 w-full bg-primary shrink-0" />
-
-          <div className="flex-1 flex flex-col items-center justify-center px-10 py-10">
-            <div className="w-full max-w-[300px] flex flex-col gap-5">
-
-              {/* Marca */}
-              <div className="flex flex-col items-center gap-3 text-center mb-1">
-                <SebratelLogo size={52} />
-                <div>
-                  <h1 className="text-2xl font-black text-foreground tracking-tight">
-                    Sebratel Hub
-                  </h1>
-                  <p className="text-[13px] text-muted-foreground mt-1">
-                    Acesso corporativo
-                  </p>
-                </div>
+            {/* Info de domínio */}
+            <div className="flex items-start gap-3 rounded-xl border border-[#e0d8c8] bg-white px-4 py-3">
+              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <div>
+                <p className="text-xs font-semibold text-[#1a0f00]">
+                  Domínio liberado nesta fase:
+                </p>
+                <p className="text-xs font-bold text-[#1a0f00]">@sebratel.com.br</p>
+                <p className="mt-0.5 text-[11px] text-primary font-medium">Política de acesso corporativo</p>
               </div>
+            </div>
 
-              {/* Google */}
-              <Button
-                variant="outline"
-                className="w-full h-11 gap-2.5 text-sm font-semibold border-border/70 hover:border-primary/50 hover:bg-primary/5 shadow-sm"
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-              >
-                {GOOGLE_SVG}
-                Continuar com Google
-              </Button>
+            {/* Botão Google */}
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              className="flex items-center justify-center gap-3 w-full h-12 rounded-xl bg-primary text-[#1a0f00] font-bold text-sm shadow-md hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60"
+            >
+              {GOOGLE_SVG}
+              Entrar com Google
+            </button>
 
-              {/* Divisor */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-border/60" />
-                <span className="text-[11px] font-semibold text-muted-foreground/50 tracking-widest">OU</span>
-                <div className="flex-1 h-px bg-border/60" />
-              </div>
+            {/* Divisor */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-[#d8cfc0]" />
+              <span className="text-[11px] font-semibold text-[#a0917d] tracking-widest">ou</span>
+              <div className="flex-1 h-px bg-[#d8cfc0]" />
+            </div>
 
-              {/* Formulário */}
-              <form onSubmit={handleEmailSignIn} className="flex flex-col gap-2.5">
+            {/* Link "Problemas para acessar?" */}
+            <button
+              type="button"
+              onClick={() => setShowEmail((v) => !v)}
+              className="flex items-center gap-1.5 self-center text-[13px] font-semibold text-primary hover:text-primary/80 transition-colors"
+            >
+              {showEmail ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              Problemas para acessar?
+            </button>
+
+            {/* Formulário e-mail (expansível) */}
+            {showEmail && (
+              <form onSubmit={handleEmailSignIn} className="flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
                 <Input
                   type="email"
                   placeholder="E-mail corporativo"
@@ -206,7 +253,7 @@ export function LoginPage() {
                   required
                   autoComplete="email"
                   disabled={isLoading}
-                  className="h-11 bg-muted/30 border-border/60 focus:border-primary"
+                  className="h-11 bg-white border-[#d8cfc0] focus:border-primary"
                 />
                 <Input
                   type="password"
@@ -216,58 +263,46 @@ export function LoginPage() {
                   required
                   autoComplete="current-password"
                   disabled={isLoading}
-                  className="h-11 bg-muted/30 border-border/60 focus:border-primary"
+                  className="h-11 bg-white border-[#d8cfc0] focus:border-primary"
                 />
-
                 <button
                   type="button"
                   onClick={handlePasswordReset}
-                  disabled={resetState === 'sending' || resetState === 'sent' || isLoading}
-                  className="self-end text-[12px] text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-0.5"
+                  disabled={resetState !== 'idle' || isLoading}
+                  className="self-end text-[12px] text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
                 >
-                  {resetState === 'sending'
-                    ? 'Enviando...'
-                    : resetState === 'sent'
-                      ? 'E-mail enviado ✓'
-                      : 'Esqueci minha senha'}
+                  {resetState === 'sending' ? 'Enviando...' : resetState === 'sent' ? 'E-mail enviado ✓' : 'Esqueci minha senha'}
                 </button>
-
-                <Button
-                  type="submit"
-                  className="w-full h-11 text-sm font-bold mt-1"
-                  disabled={isLoading || !email || !password}
-                >
+                <Button type="submit" className="h-11 font-bold" disabled={isLoading || !email || !password}>
                   {isLoading ? 'Entrando...' : 'Entrar'}
                 </Button>
+                {resetState === 'sent' && (
+                  <p className="text-xs text-center text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    Se este e-mail estiver cadastrado, você receberá as instruções.
+                  </p>
+                )}
+                {resetError && (
+                  <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{resetError}</p>
+                )}
               </form>
+            )}
 
-              {/* Feedback */}
-              {resetState === 'sent' && (
-                <p className="text-sm text-center rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-800">
-                  Se este e-mail estiver cadastrado, você receberá as instruções em breve.
-                </p>
-              )}
-              {resetError && (
-                <p className="text-sm text-destructive text-center rounded-xl bg-destructive/10 px-4 py-2.5">
-                  {resetError}
-                </p>
-              )}
-              {displayError && (
-                <p className="text-sm text-destructive text-center rounded-xl bg-destructive/10 px-4 py-2.5">
-                  {displayError}
-                </p>
-              )}
-
-            </div>
+            {/* Erros gerais */}
+            {displayError && (
+              <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/8 px-3 py-2.5">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                <p className="text-xs text-destructive">{displayError}</p>
+              </div>
+            )}
           </div>
-
-          {/* Rodapé */}
-          <p className="text-[10px] text-muted-foreground/40 text-center pb-4 select-none">
-            © {new Date().getFullYear()} Sebratel · Uso interno
-          </p>
         </div>
 
+        {/* Rodapé */}
+        <p className="text-[10px] text-[#a0917d] text-center pb-5 select-none">
+          © {new Date().getFullYear()} Sebratel · Uso interno
+        </p>
       </div>
+
     </div>
   )
 }
