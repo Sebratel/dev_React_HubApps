@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   Menu, X, LayoutDashboard, Users, ClipboardList, LayoutGrid,
-  Bell, UsersRound, MessageSquare, ArrowLeft, ScrollText, Sparkles, BookOpen,
+  Bell, UsersRound, MessageSquare, ArrowLeft, ScrollText, Sparkles, BookOpen, ChevronLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SebratelLogo } from '@/components/SebratelLogo'
@@ -22,8 +22,14 @@ const NAV_ITEMS = [
   { to: '/admin/audit-logs',      label: 'Auditoria',    icon: ScrollText,      end: false },
 ]
 
+function getSidebarPinned(): boolean {
+  try { return localStorage.getItem('sidebar-pinned') !== 'false' }
+  catch { return true }
+}
+
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [pinned, setPinned] = useState(getSidebarPinned)
 
   const { data: stats } = useQuery({
     queryKey: ['admin', 'stats'],
@@ -38,6 +44,22 @@ export function AdminLayout() {
     '/admin/users':           stats?.inactiveUsers      ?? 0,
   }
 
+  function togglePin() {
+    setPinned((p) => {
+      const next = !p
+      try { localStorage.setItem('sidebar-pinned', String(next)) } catch {}
+      return next
+    })
+  }
+
+  const labelClass = pinned
+    ? 'opacity-100 flex-1 leading-none'
+    : 'opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150 flex-1 leading-none'
+
+  const wordmarkClass = pinned
+    ? 'flex flex-col leading-none whitespace-nowrap'
+    : 'flex flex-col leading-none whitespace-nowrap opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150'
+
   return (
     <div className="h-screen overflow-hidden flex bg-background">
       {/* Mobile overlay */}
@@ -49,15 +71,15 @@ export function AdminLayout() {
         />
       )}
 
-      {/* ── Sidebar — always fixed/overlay, never pushes content ─────────── */}
+      {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
       <aside
         className={cn(
           'group fixed inset-y-0 left-0 z-30',
           'flex flex-col bg-card border-r border-border overflow-hidden shrink-0',
-          // Desktop: collapsed 60px, expands on hover as overlay
-          'md:w-[60px] md:hover:w-56',
+          // Desktop: pinned = fixed width, unpinned = collapsed + hover overlay
+          pinned ? 'md:w-56' : 'md:w-[60px] md:hover:w-56',
           'md:transition-[width] md:duration-200 md:ease-in-out',
-          // Mobile: full-width drawer (slide in/out)
+          // Mobile: full-width drawer
           'w-64',
           'transition-transform md:transition-[width] duration-200 ease-in-out',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
@@ -72,11 +94,21 @@ export function AdminLayout() {
             className="flex items-center gap-3 min-w-0 rounded-xl transition-transform duration-150 active:scale-95"
           >
             <SebratelLogo size={34} />
-            <span className="flex flex-col leading-none whitespace-nowrap opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150">
+            <span className={wordmarkClass}>
               <span className="font-extrabold text-[15px] text-foreground tracking-tight">Sebratel</span>
               <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary mt-0.5">Admin</span>
             </span>
           </Link>
+
+          {/* Pin/unpin toggle — desktop only */}
+          <button
+            onClick={togglePin}
+            className="hidden md:flex ml-auto shrink-0 p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            aria-label={pinned ? 'Recolher menu' : 'Fixar menu'}
+            title={pinned ? 'Recolher menu' : 'Fixar menu'}
+          >
+            <ChevronLeft className={cn('h-4 w-4 transition-transform duration-200', !pinned && 'rotate-180')} />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -109,18 +141,22 @@ export function AdminLayout() {
                       <Icon className="sidebar-nav-icon h-[18px] w-[18px]" aria-hidden />
                       {count > 0 && (
                         <span
-                          className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-card md:group-hover:opacity-0 transition-opacity duration-150"
+                          className={cn(
+                            'absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-card transition-opacity duration-150',
+                            pinned ? 'opacity-0' : 'md:group-hover:opacity-0',
+                          )}
                           aria-hidden
                         />
                       )}
                     </div>
 
-                    <span className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150 flex-1 leading-none">
-                      {label}
-                    </span>
+                    <span className={labelClass}>{label}</span>
 
                     {count > 0 && (
-                      <span className="ml-auto text-[10px] font-bold leading-none bg-primary/15 text-primary rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center whitespace-nowrap opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150">
+                      <span className={cn(
+                        'ml-auto text-[10px] font-bold leading-none bg-primary/15 text-primary rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center whitespace-nowrap',
+                        pinned ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150',
+                      )}>
                         {count > 99 ? '99+' : count}
                       </span>
                     )}
@@ -138,7 +174,7 @@ export function AdminLayout() {
               className="group/item flex items-center gap-3 px-[10px] py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors overflow-hidden whitespace-nowrap"
             >
               <ArrowLeft className="sidebar-nav-icon h-[18px] w-[18px] shrink-0" aria-hidden />
-              <span className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150">
+              <span className={pinned ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150'}>
                 Voltar ao Hub
               </span>
             </Link>
@@ -146,8 +182,12 @@ export function AdminLayout() {
         </nav>
       </aside>
 
-      {/* ── Main column — offset by collapsed sidebar width on desktop ──────── */}
-      <div className="flex flex-col flex-1 min-w-0 h-full md:pl-[60px]">
+      {/* ── Main column ─────────────────────────────────────────────────────── */}
+      <div className={cn(
+        'flex flex-col flex-1 min-w-0 h-full',
+        pinned ? 'md:pl-56' : 'md:pl-[60px]',
+        'transition-[padding] duration-200 ease-in-out',
+      )}>
         {/* Topbar — mobile only */}
         <header className="h-14 bg-primary flex items-center px-4 shadow-sm gap-3 shrink-0 md:hidden">
           <button
