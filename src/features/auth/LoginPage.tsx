@@ -25,7 +25,7 @@ const GOOGLE_SVG = (
 
 function HexIcon({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div className="absolute pointer-events-none select-none" style={style} aria-hidden>
+    <div className="relative pointer-events-none select-none" style={style} aria-hidden>
       <svg width="64" height="72" viewBox="0 0 64 72">
         <polygon
           points="32,2 62,18 62,54 32,70 2,54 2,18"
@@ -156,30 +156,39 @@ export function LoginPage() {
         {/* Faixa escura inferior para legibilidade do texto */}
         <div className="absolute bottom-0 left-0 right-0 h-52 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
-        {/* Ícones hexagonais flutuantes */}
-        <HexIcon style={{ top: '10%',  left: '10%'  }}><IconBolt /></HexIcon>
-        <HexIcon style={{ top: '8%',   left: '38%'  }}><IconCloud /></HexIcon>
-        <HexIcon style={{ top: '14%',  right: '12%' }}><IconUsers /></HexIcon>
-        <HexIcon style={{ top: '38%',  left: '5%'   }}><IconBattery /></HexIcon>
-        <HexIcon style={{ top: '42%',  right: '8%'  }}><IconWifi /></HexIcon>
-        <HexIcon style={{ bottom: '32%', left: '28%' }}><IconBarChart /></HexIcon>
+        {/* Texto inferior + ícones */}
+        <div className="relative z-10 px-12 py-10 flex items-end justify-between gap-6">
+          {/* Texto */}
+          <div className="min-w-0">
+            {/* Badge */}
+            <div className="flex items-center gap-2 mb-5">
+              <img src="/logo-circular-sebratel.png" alt="Sebratel" className="w-10 h-10 opacity-90" draggable={false} />
+              <span className="text-xs font-bold tracking-[0.18em] text-white/70 uppercase">Sebratel Hub</span>
+            </div>
 
-        {/* Texto inferior */}
-        <div className="relative z-10 px-12 py-10">
-          {/* Badge */}
-          <div className="flex items-center gap-2 mb-5">
-            <img src="/logo-circular-sebratel.png" alt="Sebratel" className="w-10 h-10 opacity-90" draggable={false} />
-            <span className="text-xs font-bold tracking-[0.18em] text-white/70 uppercase">Sebratel Hub</span>
+            <h1 className="text-[2.4rem] font-black text-white leading-[1.15] tracking-tight">
+              A conexão que<br />
+              move{' '}
+              <span className="text-[#FFB000]">o que importa.</span>
+            </h1>
+            <p className="mt-3 text-sm text-white/50 font-medium leading-relaxed max-w-sm">
+              Tecnologia e pessoas conectadas para levar o melhor todos os dias.
+            </p>
           </div>
 
-          <h1 className="text-[2.4rem] font-black text-white leading-[1.15] tracking-tight">
-            A conexão que<br />
-            move{' '}
-            <span className="text-[#FFB000]">o que importa.</span>
-          </h1>
-          <p className="mt-3 text-sm text-white/50 font-medium leading-relaxed max-w-sm">
-            Tecnologia e pessoas conectadas para levar o melhor todos os dias.
-          </p>
+          {/* Ícones hexagonais em grid 2×3 */}
+          <div className="shrink-0 flex flex-col gap-1.5 pb-1">
+            <div className="flex gap-1.5">
+              <HexIcon><IconBolt /></HexIcon>
+              <HexIcon><IconCloud /></HexIcon>
+              <HexIcon><IconUsers /></HexIcon>
+            </div>
+            <div className="flex gap-1.5">
+              <HexIcon><IconBattery /></HexIcon>
+              <HexIcon><IconWifi /></HexIcon>
+              <HexIcon><IconBarChart /></HexIcon>
+            </div>
+          </div>
         </div>
       </div>
 
