@@ -1,5 +1,6 @@
-import { auth } from '@/firebase'
+import { auth, storage } from '@/firebase'
 import { getIdToken } from 'firebase/auth'
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { ApiError, type PaginatedResponse, type QueryParams } from '@/types/api'
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
@@ -97,6 +98,39 @@ export async function uploadFile(
     xhr.open('POST', `${API_URL}${path}`)
     xhr.setRequestHeader('Authorization', `Bearer ${token}`)
     xhr.send(fd)
+  })
+}
+
+// Upload a file directly to Firebase Storage. Returns a permanent public download URL
+// that works regardless of environment (dev/prod/Portainer).
+export async function uploadFileToStorage(
+  folder: string,
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<string> {
+  const user = auth.currentUser
+  if (!user) throw new ApiError('Usuário não autenticado', 401)
+
+  const ext = file.name.split('.').pop() ?? 'bin'
+  const path = `${folder}/${user.uid}_${Date.now()}.${ext}`
+  const storageRef = ref(storage, path)
+  const task = uploadBytesResumable(storageRef, file)
+
+  return new Promise((resolve, reject) => {
+    task.on(
+      'state_changed',
+      (snap) => {
+        if (onProgress) onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100))
+      },
+      (err) => reject(new ApiError(err.message, 0)),
+      async () => {
+        try {
+          resolve(await getDownloadURL(task.snapshot.ref))
+        } catch (err) {
+          reject(err)
+        }
+      },
+    )
   })
 }
 

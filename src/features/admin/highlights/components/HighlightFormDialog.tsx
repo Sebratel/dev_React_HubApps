@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { uploadFile } from '@/lib/api'
+import { uploadFileToStorage } from '@/lib/api'
 import type { HighlightModel } from '@/types/models'
 
 const BADGE_PRESETS = ['NOVIDADE', 'EM BREVE', 'ATUALIZAÇÃO', 'DESTAQUE']
@@ -165,7 +165,7 @@ export function HighlightFormDialog({
     setUploadedFileName(file.name)
 
     try {
-      const url = await uploadFile('/upload/highlights', file, setUploadProgress)
+      const url = await uploadFileToStorage('highlights', file, setUploadProgress)
       setValue('imageUrl', url, { shouldValidate: true })
     } catch (err) {
       setUploadError(err instanceof Error ? `Erro ao enviar: ${err.message}` : 'Erro ao enviar o arquivo')
