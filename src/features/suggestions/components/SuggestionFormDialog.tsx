@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog'
@@ -6,7 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
-import { useAppsStore } from '@/stores/apps.store'
+import { getApps } from '@/services/app.service'
+import { getUserApps } from '@/utils/permissions'
+import { useAuthStore } from '@/stores/auth.store'
 import type { SuggestionType } from '@/types/enums'
 import type { CreateSuggestionPayload } from '@/services/suggestion.service'
 
@@ -32,7 +35,19 @@ export function SuggestionFormDialog({
   const [form, setForm]   = useState(DEFAULT)
   const [error, setError] = useState<string | null>(null)
 
-  const apps = useAppsStore((s) => s.userApps)
+  const user = useAuthStore((s) => s.user)
+
+  const { data: allApps = [] } = useQuery({
+    queryKey: ['apps'],
+    queryFn: getApps,
+    staleTime: 300_000,
+    enabled: open && !!user,
+  })
+
+  const apps = useMemo(
+    () => (user ? getUserApps(user, allApps) : []),
+    [user, allApps]
+  )
 
   useEffect(() => {
     if (open) { setForm(DEFAULT); setError(null) }

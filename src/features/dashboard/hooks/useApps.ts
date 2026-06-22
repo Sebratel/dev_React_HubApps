@@ -42,6 +42,11 @@ export function useApps() {
     [userApps, recent]
   )
 
+  // Sync computed userApps back to the store so other components can read it
+  useEffect(() => {
+    useAppsStore.getState().setUserApps(userApps)
+  }, [userApps])
+
   // Prune stale IDs from persisted store when the app list is loaded
   useEffect(() => {
     if (allApps.length > 0) {
