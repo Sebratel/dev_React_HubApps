@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { RefreshCw, Search, CheckCircle, XCircle, Clock3, Inbox, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -183,7 +183,7 @@ export function AccessRequestsManagementPage() {
   const volMax = Math.max(...weeklyVolume, 1)
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <PageHero
         icon={Inbox}
         title="Solicitações de Acesso"

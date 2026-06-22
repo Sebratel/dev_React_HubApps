@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { RefreshCw, Search, Download, ScrollText } from 'lucide-react'
 import { listAuditLogs } from '@/services/admin/admin-audit-log.service'
 import { Button } from '@/components/ui/button'
@@ -133,7 +133,7 @@ export function AuditLogsManagementPage() {
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <PageHero
         icon={ScrollText}
         title="Logs de Auditoria"

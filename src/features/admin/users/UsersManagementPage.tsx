@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { RefreshCw, Search, UserPlus, Download, Users, UserCheck, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -128,7 +128,7 @@ export function UsersManagementPage() {
   const activeRatio = totalUsers > 0 ? Math.round((activeCount / totalUsers) * 100) : 0
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <PageHero
         icon={Users}
         title="Usuários"

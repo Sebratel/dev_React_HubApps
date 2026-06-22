@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, Plus, Pencil, Trash2, ExternalLink, Globe, FileText, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -250,7 +250,7 @@ export function AdminManualsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
 
       <PageHero
         icon={BookOpen}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical, Sparkles, CheckCircle2, EyeOffIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -106,7 +106,7 @@ export function AdminHighlightsPage() {
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <PageHero
         icon={Sparkles}
         title="Destaques"

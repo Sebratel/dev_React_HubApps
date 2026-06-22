@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
   Plus, RefreshCw, Pencil, Trash2, Megaphone,
@@ -254,7 +254,7 @@ export function AdminAnnouncementsPage() {
   const isBusy = createMutation.isPending || updateMutation.isPending
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <PageHero
         icon={Megaphone}
         title="Avisos"

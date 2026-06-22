@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import { ClipboardList, Clock3, CheckCircle2, XCircle } from 'lucide-react'
@@ -55,7 +55,7 @@ export function MyRequestsPage() {
   if (!user) return null
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <PageHero
         icon={ClipboardList}
         title="Minhas solicitações"

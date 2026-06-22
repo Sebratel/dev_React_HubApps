@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Plus, RefreshCw, Pencil, Trash2, Users, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -103,7 +103,7 @@ export function AdminTeamsPage() {
   const skeletonCards = Array.from({ length: 4 })
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <PageHero
         icon={Users}
         title="Times"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Plus, MessageSquare, RefreshCw, ThumbsUp, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -56,7 +56,7 @@ export function SuggestionsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <PageHero
         icon={MessageSquare}
         title="Sugestões"

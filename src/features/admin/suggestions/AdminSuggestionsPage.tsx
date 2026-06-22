@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
   RefreshCw, Pencil, MessageSquare, Clock3, CheckCircle2,
@@ -290,7 +290,7 @@ export function AdminSuggestionsPage() {
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <PageHero
         icon={MessageSquare}
         title="Sugestões"

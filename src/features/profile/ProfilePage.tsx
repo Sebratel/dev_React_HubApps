@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+﻿import { useState, useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   updateProfile,
@@ -156,7 +156,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <motion.div
