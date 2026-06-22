@@ -163,7 +163,7 @@ export function AppsManagementPage() {
   const showInsights = !isLoading && totalApps >= 2
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <PageHero
         icon={LayoutGrid}
         title="Aplicativos"
