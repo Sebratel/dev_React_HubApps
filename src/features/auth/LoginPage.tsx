@@ -144,7 +144,7 @@ export function LoginPage() {
           alt=""
           aria-hidden
           draggable={false}
-          className="absolute inset-0 w-full h-full object-cover object-center opacity-90 animate-ken-burns"
+          className="absolute inset-0 w-full h-full object-cover object-center opacity-95 animate-ken-burns"
         />
         {/* Overlay âmbar sutil */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#2d1800]/60 via-transparent to-[#0d0a06]/40" />
