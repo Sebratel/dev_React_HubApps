@@ -233,7 +233,7 @@ export function LoginPage() {
               onClick={handleGoogleSignIn}
               disabled={isLoading}
               className="flex items-center justify-center gap-3 w-full h-14 rounded-2xl bg-primary text-[#1a0f00] font-bold text-sm active:scale-[0.98] transition-all disabled:opacity-60"
-              style={{ boxShadow: 'inset 3px 3px 8px rgba(180,120,0,0.25), inset -2px -2px 6px rgba(255,220,80,0.4)' }}
+              style={{ boxShadow: '0 4px 18px rgba(255,176,0,0.45), 0 1px 4px rgba(0,0,0,0.12)' }}
             >
               {GOOGLE_SVG}
               Entrar com Google
