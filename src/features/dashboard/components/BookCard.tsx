@@ -89,7 +89,7 @@ export function BookCard({
 
       {/* Inicial em marca d'água */}
       <span
-        className="pointer-events-none absolute -top-4 -right-2 select-none font-black leading-none text-[#3d1a00]"
+        className="pointer-events-none absolute top-2 right-4 select-none font-black leading-none text-[#3d1a00]"
         style={{ fontSize: '5.5rem', opacity: 0.12 }}
         aria-hidden
       >
