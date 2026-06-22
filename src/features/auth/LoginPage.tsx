@@ -29,12 +29,12 @@ function HexIcon({ children, style }: { children: React.ReactNode; style?: React
       <svg width="64" height="72" viewBox="0 0 64 72">
         <polygon
           points="32,2 62,18 62,54 32,70 2,54 2,18"
-          fill="rgba(255,176,0,0.75)"
-          stroke="rgba(255,176,0,0.9)"
+          fill="none"
+          stroke="rgba(255,176,0,0.55)"
           strokeWidth="1.5"
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-[#1a1200]">
+      <div className="absolute inset-0 flex items-center justify-center text-[#FFB000]/70">
         {children}
       </div>
     </div>
@@ -149,7 +149,7 @@ export function LoginPage() {
           alt=""
           aria-hidden
           draggable={false}
-          className="absolute inset-0 w-full h-full object-cover object-center opacity-80 animate-ken-burns"
+          className="absolute inset-0 w-full h-full object-cover object-center opacity-90 animate-ken-burns"
         />
         {/* Overlay âmbar sutil */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#2d1800]/60 via-transparent to-[#0d0a06]/40" />
