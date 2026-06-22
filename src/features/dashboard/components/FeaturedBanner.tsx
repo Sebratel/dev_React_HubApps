@@ -9,8 +9,7 @@ import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { HighlightModel } from '@/types/models'
 
-const CARD_RATIO = 0.40
-const ROT_DEG   = 22
+const ROT_DEG = 22
 
 // ── Single card — hooks at top level so rules of hooks are respected ──────────
 interface CardProps {
@@ -21,10 +20,11 @@ interface CardProps {
   cardW:      number
   cardH:      number
   step:       number
+  rotDeg:     number
   onNavigate: (idx: number) => void
 }
 
-function CarouselCard({ item, idx, n, pos, cardW, cardH, step, onNavigate }: CardProps) {
+function CarouselCard({ item, idx, n, pos, cardW, cardH, step, rotDeg, onNavigate }: CardProps) {
   const reduced = useReducedMotion()
   const [hover, setHover]       = useState(false)
   const [isCenter, setIsCenter] = useState(false)
@@ -43,7 +43,7 @@ function CarouselCard({ item, idx, n, pos, cardW, cardH, step, onNavigate }: Car
   }, [d])
 
   const x       = useTransform(d, v => v * step)
-  const rotY    = useTransform(d, v => reduced ? 0 : -v * ROT_DEG)
+  const rotY    = useTransform(d, v => reduced ? 0 : -v * rotDeg)
   // translateZ — pushes side cards physically back in 3D space (real depth via container perspective)
   const z       = useTransform(d, v => reduced ? 0 : -Math.abs(v) * 90)
   // stronger size hierarchy: 1 at center, 0.68 at ±1 — the grow-to-center is more dramatic
@@ -225,9 +225,12 @@ export function FeaturedBanner({ highlights }: FeaturedBannerProps) {
     return () => ro.disconnect()
   }, [])
 
-  const cardW = cw * CARD_RATIO
+  const isMobile = cw < 600
+  const cardRatio = isMobile ? 0.82 : 0.40
+  const rotDeg    = isMobile ? 6    : ROT_DEG
+  const cardW = cw * cardRatio
   const cardH = Math.round(cardW * (9 / 16))
-  const step  = cardW
+  const step  = isMobile ? cw * 0.86 : cardW
 
   // Navigate — animate continuous position
   const navigateTo = useCallback((newPos: number) => {
@@ -336,6 +339,7 @@ export function FeaturedBanner({ highlights }: FeaturedBannerProps) {
             cardW={cardW}
             cardH={cardH}
             step={step}
+            rotDeg={rotDeg}
             onNavigate={(idx) => {
               const current = pos.get()
               const currentIdx = Math.round(((current % n) + n) % n) % n

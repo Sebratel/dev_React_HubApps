@@ -52,6 +52,9 @@
   }
 }
 
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
 @media (prefers-reduced-motion: reduce) {
   /* Only skip decorative entrance/exit animations — preserve functional animate-spin, animate-pulse */
   .animate-fade-in,

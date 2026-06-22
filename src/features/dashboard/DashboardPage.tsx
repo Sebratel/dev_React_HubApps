@@ -388,7 +388,9 @@ export function DashboardPage() {
               >
                 {/* Tab bar */}
                 <div
-                  className="flex gap-1 rounded-2xl p-1"
+                  className="overflow-x-auto scrollbar-none -mx-1 px-1 pb-0.5"
+                ><div
+                  className="flex gap-1 rounded-2xl p-1 min-w-max sm:min-w-0"
                   style={{
                     background: 'rgba(255,255,255,0.55)',
                     backdropFilter: 'blur(12px)',
@@ -406,7 +408,7 @@ export function DashboardPage() {
                       aria-selected={activeTab === key}
                       onClick={() => setActiveTab(key)}
                       className={cn(
-                        'relative flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150',
+                        'relative flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150 whitespace-nowrap',
                         activeTab === key ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
                       )}
                     >
@@ -425,7 +427,7 @@ export function DashboardPage() {
                       )}
                     </button>
                   ))}
-                </div>
+                </div></div>
 
                 {/* Grid com transição entre abas */}
                 <AnimatePresence mode="wait">
