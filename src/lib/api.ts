@@ -1,6 +1,5 @@
-import { auth, storage } from '@/firebase'
+import { auth } from '@/firebase'
 import { getIdToken } from 'firebase/auth'
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { ApiError, type PaginatedResponse, type QueryParams } from '@/types/api'
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
@@ -101,36 +100,45 @@ export async function uploadFile(
   })
 }
 
-// Upload a file directly to Firebase Storage. Returns a permanent public download URL
-// that works regardless of environment (dev/prod/Portainer).
-export async function uploadFileToStorage(
-  folder: string,
+// Convert an image file to a compressed Base64 data URI for storage in the database.
+// Resizes to max 1200px wide and encodes as JPEG at 82% quality.
+export async function imageToBase64(
   file: File,
   onProgress?: (pct: number) => void,
 ): Promise<string> {
-  const user = auth.currentUser
-  if (!user) throw new ApiError('Usuário não autenticado', 401)
-
-  const ext = file.name.split('.').pop() ?? 'bin'
-  const path = `${folder}/${user.uid}_${Date.now()}.${ext}`
-  const storageRef = ref(storage, path)
-  const task = uploadBytesResumable(storageRef, file)
-
   return new Promise((resolve, reject) => {
-    task.on(
-      'state_changed',
-      (snap) => {
-        if (onProgress) onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100))
-      },
-      (err) => reject(new ApiError(err.message, 0)),
-      async () => {
-        try {
-          resolve(await getDownloadURL(task.snapshot.ref))
-        } catch (err) {
-          reject(err)
-        }
-      },
-    )
+    onProgress?.(10)
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+
+    img.onload = () => {
+      onProgress?.(40)
+      const MAX_W = 1200
+      const scale = img.width > MAX_W ? MAX_W / img.width : 1
+      const w = Math.round(img.width * scale)
+      const h = Math.round(img.height * scale)
+
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { reject(new Error('Canvas não disponível')); return }
+
+      ctx.drawImage(img, 0, 0, w, h)
+      URL.revokeObjectURL(url)
+      onProgress?.(80)
+
+      const dataUri = canvas.toDataURL('image/jpeg', 0.82)
+      onProgress?.(100)
+      resolve(dataUri)
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Não foi possível carregar a imagem'))
+    }
+
+    img.src = url
   })
 }
 

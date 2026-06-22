@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { uploadFileToStorage } from '@/lib/api'
+import { imageToBase64 } from '@/lib/api'
 import type { HighlightModel } from '@/types/models'
 
 const BADGE_PRESETS = ['NOVIDADE', 'EM BREVE', 'ATUALIZAÇÃO', 'DESTAQUE']
@@ -70,7 +70,10 @@ const schema = z.object({
   badgeText:      z.string().max(50).optional(),
   ctaLabel:       z.string().max(100).optional(),
   ctaUrl:         z.string().url('URL inválida').or(z.literal('')).optional(),
-  imageUrl:       z.string().url('URL da imagem inválida').min(1, 'Imagem obrigatória'),
+  imageUrl:       z.string().min(1, 'Imagem obrigatória').refine(
+    v => v.startsWith('data:image/') || v.startsWith('http://') || v.startsWith('https://'),
+    'Use uma URL válida ou faça upload de uma imagem',
+  ),
   objectFit:      z.enum(['cover', 'contain']),
   objectPosition: z.string(),
   sortOrder:      z.coerce.number().int().min(0).optional(),
@@ -165,7 +168,7 @@ export function HighlightFormDialog({
     setUploadedFileName(file.name)
 
     try {
-      const url = await uploadFileToStorage('highlights', file, setUploadProgress)
+      const url = await imageToBase64(file, setUploadProgress)
       setValue('imageUrl', url, { shouldValidate: true })
     } catch (err) {
       setUploadError(err instanceof Error ? `Erro ao enviar: ${err.message}` : 'Erro ao enviar o arquivo')
