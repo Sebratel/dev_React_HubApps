@@ -142,7 +142,7 @@ export function AdminLayout() {
           <span className="font-bold text-black/90 text-base tracking-tight">Admin</span>
         </header>
 
-        <main className="flex-1 p-6 overflow-y-auto min-w-0">
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0">
           <Outlet />
         </main>
       </div>

@@ -141,7 +141,7 @@ export function AuditLogsManagementPage() {
         stats={!isLoading && totalLogs > 0 ? heroStats : undefined}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_260px] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 items-start">
         {/* ── Coluna principal ─────────────────────────────────────────────── */}
         <div className="flex flex-col gap-6 min-w-0">
           {/* Toolbar */}
@@ -233,7 +233,7 @@ export function AuditLogsManagementPage() {
             </Select>
 
             {/* Custom date range */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground whitespace-nowrap">De</span>
               <Input
                 type="date"
@@ -284,7 +284,7 @@ export function AuditLogsManagementPage() {
         </div>
 
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-        <aside className="flex flex-col gap-4 xl:sticky xl:top-6">
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-6">
           {/* Stats */}
           <div className="rounded-xl border border-border bg-card p-5">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-4">

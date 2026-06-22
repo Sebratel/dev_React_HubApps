@@ -187,7 +187,7 @@ export function LoginPage() {
       <div className="hidden lg:block w-1.5 shrink-0 bg-[#FFB000] z-10" aria-hidden />
 
       {/* ── Direita: formulário ─────────────────────────────────────────── */}
-      <div className="w-[35%] shrink-0 flex flex-col bg-[#f7f4ee] overflow-y-auto">
+      <div className="w-full lg:w-[35%] shrink-0 flex flex-col bg-[#f7f4ee] overflow-y-auto">
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
           <div className="w-full max-w-[340px] flex flex-col gap-6">
 
