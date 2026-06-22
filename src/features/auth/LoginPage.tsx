@@ -29,12 +29,12 @@ function HexIcon({ children, style }: { children: React.ReactNode; style?: React
       <svg width="64" height="72" viewBox="0 0 64 72">
         <polygon
           points="32,2 62,18 62,54 32,70 2,54 2,18"
-          fill="none"
-          stroke="rgba(255,176,0,0.45)"
+          fill="rgba(255,176,0,0.75)"
+          stroke="rgba(255,176,0,0.9)"
           strokeWidth="1.5"
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-[#FFB000]/60">
+      <div className="absolute inset-0 flex items-center justify-center text-[#1a1200]">
         {children}
       </div>
     </div>
@@ -187,36 +187,44 @@ export function LoginPage() {
       <div className="hidden lg:block w-1.5 shrink-0 bg-[#FFB000] z-10" aria-hidden />
 
       {/* ── Direita: formulário ─────────────────────────────────────────── */}
-      <div className="w-full lg:w-[35%] shrink-0 flex flex-col bg-[#f7f4ee] overflow-y-auto">
+      <div className="w-full lg:w-[35%] shrink-0 flex flex-col bg-[#efefed] overflow-y-auto">
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
-          <div className="w-full max-w-[340px] flex flex-col gap-6">
+          <div className="w-full max-w-[320px] flex flex-col items-center gap-6">
 
             {/* Badge topo */}
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded-full bg-primary/15 px-3 py-1 text-[11px] font-bold tracking-widest text-primary uppercase">
-                Sebratel Hub
-              </span>
-            </div>
+            <span
+              className="inline-flex items-center rounded-full px-5 py-1.5 text-[11px] font-bold tracking-[0.18em] text-primary uppercase"
+              style={{ background: '#efefed', boxShadow: '4px 4px 10px rgba(0,0,0,0.13), -3px -3px 8px rgba(255,255,255,0.85)' }}
+            >
+              Sebratel Hub
+            </span>
 
             {/* Título */}
-            <div>
-              <h2 className="text-2xl font-black text-[#1a0f00] tracking-tight leading-tight">
+            <div className="text-center">
+              <h2 className="text-[1.75rem] font-black text-[#1a0f00] tracking-tight leading-tight">
                 Acessar plataforma
               </h2>
-              <p className="mt-1.5 text-sm text-[#7a6a55]">
-                Acesso com conta Google para controle de permissões por módulo.
+              <p className="mt-2 text-sm text-[#7a6a55] leading-snug">
+                Acesso com conta Google para controle de<br />permissões por módulo.
               </p>
             </div>
 
             {/* Info de domínio */}
-            <div className="flex items-start gap-3 rounded-xl border border-[#e0d8c8] bg-white px-4 py-3">
-              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div
+              className="w-full flex items-center gap-4 rounded-2xl bg-[#efefed] px-5 py-4"
+              style={{ boxShadow: '6px 6px 14px rgba(0,0,0,0.12), -4px -4px 10px rgba(255,255,255,0.88)' }}
+            >
+              <div
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                style={{ background: '#efefed', boxShadow: '3px 3px 7px rgba(0,0,0,0.12), -2px -2px 6px rgba(255,255,255,0.85)' }}
+              >
+                <Lock className="h-5 w-5 text-primary" />
+              </div>
               <div>
-                <p className="text-xs font-semibold text-[#1a0f00]">
-                  Domínio liberado nesta fase:
+                <p className="text-[10px] font-bold tracking-[0.14em] text-primary uppercase">
+                  Domínio liberado:
                 </p>
-                <p className="text-xs font-bold text-[#1a0f00]">@sebratel.com.br</p>
-                <p className="mt-0.5 text-[11px] text-primary font-medium">Política de acesso corporativo</p>
+                <p className="text-sm font-bold text-[#1a0f00]">@sebratel.com.br</p>
               </div>
             </div>
 
@@ -224,14 +232,15 @@ export function LoginPage() {
             <button
               onClick={handleGoogleSignIn}
               disabled={isLoading}
-              className="flex items-center justify-center gap-3 w-full h-12 rounded-xl bg-primary text-[#1a0f00] font-bold text-sm shadow-md hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60"
+              className="flex items-center justify-center gap-3 w-full h-14 rounded-2xl bg-primary text-[#1a0f00] font-bold text-sm active:scale-[0.98] transition-all disabled:opacity-60"
+              style={{ boxShadow: '4px 4px 12px rgba(255,176,0,0.45), -2px -2px 8px rgba(255,255,255,0.5)' }}
             >
               {GOOGLE_SVG}
               Entrar com Google
             </button>
 
             {/* Divisor */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full">
               <div className="flex-1 h-px bg-[#d8cfc0]" />
               <span className="text-[11px] font-semibold text-[#a0917d] tracking-widest">ou</span>
               <div className="flex-1 h-px bg-[#d8cfc0]" />
@@ -241,7 +250,7 @@ export function LoginPage() {
             <button
               type="button"
               onClick={() => setShowEmail((v) => !v)}
-              className="flex items-center gap-1.5 self-center text-[13px] font-semibold text-primary hover:text-primary/80 transition-colors"
+              className="flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:text-primary/80 transition-colors"
             >
               {showEmail ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               Problemas para acessar?
@@ -303,7 +312,7 @@ export function LoginPage() {
         </div>
 
         {/* Rodapé */}
-        <p className="text-[10px] text-[#a0917d] text-center pb-5 select-none">
+        <p className="text-[10px] text-[#a0917d] text-center pb-5 select-none tracking-widest uppercase">
           © {new Date().getFullYear()} Sebratel · Uso interno
         </p>
       </div>
