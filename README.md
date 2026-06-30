@@ -41,16 +41,28 @@ dev_React_HubApps/
 # 1. Instalar dependências
 npm install
 
-# 2. Configurar variáveis de ambiente
+# 2. Configurar variáveis de ambiente do frontend
 cp .env.example .env.local
-# Preencha os valores do projeto Firebase em .env.local
+# .env.example já vem com a config pública do Firebase preenchida.
+# Ajuste apenas VITE_API_URL (localhost x backend remoto) se preciso.
+
+# 3. Backend (hub-api) — em outro terminal
+cp hub-api/.env.example hub-api/.env
+# Preencha DB_PASS, SSO_JWT_SECRET e a service account
 ```
 
 ## Variáveis de ambiente
 
-Copie `.env.example` e preencha os valores. Todas as variáveis são chaves **públicas** do Firebase
-(identificadores de projeto, não segredos). Nunca adicione `VITE_JWT_SECRET`, `VITE_PRIVATE_KEY`,
-ou credenciais de service account — veja ADR-0001-D7.
+São **três** arquivos de referência (versionados, sem segredos reais):
+
+| Arquivo | Uso |
+|---|---|
+| `.env.example` | Frontend em dev local → copiar p/ `.env.local` |
+| `hub-api/.env.example` | Backend em dev local → copiar p/ `hub-api/.env` |
+| `.env.portainer.example` | Deploy via Portainer (frontend + backend consolidados) → `.env` na raiz |
+
+As `VITE_*` são chaves **públicas** do Firebase (identificadores de projeto, não segredos).
+Nunca adicione `VITE_JWT_SECRET`, `VITE_PRIVATE_KEY`, ou credenciais de service account — veja ADR-0001-D7.
 
 ## Scripts
 
