@@ -1,7 +1,7 @@
 # ============================================================
 # Sebratel Hub — Stack única (hub-web + hub-api)
 # Todas as variáveis (frontend VITE_* + backend) vêm de UM só
-# lugar: ./.env (modelo em ./.env.portainer.example).
+# lugar: ./.env (modelo em ./.env.example).
 # No Portainer, cole esse mesmo bloco em "Environment variables".
 # ============================================================
 services:

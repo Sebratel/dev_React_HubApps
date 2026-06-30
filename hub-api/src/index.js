@@ -1,4 +1,9 @@
-require('dotenv').config()
+const path = require('path')
+
+// .env CENTRAL: um único arquivo na raiz do monorepo serve frontend + backend.
+// Em Docker/produção o arquivo não existe e as vars vêm do ambiente do container
+// (compose `environment:`) — neste caso config() simplesmente não carrega nada.
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })
 
 const express   = require('express')
 const helmet    = require('helmet')
@@ -6,7 +11,6 @@ const cors      = require('cors')
 const morgan    = require('morgan')
 const rateLimit = require('express-rate-limit')
 const admin     = require('firebase-admin')
-const path      = require('path')
 
 // ─── Firebase Admin ───────────────────────────────────────────
 if (!admin.apps.length) {
