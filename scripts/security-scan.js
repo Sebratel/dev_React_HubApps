@@ -71,7 +71,11 @@ const FORBIDDEN = [
 
 // ─── Directories / extensions to scan ───────────────────────────────────────
 const SCAN_DIRS = ['src', 'public', 'dist'].map((d) => join(ROOT, d))
-const SCAN_ENV_GLOB = ['.env', '.env.local', '.env.development', '.env.development.local', '.env.production', '.env.staging']
+// O .env da raiz agora é o arquivo ÚNICO do monorepo (frontend + backend) e,
+// por decisão de projeto, contém segredos do backend (DB_PASS, SSO_JWT_SECRET).
+// Por isso ele NÃO é varrido aqui. O guard contra segredos vazarem pro bundle
+// continua valendo via SCAN_DIRS (src/public/dist) e os outros .env.* abaixo.
+const SCAN_ENV_GLOB = ['.env.local', '.env.development', '.env.development.local', '.env.production']
 const SCAN_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.env'])
 
 // Files that are explicitly allowed to reference these patterns (e.g. this script itself,

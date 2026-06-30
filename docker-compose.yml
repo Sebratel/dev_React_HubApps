@@ -1,6 +1,12 @@
+# ============================================================
+# Sebratel Hub — Stack única (hub-web + hub-api)
+# Todas as variáveis (frontend VITE_* + backend) vêm de UM só
+# lugar: ./.env (modelo em ./.env.example).
+# No Portainer, cole esse mesmo bloco em "Environment variables".
+# ============================================================
 services:
   hub-api:
-    build: .
+    build: ./hub-api
     container_name: hub-api
     restart: unless-stopped
     ports:
@@ -21,7 +27,7 @@ services:
 
   hub-web:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile
       args:
         VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY}

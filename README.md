@@ -6,13 +6,15 @@ Hub corporativo da Sebratel — frontend React 18 + backend Node.js/Express em m
 
 ```
 dev_React_HubApps/
+├── docker-compose.yml        # Stack única Portainer (hub-web + hub-api)
+├── .env.example              # Env ÚNICO (frontend + backend) — dev e deploy
+├── Dockerfile                # Build do hub-web (frontend → Nginx)
 ├── hub-api/          # Backend Node.js/Express — API REST + Docker
 │   ├── src/          # Rotas, middlewares, utilitários
 │   ├── tests/        # Testes Jest
 │   ├── sql/          # Migrations MySQL
 │   ├── nginx/        # Config Nginx (reverse proxy + SSL)
-│   ├── Dockerfile
-│   └── docker-compose.yml
+│   └── Dockerfile
 ├── src/              # Frontend React 18 + TypeScript + Vite
 ├── test/             # Testes Vitest
 ├── public/
@@ -21,8 +23,12 @@ dev_React_HubApps/
 ```
 
 **Deploy:**
-- `hub-api/` → Docker via Portainer (apontar compose para `hub-api/docker-compose.yml`)
-- Frontend (raiz) → Firebase Hosting via `firebase deploy`
+- **Portainer (stack única)** → `docker-compose.yml` (na **raiz**) sobe **hub-web + hub-api** juntos.
+  Todas as variáveis (frontend `VITE_*` + backend) ficam num **único** arquivo na raiz:
+  `.env` (modelo em [`.env.example`](.env.example)).
+  No Portainer, aponte o compose para `./docker-compose.yml` e cole esse mesmo bloco em
+  *Environment variables → Advanced mode*.
+- **Alternativa frontend** → Firebase Hosting via `firebase deploy` (não usa o env do Portainer).
 
 ## Pré-requisitos
 
@@ -35,16 +41,22 @@ dev_React_HubApps/
 # 1. Instalar dependências
 npm install
 
-# 2. Configurar variáveis de ambiente
-cp .env.example .env.local
-# Preencha os valores do projeto Firebase em .env.local
+# 2. Configurar variáveis de ambiente (UM arquivo só, frontend + backend)
+cp .env.example .env
+# .env já vem com a config pública do Firebase preenchida.
+# Preencha DB_PASS / SSO_JWT_SECRET e ajuste VITE_API_URL se preciso.
+# (a service account local fica em hub-api/firebase-service-account.json)
 ```
 
 ## Variáveis de ambiente
 
-Copie `.env.example` e preencha os valores. Todas as variáveis são chaves **públicas** do Firebase
-(identificadores de projeto, não segredos). Nunca adicione `VITE_JWT_SECRET`, `VITE_PRIVATE_KEY`,
-ou credenciais de service account — veja ADR-0001-D7.
+**Um único arquivo** `.env` na raiz serve tudo: o Vite lê as `VITE_*` (frontend) e o
+hub-api lê o restante (backend, via `dotenv` apontado para a raiz). Modelo versionado
+e sem segredos reais: [`.env.example`](.env.example) — o mesmo arquivo serve de base
+para o deploy no Portainer.
+
+As `VITE_*` são chaves **públicas** do Firebase (identificadores de projeto, não segredos).
+Nunca adicione `VITE_JWT_SECRET`, `VITE_PRIVATE_KEY`, ou credenciais de service account — veja ADR-0001-D7.
 
 ## Scripts
 
