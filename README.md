@@ -6,13 +6,15 @@ Hub corporativo da Sebratel — frontend React 18 + backend Node.js/Express em m
 
 ```
 dev_React_HubApps/
+├── docker-compose.yml        # Stack única Portainer (hub-web + hub-api)
+├── .env.portainer.example    # Variáveis consolidadas (frontend + backend)
+├── Dockerfile                # Build do hub-web (frontend → Nginx)
 ├── hub-api/          # Backend Node.js/Express — API REST + Docker
 │   ├── src/          # Rotas, middlewares, utilitários
 │   ├── tests/        # Testes Jest
 │   ├── sql/          # Migrations MySQL
 │   ├── nginx/        # Config Nginx (reverse proxy + SSL)
-│   ├── Dockerfile
-│   └── docker-compose.yml
+│   └── Dockerfile
 ├── src/              # Frontend React 18 + TypeScript + Vite
 ├── test/             # Testes Vitest
 ├── public/
@@ -21,8 +23,12 @@ dev_React_HubApps/
 ```
 
 **Deploy:**
-- `hub-api/` → Docker via Portainer (apontar compose para `hub-api/docker-compose.yml`)
-- Frontend (raiz) → Firebase Hosting via `firebase deploy`
+- **Portainer (stack única)** → `docker-compose.yml` (na **raiz**) sobe **hub-web + hub-api** juntos.
+  Todas as variáveis (frontend `VITE_*` + backend) ficam num **único** arquivo na raiz:
+  `.env` (modelo em [`.env.portainer.example`](.env.portainer.example)).
+  No Portainer, aponte o compose para `./docker-compose.yml` e cole esse mesmo bloco em
+  *Environment variables → Advanced mode*.
+- **Alternativa frontend** → Firebase Hosting via `firebase deploy` (não usa o env do Portainer).
 
 ## Pré-requisitos
 
