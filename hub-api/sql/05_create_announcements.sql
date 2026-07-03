@@ -1,5 +1,4 @@
 -- Migration 05: tabela de avisos (announcements)
-USE DB_Hub_Apps;
 
 CREATE TABLE IF NOT EXISTS announcements (
   id               VARCHAR(36)                                    NOT NULL PRIMARY KEY,

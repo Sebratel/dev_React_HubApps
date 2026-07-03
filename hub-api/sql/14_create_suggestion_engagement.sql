@@ -1,4 +1,3 @@
-USE DB_Hub_Apps;
 
 -- Votos de apoio / não-apoio às sugestões (1 por usuário por sugestão)
 CREATE TABLE IF NOT EXISTS suggestion_votes (

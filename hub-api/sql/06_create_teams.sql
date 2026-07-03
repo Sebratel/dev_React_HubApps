@@ -1,5 +1,4 @@
 -- Migration 06: tabela de times (equipes)
-USE DB_Hub_Apps;
 
 CREATE TABLE IF NOT EXISTS teams (
   id          VARCHAR(36)   NOT NULL PRIMARY KEY,
