@@ -23,6 +23,30 @@ function buildUrl(path: string, params?: QueryParams): string {
   return qs ? `${API_URL}${path}?${qs}` : `${API_URL}${path}`
 }
 
+async function readJsonResponse(res: Response): Promise<unknown | undefined> {
+  const text = await res.text()
+  if (!text.trim()) return undefined
+
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new ApiError('A API retornou uma resposta invalida. Tente novamente em instantes.', res.status)
+  }
+}
+
+function getErrorMessage(payload: unknown, res: Response): string {
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    'error' in payload &&
+    typeof (payload as { error?: unknown }).error === 'string'
+  ) {
+    return (payload as { error: string }).error
+  }
+
+  return res.statusText || `Erro ${res.status}`
+}
+
 async function request<T>(
   method: string,
   path: string,
@@ -46,16 +70,16 @@ async function request<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
 
+  const payload = await readJsonResponse(res)
+
   if (!res.ok) {
-    const payload = await res.json().catch(() => ({ error: res.statusText }))
-    const message = (payload as { error?: string }).error ?? `Erro ${res.status}`
-    throw new ApiError(message, res.status)
+    throw new ApiError(getErrorMessage(payload, res), res.status)
   }
 
-  // 204 No Content — sem corpo para parsear
-  if (res.status === 204) return undefined as T
+  // Respostas sem corpo sao validas para endpoints tipados como void.
+  if (res.status === 204 || payload === undefined) return undefined as T
 
-  return res.json() as Promise<T>
+  return payload as T
 }
 
 // Upload a file with progress tracking. Returns the full public URL.

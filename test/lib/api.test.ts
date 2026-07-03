@@ -22,7 +22,7 @@ function mockFetch(status: number, body: unknown) {
       ok: status >= 200 && status < 300,
       status,
       statusText: String(status),
-      json: () => Promise.resolve(body),
+      text: () => Promise.resolve(body === undefined ? '' : JSON.stringify(body)),
     }),
   )
 }
@@ -59,6 +59,11 @@ describe('api.get', () => {
     mockFetch(200, { name: 'Alice' })
     const result = await api.get<{ name: string }>('/users/me')
     expect(result.name).toBe('Alice')
+  })
+
+  it('returns undefined when success response has no body', async () => {
+    mockFetch(200, undefined)
+    await expect(api.patch<void>('/users/me/offline', {})).resolves.toBeUndefined()
   })
 })
 
@@ -98,11 +103,30 @@ describe('api error handling', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: () => Promise.reject(new Error('not json')),
+        text: () => Promise.resolve(''),
       }),
     )
     await expect(api.get('/test')).rejects.toSatisfy(
       (err: unknown) => err instanceof ApiError && err.status === 500,
+    )
+  })
+
+  it('throws ApiError when backend returns invalid JSON', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: () => Promise.resolve('<html>not json</html>'),
+      }),
+    )
+
+    await expect(api.get('/users/me')).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof ApiError &&
+        err.status === 200 &&
+        err.message === 'A API retornou uma resposta invalida. Tente novamente em instantes.',
     )
   })
 })
