@@ -1,7 +1,8 @@
-require('dotenv').config()
+const path  = require('path')
+// Lê o .env CENTRAL da raiz do monorepo (mesmo arquivo do backend).
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })
 const mysql = require('mysql2/promise')
 const fs    = require('fs')
-const path  = require('path')
 
 // Splits SQL into individual statements, skipping blank/comment-only chunks.
 // Ignores semicolons inside -- line comments to avoid breaking multi-line statements.
@@ -30,6 +31,7 @@ const MIGRATIONS = [
   { file: '13_add_highlight_image_options.sql', label: 'Opções de imagem em highlights'  },
   { file: '14_create_suggestion_engagement.sql', label: 'Engajamento de sugestões'       },
   { file: '15_create_app_manuals.sql',    label: 'Tabela de manuais de aplicativos'      },
+  { file: '16_expand_highlight_image_url.sql', label: 'Expande highlight_image_url'      },
 ]
 
 // Errors that mean "already exists" — safe to skip for idempotency
@@ -73,7 +75,16 @@ async function run() {
     multipleStatements: false,
   })
 
-  console.log(`Host: ${process.env.DB_HOST}:${process.env.DB_PORT || 3306}\n`)
+  // Cria/seleciona o banco a partir do DB_NAME (permite bancos separados
+  // por ambiente — staging x prod — na mesma instância MySQL).
+  const DB_NAME = process.env.DB_NAME || 'DB_Hub_Apps'
+  await conn.query(
+    `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+  )
+  await conn.query(`USE \`${DB_NAME}\``)
+
+  console.log(`Host: ${process.env.DB_HOST}:${process.env.DB_PORT || 3306}`)
+  console.log(`Database: ${DB_NAME}\n`)
 
   for (const { file, label } of MIGRATIONS) {
     process.stdout.write(`  [${file}] ${label}... `)

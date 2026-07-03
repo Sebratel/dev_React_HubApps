@@ -1,13 +1,8 @@
 -- ============================================================
 -- Sebratel Hub — Schema MySQL
--- Banco: DB_Hub_Apps
+-- O banco é criado/selecionado pelo runner via DB_NAME
+-- (ver sql/run-migrations.js). Não fixar o nome aqui.
 -- ============================================================
-
-CREATE DATABASE IF NOT EXISTS DB_Hub_Apps
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-
-USE DB_Hub_Apps;
 
 -- ─── users ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
