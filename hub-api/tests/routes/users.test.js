@@ -80,6 +80,36 @@ describe('POST /users/provision', () => {
 
     const insertSql = pool.query.mock.calls[0][0]
     expect(insertSql).toMatch(/ON DUPLICATE KEY UPDATE/i)
+    expect(insertSql).toMatch(/id = VALUES\(id\)/i)
+    expect(insertSql).toMatch(/email = VALUES\(email\)/i)
+  })
+
+  it('normalizes e-mail before provision', async () => {
+    const user = { id: 'admin-uid', email: 'a@b.com', name: 'Alice', is_active: 0 }
+    pool.query
+      .mockResolvedValueOnce([{}])
+      .mockResolvedValueOnce([[user]])
+
+    await request(app)
+      .post('/users/provision')
+      .set('Authorization', 'Bearer token')
+      .send({ name: 'Alice', email: 'A@B.COM' })
+
+    expect(pool.query.mock.calls[0][1][1]).toBe('a@b.com')
+  })
+
+  it('returns JSON error when provisioned user cannot be loaded', async () => {
+    pool.query
+      .mockResolvedValueOnce([{}])
+      .mockResolvedValueOnce([[]])
+
+    const res = await request(app)
+      .post('/users/provision')
+      .set('Authorization', 'Bearer token')
+      .send({ name: 'Alice', email: 'a@b.com' })
+
+    expect(res.status).toBe(500)
+    expect(res.body.error).toMatch(/provisionar/)
   })
 })
 
