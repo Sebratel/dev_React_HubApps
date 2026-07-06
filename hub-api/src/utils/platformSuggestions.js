@@ -63,8 +63,8 @@ function listQuery(whereClause) {
   return `
     SELECT
       s.id,
-      a.id AS app_id,
-      s.sector AS app_name,
+      s.app_id,
+      COALESCE(a.name, s.sector) AS app_name,
       s.author_uid AS user_id,
       s.author_name AS user_name,
       s.title,
@@ -85,7 +85,7 @@ function listQuery(whereClause) {
       END AS my_vote,
       uv.up_voter_names
     FROM platform_suggestions s
-    LEFT JOIN apps a ON a.name = s.sector
+    LEFT JOIN apps a ON a.id = s.app_id
     LEFT JOIN platform_suggestion_votes mv
       ON mv.suggestion_id = s.id AND mv.user_uid = ?
     LEFT JOIN (

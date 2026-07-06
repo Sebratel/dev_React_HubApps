@@ -86,6 +86,15 @@ describe('GET /suggestions', () => {
     expect(res.body[0].status).toBe('pending')
     expect(res.body[0].type).toBe('feature')
   })
+
+  it('filtra por appId quando informado', async () => {
+    pool.query.mockResolvedValueOnce([[BASE_RAW]])
+    const res = await request(app)
+      .get('/suggestions?appId=app-1')
+      .set('Authorization', 'Bearer tok')
+    expect(res.status).toBe(200)
+    expect(pool.query.mock.calls[0][1]).toEqual(['user-uid', 'app-1'])
+  })
 })
 
 describe('GET /suggestions/all', () => {
@@ -100,6 +109,7 @@ describe('GET /suggestions/all', () => {
 describe('POST /suggestions', () => {
   it('cria sugestão com sucesso', async () => {
     pool.query.mockResolvedValueOnce([[BASE_USER]])
+    pool.query.mockResolvedValueOnce([[{ id: 'app-1', name: 'Listagem Splitters' }]])
     conn.query.mockResolvedValueOnce([{ insertId: 1 }])
     conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])
     pool.query.mockResolvedValueOnce([[BASE_RAW]])
@@ -112,6 +122,7 @@ describe('POST /suggestions', () => {
     expect(res.status).toBe(201)
     expect(res.body.title).toBe('Minha sugestão')
     expect(conn.query.mock.calls[0][0]).toMatch(/INSERT INTO platform_suggestions/i)
+    expect(conn.query.mock.calls[0][1][3]).toBe('app-1')
   })
 
   it('rejeita sem title', async () => {

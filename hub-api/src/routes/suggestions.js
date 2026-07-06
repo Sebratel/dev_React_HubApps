@@ -31,10 +31,39 @@ async function fetchSuggestionById(uid, id) {
   return rows.length ? mapSuggestionRow(rows[0]) : null
 }
 
+async function resolveApp(appId, appName) {
+  if (appId) {
+    const [rows] = await pool.query(
+      'SELECT id, name FROM apps WHERE id = ? AND is_active = 1',
+      [appId],
+    )
+    if (!rows.length) return { error: 'App inválido ou inativo' }
+    return { appId: rows[0].id, appName: rows[0].name }
+  }
+
+  if (appName?.trim()) {
+    const [rows] = await pool.query(
+      'SELECT id, name FROM apps WHERE name = ? AND is_active = 1',
+      [appName.trim()],
+    )
+    if (rows.length) return { appId: rows[0].id, appName: rows[0].name }
+    return { appId: null, appName: appName.trim() }
+  }
+
+  return { appId: null, appName: null }
+}
+
+function listFilterClause(appId) {
+  if (!appId) return { clause: '', params: [] }
+  return { clause: 'WHERE s.app_id = ?', params: [appId] }
+}
+
 // GET /suggestions — feed da comunidade (tabelas legadas platform_*)
+// Query opcional: ?appId=app-splitters-sebratel
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const [rows] = await pool.query(listQuery(''), [req.uid])
+    const { clause, params } = listFilterClause(req.query.appId)
+    const [rows] = await pool.query(listQuery(clause), [req.uid, ...params])
     res.json(rows.map(mapSuggestionRow))
   } catch (err) {
     next(err)
@@ -44,7 +73,8 @@ router.get('/', requireAuth, async (req, res, next) => {
 // GET /suggestions/all — admin
 router.get('/all', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const [rows] = await pool.query(listQuery(''), [req.uid])
+    const { clause, params } = listFilterClause(req.query.appId)
+    const [rows] = await pool.query(listQuery(clause), [req.uid, ...params])
     res.json(rows.map(mapSuggestionRow))
   } catch (err) {
     next(err)
@@ -59,8 +89,11 @@ router.post('/', requireAuth, async (req, res, next) => {
   const { title, body, type, appId, appName } = req.body
   if (!title?.trim()) return res.status(400).json({ error: 'title obrigatório' })
 
+  const resolved = await resolveApp(appId, appName)
+  if (resolved.error) return res.status(400).json({ error: resolved.error })
+
   const suggType = VALID_TYPES.includes(type) ? type : 'other'
-  const sector   = (appName || '').trim() || 'Hub Geral'
+  const sector   = resolved.appName || 'Hub Geral'
   const category = typeToCategory(suggType)
   const description = body?.trim() || title.trim()
 
@@ -70,13 +103,14 @@ router.post('/', requireAuth, async (req, res, next) => {
     await conn.beginTransaction()
     const [result] = await conn.query(
       `INSERT INTO platform_suggestions
-         (title, description, sector, category, status,
+         (title, description, sector, app_id, category, status,
           author_uid, author_email, author_name, author_photo_url)
-       VALUES (?, ?, ?, ?, 'open', ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, 'open', ?, ?, ?, ?)`,
       [
         title.trim(),
         description,
         sector,
+        resolved.appId,
         category,
         req.uid,
         user.email || '',
@@ -89,7 +123,7 @@ router.post('/', requireAuth, async (req, res, next) => {
     await logAudit({
       uid: req.uid,
       action: AUDIT_ACTIONS.SUGGESTION_CREATE,
-      details: { id: newId, title: title.trim(), appId: appId || null, sector },
+      details: { id: newId, title: title.trim(), appId: resolved.appId, sector },
       req,
       conn,
     })
