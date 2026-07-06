@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { resolveAssetUrl } from '@/lib/api'
 import { ApiError } from '@/types/api'
-import { ApiError } from '@/types/api'
 import { PageHero, type HeroStat } from '@/components/PageHero'
 import {
   listAllHighlights, createHighlight, updateHighlight, deleteHighlight,
