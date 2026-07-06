@@ -2,71 +2,56 @@ const router = require('express').Router()
 const pool   = require('../db/pool')
 const { requireAuth, requireAdmin } = require('../middleware/auth')
 const { adminWriteLimiter }         = require('../middleware/rateLimits')
-const { randomUUID }                = require('crypto')
 const logAudit                      = require('../utils/logAudit')
 const AUDIT_ACTIONS                 = require('../utils/auditActions')
+const {
+  listQuery,
+  mapSuggestionRow,
+  mapCommentRow,
+  typeToCategory,
+  hubToLegacyStatus,
+  valueToVoteType,
+  refreshCounts,
+} = require('../utils/platformSuggestions')
 
 const VALID_TYPES    = ['feature', 'bug', 'improvement', 'other']
 const VALID_STATUSES = ['pending', 'in_review', 'done', 'rejected']
 
-// Aggregated SELECT: suggestion row + vote tallies + current user's vote + comment count.
-// First `?` placeholder is the current user's id (for my_vote); caller appends WHERE params.
-function listQuery(whereClause) {
-  return `
-    SELECT
-      s.*,
-      COALESCE(v.up_count, 0)      AS up_count,
-      COALESCE(v.down_count, 0)    AS down_count,
-      COALESCE(v.score, 0)         AS score,
-      v.up_voter_names             AS up_voter_names,
-      COALESCE(c.comment_count, 0) AS comment_count,
-      mv.value                     AS my_vote
-    FROM suggestions s
-    LEFT JOIN (
-      SELECT suggestion_id,
-        SUM(CASE WHEN value = 1  THEN 1 ELSE 0 END) AS up_count,
-        SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END) AS down_count,
-        SUM(value)                                  AS score,
-        GROUP_CONCAT(CASE WHEN value = 1 THEN user_name END ORDER BY created_at DESC SEPARATOR '||') AS up_voter_names
-      FROM suggestion_votes GROUP BY suggestion_id
-    ) v ON v.suggestion_id = s.id
-    LEFT JOIN (
-      SELECT suggestion_id, COUNT(*) AS comment_count
-      FROM suggestion_comments GROUP BY suggestion_id
-    ) c ON c.suggestion_id = s.id
-    LEFT JOIN suggestion_votes mv ON mv.suggestion_id = s.id AND mv.user_id = ?
-    ${whereClause}
-    ORDER BY s.created_at DESC
-  `
-}
-
 async function fetchActiveUser(uid) {
-  const [rows] = await pool.query('SELECT name, is_active FROM users WHERE id = ?', [uid])
+  const [rows] = await pool.query(
+    'SELECT name, email, photo_url, is_active FROM users WHERE id = ?',
+    [uid],
+  )
   if (!rows.length || !rows[0].is_active) return null
   return rows[0]
 }
 
-// GET /suggestions — feed da comunidade (todas as sugestões + engajamento do usuário)
+async function fetchSuggestionById(uid, id) {
+  const [rows] = await pool.query(listQuery('WHERE s.id = ?'), [uid, id])
+  return rows.length ? mapSuggestionRow(rows[0]) : null
+}
+
+// GET /suggestions — feed da comunidade (tabelas legadas platform_*)
 router.get('/', requireAuth, async (req, res, next) => {
   try {
     const [rows] = await pool.query(listQuery(''), [req.uid])
-    res.json(rows)
+    res.json(rows.map(mapSuggestionRow))
   } catch (err) {
     next(err)
   }
 })
 
-// GET /suggestions/all — admin: todas as sugestões (mesmo payload enriquecido)
+// GET /suggestions/all — admin
 router.get('/all', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const [rows] = await pool.query(listQuery(''), [req.uid])
-    res.json(rows)
+    res.json(rows.map(mapSuggestionRow))
   } catch (err) {
     next(err)
   }
 })
 
-// POST /suggestions — usuário: criar sugestão
+// POST /suggestions — criar sugestão (visível também na plataforma de splitters)
 router.post('/', requireAuth, async (req, res, next) => {
   const user = await fetchActiveUser(req.uid)
   if (!user) return res.status(403).json({ error: 'Usuário inativo' })
@@ -75,19 +60,38 @@ router.post('/', requireAuth, async (req, res, next) => {
   if (!title?.trim()) return res.status(400).json({ error: 'title obrigatório' })
 
   const suggType = VALID_TYPES.includes(type) ? type : 'other'
-  const id       = randomUUID()
+  const sector   = (appName || '').trim() || 'Hub Geral'
+  const category = typeToCategory(suggType)
+  const description = body?.trim() || title.trim()
 
   const conn = await pool.getConnection()
+  let newId
   try {
     await conn.beginTransaction()
-    await conn.query(
-      `INSERT INTO suggestions (id, app_id, app_name, user_id, user_name, title, body, type)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, appId || null, appName || null, req.uid, user.name, title.trim(), body?.trim() || null, suggType],
+    const [result] = await conn.query(
+      `INSERT INTO platform_suggestions
+         (title, description, sector, category, status,
+          author_uid, author_email, author_name, author_photo_url)
+       VALUES (?, ?, ?, ?, 'open', ?, ?, ?, ?)`,
+      [
+        title.trim(),
+        description,
+        sector,
+        category,
+        req.uid,
+        user.email || '',
+        user.name,
+        user.photo_url || null,
+      ],
     )
+    newId = result.insertId
+
     await logAudit({
-      uid: req.uid, action: AUDIT_ACTIONS.SUGGESTION_CREATE,
-      details: { id, title: title.trim(), appId: appId || null }, req, conn,
+      uid: req.uid,
+      action: AUDIT_ACTIONS.SUGGESTION_CREATE,
+      details: { id: newId, title: title.trim(), appId: appId || null, sector },
+      req,
+      conn,
     })
     await conn.commit()
   } catch (err) {
@@ -97,11 +101,11 @@ router.post('/', requireAuth, async (req, res, next) => {
     conn.release()
   }
 
-  const [rows] = await pool.query(listQuery('WHERE s.id = ?'), [req.uid, id])
-  res.status(201).json(rows[0])
+  const row = await fetchSuggestionById(req.uid, newId)
+  res.status(201).json(row)
 })
 
-// POST /suggestions/:id/vote — apoiar (1), não apoiar (-1) ou remover (0)
+// POST /suggestions/:id/vote
 router.post('/:id/vote', requireAuth, async (req, res, next) => {
   const user = await fetchActiveUser(req.uid)
   if (!user) return res.status(403).json({ error: 'Usuário inativo' })
@@ -111,25 +115,44 @@ router.post('/:id/vote', requireAuth, async (req, res, next) => {
     return res.status(400).json({ error: 'value inválido. Use 1, -1 ou 0.' })
   }
 
-  const [exists] = await pool.query('SELECT id FROM suggestions WHERE id = ?', [req.params.id])
+  const suggestionId = Number(req.params.id)
+  if (!Number.isFinite(suggestionId)) {
+    return res.status(400).json({ error: 'ID de sugestão inválido' })
+  }
+
+  const [exists] = await pool.query('SELECT id FROM platform_suggestions WHERE id = ?', [suggestionId])
   if (!exists.length) return res.status(404).json({ error: 'Sugestão não encontrada' })
 
   const conn = await pool.getConnection()
   try {
     await conn.beginTransaction()
     if (value === 0) {
-      await conn.query('DELETE FROM suggestion_votes WHERE suggestion_id = ? AND user_id = ?', [req.params.id, req.uid])
-    } else {
       await conn.query(
-        `INSERT INTO suggestion_votes (suggestion_id, user_id, user_name, value)
-         VALUES (?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE value = VALUES(value), created_at = CURRENT_TIMESTAMP`,
-        [req.params.id, req.uid, user.name, value],
+        'DELETE FROM platform_suggestion_votes WHERE suggestion_id = ? AND user_uid = ?',
+        [suggestionId, req.uid],
+      )
+    } else {
+      const voteType = valueToVoteType(value)
+      await conn.query(
+        `INSERT INTO platform_suggestion_votes
+           (suggestion_id, user_uid, user_email, user_name, user_photo_url, vote_type)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           vote_type = VALUES(vote_type),
+           user_name = VALUES(user_name),
+           user_email = VALUES(user_email),
+           user_photo_url = VALUES(user_photo_url),
+           updated_at = CURRENT_TIMESTAMP`,
+        [suggestionId, req.uid, user.email || '', user.name, user.photo_url || null, voteType],
       )
     }
+    await refreshCounts(conn, suggestionId)
     await logAudit({
-      uid: req.uid, action: AUDIT_ACTIONS.SUGGESTION_VOTE,
-      details: { id: req.params.id, value }, req, conn,
+      uid: req.uid,
+      action: AUDIT_ACTIONS.SUGGESTION_VOTE,
+      details: { id: suggestionId, value },
+      req,
+      conn,
     })
     await conn.commit()
   } catch (err) {
@@ -139,24 +162,31 @@ router.post('/:id/vote', requireAuth, async (req, res, next) => {
     conn.release()
   }
 
-  const [rows] = await pool.query(listQuery('WHERE s.id = ?'), [req.uid, req.params.id])
-  res.json(rows[0])
+  const row = await fetchSuggestionById(req.uid, suggestionId)
+  res.json(row)
 })
 
-// GET /suggestions/:id/comments — lista de comentários
+// GET /suggestions/:id/comments
 router.get('/:id/comments', requireAuth, async (req, res, next) => {
+  const suggestionId = Number(req.params.id)
+  if (!Number.isFinite(suggestionId)) {
+    return res.status(400).json({ error: 'ID de sugestão inválido' })
+  }
+
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM suggestion_comments WHERE suggestion_id = ? ORDER BY created_at ASC',
-      [req.params.id],
+      `SELECT * FROM platform_suggestion_comments
+       WHERE suggestion_id = ?
+       ORDER BY created_at ASC`,
+      [suggestionId],
     )
-    res.json(rows)
+    res.json(rows.map(mapCommentRow))
   } catch (err) {
     next(err)
   }
 })
 
-// POST /suggestions/:id/comments — adicionar comentário
+// POST /suggestions/:id/comments
 router.post('/:id/comments', requireAuth, async (req, res, next) => {
   const user = await fetchActiveUser(req.uid)
   if (!user) return res.status(403).json({ error: 'Usuário inativo' })
@@ -165,20 +195,32 @@ router.post('/:id/comments', requireAuth, async (req, res, next) => {
   if (!body) return res.status(400).json({ error: 'body obrigatório' })
   if (body.length > 2000) return res.status(400).json({ error: 'Comentário muito longo (máx. 2000)' })
 
-  const [exists] = await pool.query('SELECT id FROM suggestions WHERE id = ?', [req.params.id])
+  const suggestionId = Number(req.params.id)
+  if (!Number.isFinite(suggestionId)) {
+    return res.status(400).json({ error: 'ID de sugestão inválido' })
+  }
+
+  const [exists] = await pool.query('SELECT id FROM platform_suggestions WHERE id = ?', [suggestionId])
   if (!exists.length) return res.status(404).json({ error: 'Sugestão não encontrada' })
 
-  const id = randomUUID()
   const conn = await pool.getConnection()
+  let newId
   try {
     await conn.beginTransaction()
-    await conn.query(
-      'INSERT INTO suggestion_comments (id, suggestion_id, user_id, user_name, body) VALUES (?, ?, ?, ?, ?)',
-      [id, req.params.id, req.uid, user.name, body],
+    const [result] = await conn.query(
+      `INSERT INTO platform_suggestion_comments
+         (suggestion_id, author_uid, author_email, author_name, author_photo_url, message)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [suggestionId, req.uid, user.email || '', user.name, user.photo_url || null, body],
     )
+    newId = result.insertId
+    await refreshCounts(conn, suggestionId)
     await logAudit({
-      uid: req.uid, action: AUDIT_ACTIONS.SUGGESTION_COMMENT,
-      details: { id, suggestionId: req.params.id }, req, conn,
+      uid: req.uid,
+      action: AUDIT_ACTIONS.SUGGESTION_COMMENT,
+      details: { id: newId, suggestionId },
+      req,
+      conn,
     })
     await conn.commit()
   } catch (err) {
@@ -188,27 +230,39 @@ router.post('/:id/comments', requireAuth, async (req, res, next) => {
     conn.release()
   }
 
-  const [rows] = await pool.query('SELECT * FROM suggestion_comments WHERE id = ?', [id])
-  res.status(201).json(rows[0])
+  const [rows] = await pool.query('SELECT * FROM platform_suggestion_comments WHERE id = ?', [newId])
+  res.status(201).json(mapCommentRow(rows[0]))
 })
 
-// PATCH /suggestions/:id/status — admin: atualizar status e nota
+// PATCH /suggestions/:id/status — admin
 router.patch('/:id/status', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
   const { status, adminNote } = req.body
   if (!VALID_STATUSES.includes(status)) {
     return res.status(400).json({ error: `status inválido. Use: ${VALID_STATUSES.join(', ')}` })
   }
 
+  const suggestionId = Number(req.params.id)
+  if (!Number.isFinite(suggestionId)) {
+    return res.status(400).json({ error: 'ID de sugestão inválido' })
+  }
+
   const conn = await pool.getConnection()
   try {
     await conn.beginTransaction()
-    await conn.query(
-      'UPDATE suggestions SET status = ?, admin_note = ? WHERE id = ?',
-      [status, adminNote?.trim() || null, req.params.id],
+    const [result] = await conn.query(
+      'UPDATE platform_suggestions SET status = ? WHERE id = ?',
+      [hubToLegacyStatus(status), suggestionId],
     )
+    if (!result.affectedRows) {
+      await conn.rollback()
+      return res.status(404).json({ error: 'Sugestão não encontrada' })
+    }
     await logAudit({
-      uid: req.uid, action: AUDIT_ACTIONS.SUGGESTION_STATUS_UPDATE,
-      details: { id: req.params.id, status }, req, conn,
+      uid: req.uid,
+      action: AUDIT_ACTIONS.SUGGESTION_STATUS_UPDATE,
+      details: { id: suggestionId, status, adminNote: adminNote?.trim() || null },
+      req,
+      conn,
     })
     await conn.commit()
   } catch (err) {
@@ -218,9 +272,10 @@ router.patch('/:id/status', requireAuth, requireAdmin, adminWriteLimiter, async 
     conn.release()
   }
 
-  const [rows] = await pool.query(listQuery('WHERE s.id = ?'), [req.uid, req.params.id])
-  if (!rows.length) return res.status(404).json({ error: 'Sugestão não encontrada' })
-  res.json(rows[0])
+  const row = await fetchSuggestionById(req.uid, suggestionId)
+  if (!row) return res.status(404).json({ error: 'Sugestão não encontrada' })
+  if (adminNote?.trim()) row.admin_note = adminNote.trim()
+  res.json(row)
 })
 
 module.exports = router

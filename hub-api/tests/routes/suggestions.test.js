@@ -41,15 +41,28 @@ const pool    = require('../../src/db/pool')
 const conn    = pool._conn
 const app     = require('../../src/index')
 
-const BASE_SUGG = {
-  id: 'sugg-1', app_id: 'app-1', app_name: 'App Exemplo',
-  user_id: 'user-uid', user_name: 'Usuário Teste',
-  title: 'Minha sugestão', body: 'Detalhes',
-  type: 'feature', status: 'pending', admin_note: null,
-  created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z',
+const BASE_RAW = {
+  id: 1,
+  app_id: 'app-1',
+  app_name: 'Listagem Splitters',
+  user_id: 'user-uid',
+  user_name: 'Usuário Teste',
+  title: 'Minha sugestão',
+  body: 'Detalhes',
+  category: 'Funcionalidade',
+  legacy_status: 'open',
+  admin_note: null,
+  created_at: '2026-01-01T00:00:00.000Z',
+  updated_at: '2026-01-01T00:00:00.000Z',
+  up_count: 0,
+  down_count: 0,
+  score: 0,
+  comment_count: 0,
+  my_vote: null,
+  up_voter_names: null,
 }
 
-const BASE_USER = { name: 'Usuário Teste', is_active: 1 }
+const BASE_USER = { name: 'Usuário Teste', email: 'user@test.com', photo_url: null, is_active: 1 }
 
 beforeEach(() => {
   pool.query.mockReset()
@@ -64,17 +77,20 @@ beforeEach(() => {
 
 describe('GET /suggestions', () => {
   it('retorna sugestões do usuário logado', async () => {
-    pool.query.mockResolvedValueOnce([[BASE_SUGG]])
+    pool.query.mockResolvedValueOnce([[BASE_RAW]])
     const res = await request(app).get('/suggestions').set('Authorization', 'Bearer tok')
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(1)
     expect(res.body[0].title).toBe('Minha sugestão')
+    expect(res.body[0].id).toBe('1')
+    expect(res.body[0].status).toBe('pending')
+    expect(res.body[0].type).toBe('feature')
   })
 })
 
 describe('GET /suggestions/all', () => {
   it('retorna todas as sugestões (admin)', async () => {
-    pool.query.mockResolvedValueOnce([[BASE_SUGG, { ...BASE_SUGG, id: 'sugg-2', user_id: 'other-uid' }]])
+    pool.query.mockResolvedValueOnce([[BASE_RAW, { ...BASE_RAW, id: 2, user_id: 'other-uid' }]])
     const res = await request(app).get('/suggestions/all').set('Authorization', 'Bearer tok')
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(2)
@@ -83,16 +99,19 @@ describe('GET /suggestions/all', () => {
 
 describe('POST /suggestions', () => {
   it('cria sugestão com sucesso', async () => {
-    pool.query.mockResolvedValueOnce([[BASE_USER]])           // user lookup
-    conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])  // INSERT
-    conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])  // logAudit
-    pool.query.mockResolvedValueOnce([[BASE_SUGG]])           // SELECT de retorno
+    pool.query.mockResolvedValueOnce([[BASE_USER]])
+    conn.query.mockResolvedValueOnce([{ insertId: 1 }])
+    conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])
+    pool.query.mockResolvedValueOnce([[BASE_RAW]])
+
     const res = await request(app)
       .post('/suggestions')
       .set('Authorization', 'Bearer tok')
-      .send({ title: 'Minha sugestão', type: 'feature', appId: 'app-1', appName: 'App Exemplo' })
+      .send({ title: 'Minha sugestão', type: 'feature', appId: 'app-1', appName: 'Listagem Splitters' })
+
     expect(res.status).toBe(201)
     expect(res.body.title).toBe('Minha sugestão')
+    expect(conn.query.mock.calls[0][0]).toMatch(/INSERT INTO platform_suggestions/i)
   })
 
   it('rejeita sem title', async () => {
@@ -115,13 +134,15 @@ describe('POST /suggestions', () => {
 
   it('aceita type inválido como "other"', async () => {
     pool.query.mockResolvedValueOnce([[BASE_USER]])
+    conn.query.mockResolvedValueOnce([{ insertId: 2 }])
     conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])
-    conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])
-    pool.query.mockResolvedValueOnce([[{ ...BASE_SUGG, type: 'other' }]])
+    pool.query.mockResolvedValueOnce([[{ ...BASE_RAW, id: 2, category: 'Outro' }]])
+
     const res = await request(app)
       .post('/suggestions')
       .set('Authorization', 'Bearer tok')
       .send({ title: 'Teste', type: 'invalid_type' })
+
     expect(res.status).toBe(201)
     expect(res.body.type).toBe('other')
   })
@@ -131,18 +152,21 @@ describe('PATCH /suggestions/:id/status', () => {
   it('atualiza status com sucesso', async () => {
     conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])
     conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])
-    pool.query.mockResolvedValueOnce([[{ ...BASE_SUGG, status: 'done' }]])
+    pool.query.mockResolvedValueOnce([[{ ...BASE_RAW, legacy_status: 'done' }]])
+
     const res = await request(app)
-      .patch('/suggestions/sugg-1/status')
+      .patch('/suggestions/1/status')
       .set('Authorization', 'Bearer tok')
       .send({ status: 'done', adminNote: 'Implementado na v2!' })
+
     expect(res.status).toBe(200)
     expect(res.body.status).toBe('done')
+    expect(conn.query.mock.calls[0][0]).toMatch(/UPDATE platform_suggestions/i)
   })
 
   it('rejeita status inválido', async () => {
     const res = await request(app)
-      .patch('/suggestions/sugg-1/status')
+      .patch('/suggestions/1/status')
       .set('Authorization', 'Bearer tok')
       .send({ status: 'aprovado' })
     expect(res.status).toBe(400)
@@ -150,10 +174,8 @@ describe('PATCH /suggestions/:id/status', () => {
 
   it('retorna 404 se sugestão não existe', async () => {
     conn.query.mockResolvedValueOnce([{ affectedRows: 0 }])
-    conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])
-    pool.query.mockResolvedValueOnce([[]])
     const res = await request(app)
-      .patch('/suggestions/nonexistent/status')
+      .patch('/suggestions/999/status')
       .set('Authorization', 'Bearer tok')
       .send({ status: 'done' })
     expect(res.status).toBe(404)

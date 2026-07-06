@@ -32,6 +32,7 @@ const MIGRATIONS = [
   { file: '14_create_suggestion_engagement.sql', label: 'Engajamento de sugestões'       },
   { file: '15_create_app_manuals.sql',    label: 'Tabela de manuais de aplicativos'      },
   { file: '16_expand_highlight_image_url.sql', label: 'Expande highlight_image_url'      },
+  { file: '17_consolidate_suggestions_to_platform.sql', label: 'Consolida sugestões nas tabelas platform_*' },
 ]
 
 // Errors that mean "already exists" — safe to skip for idempotency
