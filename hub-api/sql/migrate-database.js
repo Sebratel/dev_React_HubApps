@@ -6,19 +6,19 @@
  *   node sql/migrate-database.js --drop-old
  *
  * Variáveis (opcionais — defaults abaixo):
- *   SOURCE_DB=DB_Hub_Apps
- *   TARGET_DB=DB_Sebratel_Hub_Apps
- *   DROP_DATABASES=DB_Hub_Apps,DB_Hub_Apps_Prod   (só com --drop-old)
+ *   SOURCE_DB=DB_Sebratel_Hub_Apps
+ *   TARGET_DB=DB_Hub_Apps
+ *   DROP_DATABASES=DB_Sebratel_Hub_Apps   (só com --drop-old ou --drop-only)
  */
 const path = require('path')
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })
 const mysql = require('mysql2/promise')
 
-const SOURCE_DB = process.env.SOURCE_DB || 'DB_Hub_Apps'
-const TARGET_DB = process.env.TARGET_DB || 'DB_Sebratel_Hub_Apps'
+const SOURCE_DB = process.env.SOURCE_DB || 'DB_Sebratel_Hub_Apps'
+const TARGET_DB = process.env.TARGET_DB || 'DB_Hub_Apps'
 const DROP_OLD = process.argv.includes('--drop-old')
 const DROP_ONLY = process.argv.includes('--drop-only')
-const DROP_DATABASES = (process.env.DROP_DATABASES || 'DB_Hub_Apps,DB_Hub_Apps_Prod')
+const DROP_DATABASES = (process.env.DROP_DATABASES || 'DB_Sebratel_Hub_Apps')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean)

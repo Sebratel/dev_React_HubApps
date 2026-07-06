@@ -77,7 +77,7 @@ async function run() {
 
   // Cria/seleciona o banco a partir do DB_NAME (permite bancos separados
   // por ambiente — staging x prod — na mesma instância MySQL).
-  const DB_NAME = process.env.DB_NAME || 'DB_Sebratel_Hub_Apps'
+  const DB_NAME = process.env.DB_NAME || 'DB_Hub_Apps'
   await conn.query(
     `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
   )
