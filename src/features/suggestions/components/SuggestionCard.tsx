@@ -54,8 +54,13 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
               <TypeIcon className="h-3 w-3" aria-hidden />
               {type.label}
             </span>
-            {s.appName && (
+            {s.sector && (
               <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {s.sector}
+              </span>
+            )}
+            {s.appName && (
+              <span className="rounded-full border border-primary/25 bg-primary/5 px-2.5 py-0.5 text-[11px] font-medium text-primary">
                 {s.appName}
               </span>
             )}

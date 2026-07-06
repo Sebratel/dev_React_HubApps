@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { getApps } from '@/services/app.service'
+import { getSuggestionSectors } from '@/services/suggestion.service'
 import { getUserApps } from '@/utils/permissions'
 import { useAuthStore } from '@/stores/auth.store'
+import { FALLBACK_SUGGESTION_SECTORS } from '@/constants/suggestion-sectors'
 import type { SuggestionType } from '@/types/enums'
 import type { CreateSuggestionPayload } from '@/services/suggestion.service'
 
@@ -27,7 +29,14 @@ interface SuggestionFormDialogProps {
   isSubmitting: boolean
 }
 
-const DEFAULT = { title: '', body: '', type: 'feature' as SuggestionType, appId: '', appName: '' }
+const DEFAULT = {
+  title: '',
+  body: '',
+  type: 'feature' as SuggestionType,
+  sector: '',
+  appId: '',
+  appName: '',
+}
 
 export function SuggestionFormDialog({
   open, onClose, onSave, isSubmitting,
@@ -42,6 +51,13 @@ export function SuggestionFormDialog({
     queryFn: getApps,
     staleTime: 300_000,
     enabled: open && !!user,
+  })
+
+  const { data: sectors = FALLBACK_SUGGESTION_SECTORS } = useQuery({
+    queryKey: ['suggestions', 'sectors'],
+    queryFn: getSuggestionSectors,
+    staleTime: 300_000,
+    enabled: open,
   })
 
   const apps = useMemo(
@@ -61,12 +77,14 @@ export function SuggestionFormDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    if (!form.sector.trim()) { setError('Selecione o setor.'); return }
     if (!form.title.trim()) { setError('O título é obrigatório.'); return }
     try {
       await onSave({
         title:   form.title.trim(),
         body:    form.body.trim() || null,
         type:    form.type,
+        sector:  form.sector.trim(),
         appId:   form.appId || null,
         appName: form.appName || null,
       })
@@ -87,6 +105,23 @@ export function SuggestionFormDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-2">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground" htmlFor="sugg-sector">
+              Setor <span className="text-destructive">*</span>
+            </label>
+            <Select
+              id="sugg-sector"
+              value={form.sector}
+              onChange={(e) => setForm((f) => ({ ...f, sector: e.target.value }))}
+              disabled={isSubmitting}
+            >
+              <option value="">Selecione seu setor</option>
+              {sectors.map((sector) => (
+                <option key={sector} value={sector}>{sector}</option>
+              ))}
+            </Select>
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-foreground" htmlFor="sugg-app">
               Aplicativo <span className="text-muted-foreground font-normal">(opcional)</span>
@@ -160,7 +195,7 @@ export function SuggestionFormDialog({
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
           <Button
             onClick={handleSubmit as unknown as React.MouseEventHandler}
-            disabled={isSubmitting || !form.title.trim()}
+            disabled={isSubmitting || !form.title.trim() || !form.sector.trim()}
           >
             {isSubmitting ? 'Enviando...' : 'Enviar sugestão'}
           </Button>

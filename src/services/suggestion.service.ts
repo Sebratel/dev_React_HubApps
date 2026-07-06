@@ -7,6 +7,7 @@ export interface SuggestionModel {
   id: string
   appId: string | null
   appName: string | null
+  sector: string | null
   userId: string
   userName: string
   title: string
@@ -38,6 +39,7 @@ interface SuggestionRow {
   id: string
   app_id: string | null
   app_name: string | null
+  sector: string | null
   user_id: string
   user_name: string
   title: string
@@ -76,6 +78,7 @@ function rowToSuggestion(row: SuggestionRow): SuggestionModel {
     id:        row.id,
     appId:     row.app_id,
     appName:   row.app_name,
+    sector:    row.sector,
     userId:    row.user_id,
     userName:  row.user_name,
     title:     row.title,
@@ -109,8 +112,13 @@ export interface CreateSuggestionPayload {
   title: string
   body?: string | null
   type: SuggestionType
+  sector: string
   appId?: string | null
   appName?: string | null
+}
+
+export async function getSuggestionSectors(): Promise<string[]> {
+  return api.get<string[]>('/suggestions/sectors')
 }
 
 /** Community feed: all suggestions, enriched with the current user's engagement. */

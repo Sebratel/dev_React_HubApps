@@ -13,6 +13,7 @@ const {
   valueToVoteType,
   refreshCounts,
 } = require('../utils/platformSuggestions')
+const { mergeSectors } = require('../utils/suggestionSectors')
 
 const VALID_TYPES    = ['feature', 'bug', 'improvement', 'other']
 const VALID_STATUSES = ['pending', 'in_review', 'done', 'rejected']
@@ -58,6 +59,21 @@ function listFilterClause(appId) {
   return { clause: 'WHERE s.app_id = ?', params: [appId] }
 }
 
+// GET /suggestions/sectors — setores disponíveis para o formulário
+router.get('/sectors', requireAuth, async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT DISTINCT sector
+       FROM platform_suggestions
+       WHERE sector IS NOT NULL AND TRIM(sector) != ''
+       ORDER BY sector`,
+    )
+    res.json(mergeSectors(rows.map((r) => r.sector)))
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /suggestions — feed da comunidade (tabelas legadas platform_*)
 // Query opcional: ?appId=app-splitters-sebratel
 router.get('/', requireAuth, async (req, res, next) => {
@@ -86,14 +102,15 @@ router.post('/', requireAuth, async (req, res, next) => {
   const user = await fetchActiveUser(req.uid)
   if (!user) return res.status(403).json({ error: 'Usuário inativo' })
 
-  const { title, body, type, appId, appName } = req.body
+  const { title, body, type, appId, appName, sector } = req.body
   if (!title?.trim()) return res.status(400).json({ error: 'title obrigatório' })
+  if (!sector?.trim()) return res.status(400).json({ error: 'sector obrigatório' })
 
   const resolved = await resolveApp(appId, appName)
   if (resolved.error) return res.status(400).json({ error: resolved.error })
 
   const suggType = VALID_TYPES.includes(type) ? type : 'other'
-  const sector   = resolved.appName || 'Hub Geral'
+  const sectorValue = sector.trim()
   const category = typeToCategory(suggType)
   const description = body?.trim() || title.trim()
 
@@ -109,7 +126,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       [
         title.trim(),
         description,
-        sector,
+        sectorValue,
         resolved.appId,
         category,
         req.uid,
@@ -123,7 +140,7 @@ router.post('/', requireAuth, async (req, res, next) => {
     await logAudit({
       uid: req.uid,
       action: AUDIT_ACTIONS.SUGGESTION_CREATE,
-      details: { id: newId, title: title.trim(), appId: resolved.appId, sector },
+      details: { id: newId, title: title.trim(), appId: resolved.appId, sector: sectorValue },
       req,
       conn,
     })

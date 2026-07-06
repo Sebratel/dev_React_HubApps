@@ -34,6 +34,7 @@ describe('platformSuggestions mapping', () => {
       title: 'Teste',
       body: 'Descrição',
       category: 'Bug',
+      sector: 'COR',
       legacy_status: 'open',
       created_at: '2026-01-01T00:00:00.000Z',
       updated_at: '2026-01-01T00:00:00.000Z',
@@ -49,5 +50,6 @@ describe('platformSuggestions mapping', () => {
     expect(mapped.type).toBe('bug')
     expect(mapped.status).toBe('pending')
     expect(mapped.app_name).toBe('Listagem Splitters')
+    expect(mapped.sector).toBe('COR')
   })
 })

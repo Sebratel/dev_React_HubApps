@@ -45,6 +45,7 @@ const BASE_RAW = {
   id: 1,
   app_id: 'app-1',
   app_name: 'Listagem Splitters',
+  sector: 'COR',
   user_id: 'user-uid',
   user_name: 'Usuário Teste',
   title: 'Minha sugestão',
@@ -73,6 +74,16 @@ beforeEach(() => {
   conn.commit.mockReset().mockResolvedValue(undefined)
   conn.rollback.mockReset().mockResolvedValue(undefined)
   conn.release.mockReset()
+})
+
+describe('GET /suggestions/sectors', () => {
+  it('retorna lista de setores', async () => {
+    pool.query.mockResolvedValueOnce([[{ sector: 'COR' }, { sector: 'Suporte Técnico' }]])
+    const res = await request(app).get('/suggestions/sectors').set('Authorization', 'Bearer tok')
+    expect(res.status).toBe(200)
+    expect(res.body).toContain('COR')
+    expect(res.body).toContain('Suporte Técnico')
+  })
 })
 
 describe('GET /suggestions', () => {
@@ -117,12 +128,22 @@ describe('POST /suggestions', () => {
     const res = await request(app)
       .post('/suggestions')
       .set('Authorization', 'Bearer tok')
-      .send({ title: 'Minha sugestão', type: 'feature', appId: 'app-1', appName: 'Listagem Splitters' })
+      .send({ title: 'Minha sugestão', type: 'feature', sector: 'COR', appId: 'app-1', appName: 'Listagem Splitters' })
 
     expect(res.status).toBe(201)
     expect(res.body.title).toBe('Minha sugestão')
     expect(conn.query.mock.calls[0][0]).toMatch(/INSERT INTO platform_suggestions/i)
+    expect(conn.query.mock.calls[0][1][2]).toBe('COR')
     expect(conn.query.mock.calls[0][1][3]).toBe('app-1')
+  })
+
+  it('rejeita sem sector', async () => {
+    pool.query.mockResolvedValueOnce([[BASE_USER]])
+    const res = await request(app)
+      .post('/suggestions')
+      .set('Authorization', 'Bearer tok')
+      .send({ title: 'Teste', type: 'feature' })
+    expect(res.status).toBe(400)
   })
 
   it('rejeita sem title', async () => {
@@ -152,7 +173,7 @@ describe('POST /suggestions', () => {
     const res = await request(app)
       .post('/suggestions')
       .set('Authorization', 'Bearer tok')
-      .send({ title: 'Teste', type: 'invalid_type' })
+      .send({ title: 'Teste', type: 'invalid_type', sector: 'COR' })
 
     expect(res.status).toBe(201)
     expect(res.body.type).toBe('other')

@@ -134,7 +134,8 @@ function SuggestionCard({ s, onEdit, index, reduced }: SuggestionCardProps) {
           <div>
             <p className="text-[13px] font-semibold text-foreground leading-tight">{s.userName}</p>
             <p className="text-[11px] text-muted-foreground">
-              {s.appName ?? 'Geral'} · {formatDate(s.createdAt)}
+              {s.sector ?? 'Setor não informado'}
+              {s.appName ? ` · ${s.appName}` : ''} · {formatDate(s.createdAt)}
             </p>
           </div>
         </div>

@@ -64,7 +64,8 @@ function listQuery(whereClause) {
     SELECT
       s.id,
       s.app_id,
-      COALESCE(a.name, s.sector) AS app_name,
+      s.sector,
+      COALESCE(a.name, NULL) AS app_name,
       s.author_uid AS user_id,
       s.author_name AS user_name,
       s.title,
@@ -106,6 +107,7 @@ function mapSuggestionRow(row) {
     id:            String(row.id),
     app_id:        row.app_id ?? null,
     app_name:      row.app_name ?? null,
+    sector:        row.sector ?? null,
     user_id:       row.user_id,
     user_name:     row.user_name,
     title:         row.title,
