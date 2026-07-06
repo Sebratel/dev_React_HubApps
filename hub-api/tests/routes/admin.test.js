@@ -42,6 +42,8 @@ describe('GET /admin/stats', () => {
       .mockResolvedValueOnce([[{ count: 2 }]])
       .mockResolvedValueOnce([[{ active: 4, total: 5 }]])
       .mockResolvedValueOnce([[{ active: 3, total: 4 }]])
+      .mockResolvedValueOnce([[{ count: 9 }]])
+      .mockResolvedValueOnce([[{ count: 1 }]])
 
     const res = await request(app).get('/admin/stats').set('Authorization', 'Bearer tok')
     expect(res.status).toBe(200)
@@ -54,6 +56,8 @@ describe('GET /admin/stats', () => {
         { appName: 'GER', openCount: 42 },
       ]),
       pendingSuggestions: 2,
+      pendingRequests:     9,
+      inactiveUsers:       1,
       teams:         { active: 4, total: 5 },
       announcements: { active: 3, total: 4 },
     })
@@ -66,6 +70,8 @@ describe('GET /admin/stats', () => {
       .mockResolvedValueOnce([[{ count: 0 }]])
       .mockResolvedValueOnce([[{ active: null, total: 0 }]])
       .mockResolvedValueOnce([[{ active: null, total: 0 }]])
+      .mockResolvedValueOnce([[{ count: 0 }]])
+      .mockResolvedValueOnce([[{ count: 0 }]])
 
     const res = await request(app).get('/admin/stats').set('Authorization', 'Bearer tok')
     expect(res.status).toBe(200)

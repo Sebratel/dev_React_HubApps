@@ -32,7 +32,11 @@ router.get('/stats', requireAuth, requireAdmin, async (_req, res, next) => {
          ORDER BY open_count DESC
          LIMIT 5`
       ),
-      pool.query("SELECT COUNT(*) AS count FROM suggestions WHERE status = 'pending'"),
+      pool.query(
+        `SELECT COUNT(*) AS count
+         FROM platform_suggestions
+         WHERE status IN ('open', 'in_progress', 'planned')`,
+      ),
       pool.query(
         `SELECT
            SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active,
