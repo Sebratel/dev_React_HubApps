@@ -4,44 +4,32 @@ import type { SuggestionType, SuggestionStatus } from '@/types/enums'
 export interface SuggestionTypeMeta {
   label: string
   icon: LucideIcon
-  /** Left accent bar — token color only. */
-  accent: string
-  /** Icon chip background + text — token-based soft tint. */
   iconChip: string
-  /** Category badge — token-based soft tint. */
   badge: string
 }
 
-/**
- * Token-based only (primary = âmbar, destructive, muted). No hardcoded hex,
- * no blue/purple/pink.
- */
 export const SUGGESTION_TYPE_META: Record<SuggestionType, SuggestionTypeMeta> = {
   feature: {
     label: 'Funcionalidade',
     icon: Lightbulb,
-    accent: 'bg-primary',
     iconChip: 'bg-primary/12 text-primary',
     badge: 'bg-primary/10 text-primary',
   },
   improvement: {
     label: 'Melhoria',
     icon: TrendingUp,
-    accent: 'bg-foreground/40',
     iconChip: 'bg-muted text-muted-foreground',
     badge: 'bg-muted text-muted-foreground',
   },
   bug: {
     label: 'Bug',
     icon: Bug,
-    accent: 'bg-destructive',
     iconChip: 'bg-destructive/10 text-destructive',
     badge: 'bg-destructive/10 text-destructive',
   },
   other: {
     label: 'Outro',
     icon: CircleDot,
-    accent: 'bg-border',
     iconChip: 'bg-muted text-muted-foreground',
     badge: 'bg-muted text-muted-foreground',
   },
@@ -54,14 +42,45 @@ export function getSuggestionTypeMeta(type: SuggestionType): SuggestionTypeMeta 
 export interface SuggestionStatusMeta {
   label: string
   badge: string
+  /** Faixa lateral do cartão — mesma família de cor do badge de status. */
+  accent: string
 }
 
 export const SUGGESTION_STATUS_META: Record<SuggestionStatus, SuggestionStatusMeta> = {
-  pending:   { label: 'Aguardando', badge: 'bg-primary/10 text-primary' },
-  in_review: { label: 'Em análise', badge: 'bg-muted text-muted-foreground' },
-  done:      { label: 'Concluída',  badge: 'bg-success/10 text-success' },
-  rejected:  { label: 'Encerrada',  badge: 'bg-muted text-muted-foreground' },
+  pending: {
+    label: 'Aguardando',
+    badge: 'border-amber-200 bg-amber-50 text-amber-800',
+    accent: 'bg-amber-400',
+  },
+  in_review: {
+    label: 'Em análise',
+    badge: 'border-stone-300 bg-stone-100 text-stone-700',
+    accent: 'bg-stone-400',
+  },
+  in_development: {
+    label: 'Em desenvolvimento',
+    badge: 'border-sky-200 bg-sky-50 text-sky-800',
+    accent: 'bg-sky-500',
+  },
+  done: {
+    label: 'Concluída',
+    badge: 'border-green-200 bg-green-50 text-green-700',
+    accent: 'bg-green-500',
+  },
+  rejected: {
+    label: 'Encerrada',
+    badge: 'border-border bg-muted text-muted-foreground',
+    accent: 'bg-muted-foreground/45',
+  },
 }
+
+export const SUGGESTION_STATUS_ORDER: SuggestionStatus[] = [
+  'pending',
+  'in_review',
+  'in_development',
+  'done',
+  'rejected',
+]
 
 export function getSuggestionStatusMeta(status: SuggestionStatus): SuggestionStatusMeta {
   return SUGGESTION_STATUS_META[status] ?? SUGGESTION_STATUS_META.pending

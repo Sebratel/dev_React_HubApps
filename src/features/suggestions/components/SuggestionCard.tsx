@@ -40,14 +40,14 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
         s.status === 'rejected' && 'opacity-80',
       )}
     >
-      <span className={cn('absolute inset-y-0 left-0 w-1', type.accent)} aria-hidden />
+      <span className={cn('absolute inset-y-0 left-0 w-1', status.accent)} aria-hidden />
 
       <div className="flex flex-col lg:flex-row">
         {/* Main content */}
         <div className="flex min-w-0 flex-1 flex-col gap-3 p-5 pl-6">
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', status.badge)}>
+            <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-semibold', status.badge)}>
               {status.label}
             </span>
             <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide', type.badge)}>
@@ -130,7 +130,7 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
           {/* Status */}
           <div className="hidden flex-col gap-1 lg:flex">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Status</span>
-            <span className={cn('w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold', status.badge)}>
+            <span className={cn('w-fit rounded-full border px-2.5 py-0.5 text-xs font-semibold', status.badge)}>
               {status.label}
             </span>
           </div>

@@ -117,10 +117,6 @@ export interface CreateSuggestionPayload {
   appName?: string | null
 }
 
-export async function getSuggestionSectors(): Promise<string[]> {
-  return api.get<string[]>('/suggestions/sectors')
-}
-
 /** Community feed: all suggestions, enriched with the current user's engagement. */
 export async function getSuggestions(): Promise<SuggestionModel[]> {
   const rows = await api.get<SuggestionRow[]>('/suggestions')

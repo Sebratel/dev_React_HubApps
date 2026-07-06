@@ -14,6 +14,7 @@ import { PageHero, type HeroStat } from '@/components/PageHero'
 import { useAdminSuggestions } from './hooks/useAdminSuggestions'
 import { SuggestionStatusDialog } from './components/SuggestionStatusDialog'
 import type { SuggestionModel } from '@/services/suggestion.service'
+import { getSuggestionStatusMeta, SUGGESTION_STATUS_ORDER } from '@/features/suggestions/utils'
 import type { SuggestionType, SuggestionStatus } from '@/types/enums'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -32,26 +33,12 @@ const TYPE_LABEL: Record<SuggestionType, string> = {
   other:       'Outro',
 }
 
-const STATUS_BADGE: Record<SuggestionStatus, string> = {
-  pending:   'border-amber-200 bg-amber-50  text-amber-800',
-  in_review: 'border-stone-300 bg-stone-100 text-stone-700',
-  done:      'border-green-200 bg-green-50  text-green-700',
-  rejected:  'border-border    bg-muted     text-muted-foreground',
-}
-
-const STATUS_LABEL: Record<SuggestionStatus, string> = {
-  pending:   'Aguardando',
-  in_review: 'Em análise',
-  done:      'Concluída',
-  rejected:  'Encerrada',
-}
-
 const STATUS_FILTERS: { value: SuggestionStatus | 'all'; label: string }[] = [
-  { value: 'all',       label: 'Todas'      },
-  { value: 'pending',   label: 'Aguardando' },
-  { value: 'in_review', label: 'Em análise' },
-  { value: 'done',      label: 'Concluídas' },
-  { value: 'rejected',  label: 'Encerradas' },
+  { value: 'all', label: 'Todas' },
+  ...SUGGESTION_STATUS_ORDER.map((value) => ({
+    value,
+    label: getSuggestionStatusMeta(value).label,
+  })),
 ]
 
 const AVATAR_PALETTE = [
@@ -140,8 +127,8 @@ function SuggestionCard({ s, onEdit, index, reduced }: SuggestionCardProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Badge variant="outline" className={cn('text-[11px] px-2 h-5', STATUS_BADGE[s.status])}>
-            {STATUS_LABEL[s.status]}
+          <Badge variant="outline" className={cn('text-[11px] px-2 h-5', getSuggestionStatusMeta(s.status).badge)}>
+            {getSuggestionStatusMeta(s.status).label}
           </Badge>
           <Button
             variant="ghost" size="icon"
@@ -229,10 +216,11 @@ export function AdminSuggestionsPage() {
     : suggestions.filter((s) => s.status === statusFilter)
 
   const counts = {
-    pending:   suggestions.filter((s) => s.status === 'pending').length,
-    in_review: suggestions.filter((s) => s.status === 'in_review').length,
-    done:      suggestions.filter((s) => s.status === 'done').length,
-    rejected:  suggestions.filter((s) => s.status === 'rejected').length,
+    pending:        suggestions.filter((s) => s.status === 'pending').length,
+    in_review:      suggestions.filter((s) => s.status === 'in_review').length,
+    in_development: suggestions.filter((s) => s.status === 'in_development').length,
+    done:           suggestions.filter((s) => s.status === 'done').length,
+    rejected:       suggestions.filter((s) => s.status === 'rejected').length,
   }
 
   // ── Insights ───────────────────────────────────────────────────────────────
@@ -448,7 +436,7 @@ export function AdminSuggestionsPage() {
           <p className="text-sm font-medium text-foreground">
             {statusFilter === 'all'
               ? 'Nenhuma sugestão recebida.'
-              : `Nenhuma sugestão com status "${STATUS_LABEL[statusFilter as SuggestionStatus]}".`}
+              : `Nenhuma sugestão com status "${getSuggestionStatusMeta(statusFilter as SuggestionStatus).label}".`}
           </p>
         </div>
       ) : (

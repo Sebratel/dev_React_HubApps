@@ -13,10 +13,9 @@ const {
   valueToVoteType,
   refreshCounts,
 } = require('../utils/platformSuggestions')
-const { mergeSectors } = require('../utils/suggestionSectors')
 
 const VALID_TYPES    = ['feature', 'bug', 'improvement', 'other']
-const VALID_STATUSES = ['pending', 'in_review', 'done', 'rejected']
+const VALID_STATUSES = ['pending', 'in_review', 'in_development', 'done', 'rejected']
 
 async function fetchActiveUser(uid) {
   const [rows] = await pool.query(
@@ -59,16 +58,16 @@ function listFilterClause(appId) {
   return { clause: 'WHERE s.app_id = ?', params: [appId] }
 }
 
-// GET /suggestions/sectors — setores disponíveis para o formulário
+// GET /suggestions/sectors — setores ativos (tabela teams)
 router.get('/sectors', requireAuth, async (req, res, next) => {
   try {
     const [rows] = await pool.query(
-      `SELECT DISTINCT sector
-       FROM platform_suggestions
-       WHERE sector IS NOT NULL AND TRIM(sector) != ''
-       ORDER BY sector`,
+      `SELECT name
+       FROM teams
+       WHERE is_active = 1
+       ORDER BY name`,
     )
-    res.json(mergeSectors(rows.map((r) => r.sector)))
+    res.json(rows.map((r) => r.name))
   } catch (err) {
     next(err)
   }
@@ -111,6 +110,13 @@ router.post('/', requireAuth, async (req, res, next) => {
 
   const suggType = VALID_TYPES.includes(type) ? type : 'other'
   const sectorValue = sector.trim()
+
+  const [teamRows] = await pool.query(
+    'SELECT name FROM teams WHERE is_active = 1 AND name = ?',
+    [sectorValue],
+  )
+  if (!teamRows.length) return res.status(400).json({ error: 'Setor inválido' })
+
   const category = typeToCategory(suggType)
   const description = body?.trim() || title.trim()
 

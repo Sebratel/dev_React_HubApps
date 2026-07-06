@@ -77,12 +77,11 @@ beforeEach(() => {
 })
 
 describe('GET /suggestions/sectors', () => {
-  it('retorna lista de setores', async () => {
-    pool.query.mockResolvedValueOnce([[{ sector: 'COR' }, { sector: 'Suporte Técnico' }]])
+  it('retorna setores ativos da tabela teams', async () => {
+    pool.query.mockResolvedValueOnce([[{ name: 'COR' }, { name: 'Suporte' }]])
     const res = await request(app).get('/suggestions/sectors').set('Authorization', 'Bearer tok')
     expect(res.status).toBe(200)
-    expect(res.body).toContain('COR')
-    expect(res.body).toContain('Suporte Técnico')
+    expect(res.body).toEqual(['COR', 'Suporte'])
   })
 })
 
@@ -121,6 +120,7 @@ describe('POST /suggestions', () => {
   it('cria sugestão com sucesso', async () => {
     pool.query.mockResolvedValueOnce([[BASE_USER]])
     pool.query.mockResolvedValueOnce([[{ id: 'app-1', name: 'Listagem Splitters' }]])
+    pool.query.mockResolvedValueOnce([[{ name: 'COR' }]])
     conn.query.mockResolvedValueOnce([{ insertId: 1 }])
     conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])
     pool.query.mockResolvedValueOnce([[BASE_RAW]])
@@ -166,6 +166,7 @@ describe('POST /suggestions', () => {
 
   it('aceita type inválido como "other"', async () => {
     pool.query.mockResolvedValueOnce([[BASE_USER]])
+    pool.query.mockResolvedValueOnce([[{ name: 'COR' }]])
     conn.query.mockResolvedValueOnce([{ insertId: 2 }])
     conn.query.mockResolvedValueOnce([{ affectedRows: 1 }])
     pool.query.mockResolvedValueOnce([[{ ...BASE_RAW, id: 2, category: 'Outro' }]])

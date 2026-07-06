@@ -8,10 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { getApps } from '@/services/app.service'
-import { getSuggestionSectors } from '@/services/suggestion.service'
+import { getTeams } from '@/services/team.service'
 import { getUserApps } from '@/utils/permissions'
 import { useAuthStore } from '@/stores/auth.store'
-import { FALLBACK_SUGGESTION_SECTORS } from '@/constants/suggestion-sectors'
 import type { SuggestionType } from '@/types/enums'
 import type { CreateSuggestionPayload } from '@/services/suggestion.service'
 
@@ -53,9 +52,9 @@ export function SuggestionFormDialog({
     enabled: open && !!user,
   })
 
-  const { data: sectors = FALLBACK_SUGGESTION_SECTORS } = useQuery({
-    queryKey: ['suggestions', 'sectors'],
-    queryFn: getSuggestionSectors,
+  const { data: teams = [], isLoading: loadingTeams } = useQuery({
+    queryKey: ['teams'],
+    queryFn: getTeams,
     staleTime: 300_000,
     enabled: open,
   })
@@ -113,11 +112,13 @@ export function SuggestionFormDialog({
               id="sugg-sector"
               value={form.sector}
               onChange={(e) => setForm((f) => ({ ...f, sector: e.target.value }))}
-              disabled={isSubmitting}
+              disabled={isSubmitting || loadingTeams}
             >
-              <option value="">Selecione seu setor</option>
-              {sectors.map((sector) => (
-                <option key={sector} value={sector}>{sector}</option>
+              <option value="">
+                {loadingTeams ? 'Carregando setores...' : 'Selecione seu setor'}
+              </option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.name}>{team.name}</option>
               ))}
             </Select>
           </div>

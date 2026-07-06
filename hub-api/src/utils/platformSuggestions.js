@@ -15,18 +15,20 @@ const CATEGORY_TO_TYPE = {
 }
 
 const HUB_TO_LEGACY_STATUS = {
-  pending:   'open',
-  in_review: 'in_progress',
-  done:      'done',
-  rejected:  'rejected',
+  pending:        'open',
+  in_review:      'in_progress',
+  in_development: 'planned',
+  done:           'done',
+  rejected:       'rejected',
 }
 
 const LEGACY_TO_HUB_STATUS = {
-  open:        'pending',
-  planned:     'in_review',
-  in_progress: 'in_review',
-  done:        'done',
-  rejected:    'rejected',
+  open:             'pending',
+  planned:          'in_development',
+  in_progress:      'in_review',
+  in_development:   'in_development',
+  done:             'done',
+  rejected:         'rejected',
 }
 
 function categoryToType(category) {

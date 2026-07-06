@@ -10,12 +10,15 @@ describe('platformSuggestions mapping', () => {
   it('maps legacy status to hub status', () => {
     expect(legacyToHubStatus('open')).toBe('pending')
     expect(legacyToHubStatus('in_progress')).toBe('in_review')
+    expect(legacyToHubStatus('planned')).toBe('in_development')
+    expect(legacyToHubStatus('in_development')).toBe('in_development')
     expect(legacyToHubStatus('done')).toBe('done')
   })
 
   it('maps hub status to legacy status', () => {
     expect(hubToLegacyStatus('pending')).toBe('open')
     expect(hubToLegacyStatus('in_review')).toBe('in_progress')
+    expect(hubToLegacyStatus('in_development')).toBe('planned')
     expect(hubToLegacyStatus('done')).toBe('done')
   })
 

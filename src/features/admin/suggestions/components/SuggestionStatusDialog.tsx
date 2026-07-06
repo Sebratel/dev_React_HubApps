@@ -8,13 +8,12 @@ import { Select } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import type { SuggestionModel } from '@/services/suggestion.service'
 import type { SuggestionStatus } from '@/types/enums'
+import { SUGGESTION_STATUS_ORDER, getSuggestionStatusMeta } from '@/features/suggestions/utils'
 
-const STATUS_OPTIONS: { value: SuggestionStatus; label: string }[] = [
-  { value: 'pending',   label: 'Aguardando' },
-  { value: 'in_review', label: 'Em análise' },
-  { value: 'done',      label: 'Concluída'  },
-  { value: 'rejected',  label: 'Encerrada'  },
-]
+const STATUS_OPTIONS = SUGGESTION_STATUS_ORDER.map((value) => ({
+  value,
+  label: getSuggestionStatusMeta(value).label,
+}))
 
 const TYPE_LABELS: Record<string, string> = {
   feature:     'Funcionalidade',

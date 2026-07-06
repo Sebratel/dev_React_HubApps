@@ -31,7 +31,9 @@ export function SuggestionsPage() {
 
   const doneCount = useMemo(() => suggestions.filter((s) => s.status === 'done').length, [suggestions])
   const pendingCount = useMemo(
-    () => suggestions.filter((s) => s.status === 'pending' || s.status === 'in_review').length,
+    () => suggestions.filter((s) =>
+      s.status === 'pending' || s.status === 'in_review' || s.status === 'in_development',
+    ).length,
     [suggestions],
   )
 
