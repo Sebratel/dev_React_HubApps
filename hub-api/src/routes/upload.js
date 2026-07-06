@@ -1,10 +1,12 @@
 const router      = require('express').Router()
 const multer      = require('multer')
 const path        = require('path')
+const fs          = require('fs')
 const { randomUUID } = require('crypto')
 const { requireAuth, requireAdmin } = require('../middleware/auth')
 
 const UPLOAD_DIR = path.join(__dirname, '..', '..', 'public', 'uploads', 'highlights')
+fs.mkdirSync(UPLOAD_DIR, { recursive: true })
 
 const storage = multer.diskStorage({
   destination: UPLOAD_DIR,

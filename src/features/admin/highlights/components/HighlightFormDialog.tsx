@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { imageToBase64 } from '@/lib/api'
+import { uploadFile } from '@/lib/api'
 import type { HighlightModel } from '@/types/models'
 
 const BADGE_PRESETS = ['NOVIDADE', 'EM BREVE', 'ATUALIZAÇÃO', 'DESTAQUE']
@@ -71,7 +71,12 @@ const schema = z.object({
   ctaLabel:       z.string().max(100).optional(),
   ctaUrl:         z.string().url('URL inválida').or(z.literal('')).optional(),
   imageUrl:       z.string().min(1, 'Imagem obrigatória').refine(
-    v => v.startsWith('data:image/') || v.startsWith('http://') || v.startsWith('https://'),
+    (v) =>
+      v.startsWith('data:image/')
+      || v.startsWith('http://')
+      || v.startsWith('https://')
+      || v.startsWith('/api/uploads/')
+      || v.startsWith('/uploads/'),
     'Use uma URL válida ou faça upload de uma imagem',
   ),
   objectFit:      z.enum(['cover', 'contain']),
@@ -168,7 +173,7 @@ export function HighlightFormDialog({
     setUploadedFileName(file.name)
 
     try {
-      const url = await imageToBase64(file, setUploadProgress)
+      const url = await uploadFile('/upload/highlights', file, setUploadProgress)
       setValue('imageUrl', url, { shouldValidate: true })
     } catch (err) {
       setUploadError(err instanceof Error ? `Erro ao enviar: ${err.message}` : 'Erro ao enviar o arquivo')

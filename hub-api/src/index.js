@@ -43,7 +43,7 @@ app.set('trust proxy', 1)
 
 app.use(helmet())
 app.use(morgan('combined'))
-app.use(express.json({ limit: '64kb' }))
+app.use(express.json({ limit: '2mb' }))
 
 // Static uploads — cross-origin allowed so React app (different port/domain) can display images
 app.use('/uploads', (_req, res, next) => {
