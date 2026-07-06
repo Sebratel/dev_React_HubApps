@@ -81,7 +81,7 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
 
           {/* Author */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <UserAvatar name={s.userName} size="xs" />
+            <UserAvatar name={s.userName} photoUrl={s.userPhotoUrl} size="xs" />
             <span>
               Enviado por <span className="font-semibold text-foreground">{s.userName}</span> em {formatDateTime(s.createdAt)}
             </span>
@@ -90,10 +90,16 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
           {/* Footer: supporters + comments */}
           <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/60 pt-3">
             <div className="flex items-center gap-2">
-              {s.upVoterNames.length > 0 && (
+              {s.upVoters.length > 0 && (
                 <div className="flex -space-x-2">
-                  {s.upVoterNames.slice(0, 3).map((name) => (
-                    <UserAvatar key={name} name={name} size="xs" className="ring-2 ring-card" />
+                  {s.upVoters.slice(0, 3).map((voter) => (
+                    <UserAvatar
+                      key={voter.name}
+                      name={voter.name}
+                      photoUrl={voter.photoUrl}
+                      size="xs"
+                      className="ring-2 ring-card"
+                    />
                   ))}
                 </div>
               )}

@@ -70,6 +70,7 @@ function listQuery(whereClause) {
       COALESCE(a.name, NULL) AS app_name,
       s.author_uid AS user_id,
       s.author_name AS user_name,
+      COALESCE(u.photo_url, s.author_photo_url) AS user_photo_url,
       s.title,
       s.description AS body,
       s.category,
@@ -86,14 +87,17 @@ function listQuery(whereClause) {
         WHEN mv.vote_type = 'dislike' THEN -1
         ELSE NULL
       END AS my_vote,
-      uv.up_voter_names
+      uv.up_voter_names,
+      uv.up_voter_photos
     FROM platform_suggestions s
     LEFT JOIN apps a ON a.id = s.app_id
+    LEFT JOIN users u ON u.id = s.author_uid
     LEFT JOIN platform_suggestion_votes mv
       ON mv.suggestion_id = s.id AND mv.user_uid = ?
     LEFT JOIN (
       SELECT suggestion_id,
-        GROUP_CONCAT(user_name ORDER BY created_at DESC SEPARATOR '||') AS up_voter_names
+        GROUP_CONCAT(user_name ORDER BY created_at DESC SEPARATOR '||') AS up_voter_names,
+        GROUP_CONCAT(COALESCE(user_photo_url, '') ORDER BY created_at DESC SEPARATOR '||') AS up_voter_photos
       FROM platform_suggestion_votes
       WHERE vote_type = 'like'
       GROUP BY suggestion_id
@@ -112,6 +116,7 @@ function mapSuggestionRow(row) {
     sector:        row.sector ?? null,
     user_id:       row.user_id,
     user_name:     row.user_name,
+    user_photo_url: row.user_photo_url ?? null,
     title:         row.title,
     body:          row.body,
     type:          categoryToType(row.category),
@@ -125,6 +130,7 @@ function mapSuggestionRow(row) {
     comment_count: row.comment_count,
     my_vote:       row.my_vote ?? null,
     up_voter_names: row.up_voter_names ?? null,
+    up_voter_photos: row.up_voter_photos ?? null,
   }
 }
 
@@ -134,6 +140,7 @@ function mapCommentRow(row) {
     suggestion_id: String(row.suggestion_id),
     user_id:       row.author_uid,
     user_name:     row.author_name,
+    user_photo_url: row.author_photo_url ?? null,
     body:          row.message,
     created_at:    row.created_at,
   }

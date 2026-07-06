@@ -63,7 +63,7 @@ export function SuggestionComments({ suggestionId, open }: SuggestionCommentsPro
         ) : (
           comments.map((c) => (
             <div key={c.id} className="flex gap-3">
-              <UserAvatar name={c.userName} size="sm" className="mt-0.5 shrink-0" />
+              <UserAvatar name={c.userName} photoUrl={c.userPhotoUrl} size="sm" className="mt-0.5 shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-x-2">
                   <span className="text-sm font-semibold text-foreground">{c.userName}</span>
