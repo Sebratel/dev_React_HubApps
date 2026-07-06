@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { resolveAssetUrl } from '@/lib/api'
 
 interface UserAvatarProps {
   name: string
@@ -30,7 +31,7 @@ export function UserAvatar({ name, photoUrl, size = 'md', className }: UserAvata
   if (photoUrl) {
     return (
       <img
-        src={photoUrl}
+        src={resolveAssetUrl(photoUrl)}
         alt={name}
         className={cn('rounded-full object-cover', sizeClass, className)}
         referrerPolicy="no-referrer"

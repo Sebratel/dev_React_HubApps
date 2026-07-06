@@ -1,32 +1,10 @@
 import { BookOpen } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { UserAvatar } from '@/components/UserAvatar'
 import { AUDIT_ACTION } from '@/types/api'
 import { AuditActionBadge } from './AuditActionBadge'
 import { formatRelativeTime } from '@/utils/relative-time'
 import type { AuditLogModel } from '@/types/models'
-
-// ─── Avatar helpers ───────────────────────────────────────────────────────────
-
-const AVATAR_PALETTE = [
-  { bg: '#E6F1FB', text: '#185FA5' },
-  { bg: '#FAEEDA', text: '#854F0B' },
-  { bg: '#E1F5EE', text: '#0F6E56' },
-  { bg: '#EEEDFE', text: '#534AB7' },
-  { bg: '#EAF3DE', text: '#3B6D11' },
-]
-
-function getAvatarColors(name: string) {
-  return AVATAR_PALETTE[name.charCodeAt(0) % AVATAR_PALETTE.length]
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0] ?? '')
-    .join('')
-    .toUpperCase()
-}
 
 // ─── Dot color by action ──────────────────────────────────────────────────────
 
@@ -89,8 +67,6 @@ export function AuditLogsTable({ logs, onDetails }: AuditLogsTableProps) {
       <div className="divide-y divide-border">
         {logs.map((log) => {
           const displayName = log.userName || log.userId
-          const avatarColors = getAvatarColors(displayName)
-          const initials = getInitials(displayName)
           const dotColor = getActionDotColor(log.action)
 
           return (
@@ -106,13 +82,7 @@ export function AuditLogsTable({ logs, onDetails }: AuditLogsTableProps) {
             >
               {/* User cell */}
               <div className="flex items-center gap-2.5 min-w-0">
-                <div
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
-                  style={{ background: avatarColors.bg, color: avatarColors.text }}
-                  aria-hidden
-                >
-                  {initials}
-                </div>
+                <UserAvatar name={displayName} photoUrl={log.userPhotoUrl} size="sm" className="shrink-0" />
                 <div className="min-w-0 flex items-center gap-2">
                   <span
                     className="w-1.5 h-1.5 rounded-full shrink-0"

@@ -48,6 +48,7 @@ function makeRequest(overrides: Partial<AccessRequestModel> = {}): AccessRequest
     id: 'req-1',
     userId: 'u-1',
     userName: 'Alice',
+    userPhotoUrl: null,
     email: 'alice@sebratel.com.br',
     teamId: null,
     teamName: '',

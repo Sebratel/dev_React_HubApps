@@ -51,18 +51,23 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
 
   const conditions = []
   const params     = []
-  if (userId)   { conditions.push('user_id = ?');    params.push(userId) }
-  if (action)   { conditions.push('action = ?');     params.push(action) }
-  if (dateFrom) { conditions.push('created_at >= ?'); params.push(dateFrom) }
-  if (dateTo)   { conditions.push('created_at <= ?'); params.push(dateTo) }
+  if (userId)   { conditions.push('al.user_id = ?');    params.push(userId) }
+  if (action)   { conditions.push('al.action = ?');     params.push(action) }
+  if (dateFrom) { conditions.push('al.created_at >= ?'); params.push(dateFrom) }
+  if (dateTo)   { conditions.push('al.created_at <= ?'); params.push(dateTo) }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
 
   const [[{ total }]] = await pool.query(
-    `SELECT COUNT(*) AS total FROM audit_logs ${where}`, params
+    `SELECT COUNT(*) AS total FROM audit_logs al ${where}`, params
   )
   const [data] = await pool.query(
-    `SELECT * FROM audit_logs ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+    `SELECT al.id, al.user_id, al.user_name, al.action, al.details, al.ip_address, al.created_at,
+            u.photo_url AS user_photo_url
+     FROM audit_logs al
+     LEFT JOIN users u ON u.id = al.user_id
+     ${where}
+     ORDER BY al.created_at DESC LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   )
 

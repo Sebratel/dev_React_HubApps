@@ -48,6 +48,7 @@ function makeLog(overrides: Partial<AuditLogModel> = {}): AuditLogModel {
     id:        'log-1',
     userId:    'uid-1',
     userName:  'João Silva',
+    userPhotoUrl: null,
     action:    'LOGIN',
     details:   '',
     timestamp: new Date('2026-06-01T10:00:00Z'),

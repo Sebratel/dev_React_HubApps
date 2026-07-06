@@ -75,6 +75,7 @@ export interface AccessRequestModel {
   id: string
   userId: string
   userName: string // denormalized
+  userPhotoUrl: string | null
   email: string // denormalized
   teamId: string | null
   teamName: string // denormalized
@@ -97,6 +98,7 @@ export interface AuditLogModel {
   id: string
   userId: string
   userName: string // denormalized
+  userPhotoUrl: string | null
   action: string // e.g. 'APP_ACCESS', 'USER_BLOCK', 'LOGIN'
   details: string
   timestamp: Date

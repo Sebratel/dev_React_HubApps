@@ -1,4 +1,5 @@
 import { AdminEmptyState } from './AdminEmptyState'
+import { UserAvatar } from '@/components/UserAvatar'
 import { cn } from '@/lib/utils'
 import type { AccessRequestModel } from '@/types/models'
 import { formatRelativeTime } from '@/utils/relative-time'
@@ -29,6 +30,12 @@ export function AdminPendingRequestsList({ requests }: AdminPendingRequestsListP
             'hover:bg-muted/50 transition-colors cursor-default',
           )}
         >
+          <UserAvatar
+            name={req.userName || req.userId}
+            photoUrl={req.userPhotoUrl}
+            size="xs"
+            className="shrink-0"
+          />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground truncate">
               {req.userName || req.userId}

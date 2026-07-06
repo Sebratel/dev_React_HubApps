@@ -21,6 +21,7 @@ interface AccessRequestRow {
   user_name: string | null
   user_email: string | null
   user_team: string | null
+  user_photo_url: string | null
   // From JOIN users ON reviewed_by
   reviewer_name: string | null
 }
@@ -30,6 +31,7 @@ function rowToModel(row: AccessRequestRow): AccessRequestModel {
     id: row.id,
     userId: row.user_id,
     userName: row.user_name ?? '',
+    userPhotoUrl: row.user_photo_url ?? null,
     email: row.user_email ?? '',
     teamId: null,
     teamName: row.user_team ?? '',

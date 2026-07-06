@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { canAccessAdminDashboard } from '@/utils/permissions'
 import { ApiError } from '@/types/api'
 import { PageHero, type HeroStat } from '@/components/PageHero'
+import { UserAvatar } from '@/components/UserAvatar'
 import { useAdminSuggestions } from './hooks/useAdminSuggestions'
 import { SuggestionStatusDialog } from './components/SuggestionStatusDialog'
 import type { SuggestionModel } from '@/services/suggestion.service'
@@ -40,22 +41,6 @@ const STATUS_FILTERS: { value: SuggestionStatus | 'all'; label: string }[] = [
     label: getSuggestionStatusMeta(value).label,
   })),
 ]
-
-const AVATAR_PALETTE = [
-  { bg: '#E6F1FB', text: '#185FA5' },
-  { bg: '#FAEEDA', text: '#854F0B' },
-  { bg: '#E1F5EE', text: '#0F6E56' },
-  { bg: '#EEEDFE', text: '#534AB7' },
-  { bg: '#EAF3DE', text: '#3B6D11' },
-]
-
-function getAvatarColors(name: string) {
-  return AVATAR_PALETTE[name.charCodeAt(0) % AVATAR_PALETTE.length]
-}
-
-function getInitials(name: string): string {
-  return name.split(' ').slice(0, 2).map((w) => w[0] ?? '').join('').toUpperCase()
-}
 
 function formatError(err: unknown) {
   if (err instanceof ApiError) return err.message
@@ -98,9 +83,6 @@ interface SuggestionCardProps {
 }
 
 function SuggestionCard({ s, onEdit, index, reduced }: SuggestionCardProps) {
-  const avatarColors = getAvatarColors(s.userName)
-  const initials = getInitials(s.userName)
-
   return (
     <motion.div
       layout
@@ -112,12 +94,7 @@ function SuggestionCard({ s, onEdit, index, reduced }: SuggestionCardProps) {
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5">
-          <div
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[13px] font-semibold"
-            style={{ background: avatarColors.bg, color: avatarColors.text }}
-          >
-            {initials}
-          </div>
+          <UserAvatar name={s.userName} photoUrl={s.userPhotoUrl} size="sm" className="flex-shrink-0" />
           <div>
             <p className="text-[13px] font-semibold text-foreground leading-tight">{s.userName}</p>
             <p className="text-[11px] text-muted-foreground">

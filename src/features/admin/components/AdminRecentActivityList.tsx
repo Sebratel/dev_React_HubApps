@@ -1,4 +1,5 @@
 import { AdminEmptyState } from './AdminEmptyState'
+import { UserAvatar } from '@/components/UserAvatar'
 import { cn } from '@/lib/utils'
 import type { AuditLogModel } from '@/types/models'
 import { formatRelativeTime } from '@/utils/relative-time'
@@ -21,35 +22,6 @@ const ACTION_LABELS: Record<string, string> = {
   ANNOUNCEMENT_CREATE:     'Criou aviso',
   ANNOUNCEMENT_UPDATE:     'Atualizou aviso',
   ANNOUNCEMENT_DELETE:     'Removeu aviso',
-}
-
-type ActionCategory = 'neutral' | 'success' | 'warning' | 'danger'
-
-const ACTION_CATEGORY: Record<string, ActionCategory> = {
-  LOGIN:                  'neutral',
-  LOGOUT:                 'neutral',
-  APP_OPEN:               'neutral',
-  USER_UPDATE:            'neutral',
-  USER_ACTIVATE:          'success',
-  USER_DEACTIVATE:        'danger',
-  USER_PROMOTE_ADMIN:     'warning',
-  USER_REVOKE_ADMIN:      'warning',
-  APP_CREATE:             'success',
-  APP_UPDATE:             'neutral',
-  APP_DEACTIVATE:         'danger',
-  ACCESS_REQUEST_CREATE:  'neutral',
-  ACCESS_REQUEST_APPROVE: 'success',
-  ACCESS_REQUEST_REJECT:  'danger',
-  ANNOUNCEMENT_CREATE:    'warning',
-  ANNOUNCEMENT_UPDATE:    'warning',
-  ANNOUNCEMENT_DELETE:    'danger',
-}
-
-const DOT_CLASS: Record<ActionCategory, string> = {
-  neutral: 'bg-muted-foreground/40',
-  success: 'bg-green-500',
-  warning: 'bg-amber-500',
-  danger:  'bg-destructive',
 }
 
 function parseDetails(raw: string, action?: string): string {
@@ -91,7 +63,6 @@ export function AdminRecentActivityList({ logs }: AdminRecentActivityListProps) 
       {logs.map((log, i) => {
         const label  = ACTION_LABELS[log.action] ?? log.action
         const detail = parseDetails(log.details, log.action)
-        const cat    = ACTION_CATEGORY[log.action] ?? 'neutral'
 
         return (
           <li
@@ -102,9 +73,11 @@ export function AdminRecentActivityList({ logs }: AdminRecentActivityListProps) 
               i % 2 !== 0 && 'bg-muted/20',
             )}
           >
-            <span
-              className={cn('mt-[6px] h-1.5 w-1.5 rounded-full shrink-0', DOT_CLASS[cat])}
-              aria-hidden
+            <UserAvatar
+              name={log.userName}
+              photoUrl={log.userPhotoUrl}
+              size="xs"
+              className="shrink-0 mt-0.5"
             />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-foreground leading-snug truncate">
