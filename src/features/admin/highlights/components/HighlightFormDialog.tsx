@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { uploadFile } from '@/lib/api'
+import { uploadFile, resolveAssetUrl } from '@/lib/api'
 import type { HighlightModel } from '@/types/models'
 
 const BADGE_PRESETS = ['NOVIDADE', 'EM BREVE', 'ATUALIZAÇÃO', 'DESTAQUE']
@@ -343,7 +343,7 @@ export function HighlightFormDialog({
                 >
                   {objectFit === 'contain' && (
                     <img
-                      src={imageUrl}
+                      src={resolveAssetUrl(imageUrl)}
                       alt=""
                       aria-hidden
                       className="absolute inset-0 h-full w-full object-cover scale-150"
@@ -351,7 +351,7 @@ export function HighlightFormDialog({
                     />
                   )}
                   <img
-                    src={imageUrl}
+                    src={resolveAssetUrl(imageUrl)}
                     alt="preview"
                     className="absolute inset-0 h-full w-full"
                     style={{

@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical, Sparkles, CheckCircle2, EyeOffIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { resolveAssetUrl } from '@/lib/api'
+import { ApiError } from '@/types/api'
 import { ApiError } from '@/types/api'
 import { PageHero, type HeroStat } from '@/components/PageHero'
 import {
@@ -153,7 +155,7 @@ export function AdminHighlightsPage() {
 
               {/* Thumbnail */}
               <div className="h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-                <img src={h.imageUrl} alt="" className="h-full w-full object-cover" />
+                <img src={resolveAssetUrl(h.imageUrl)} alt="" className="h-full w-full object-cover" />
               </div>
 
               {/* Info */}

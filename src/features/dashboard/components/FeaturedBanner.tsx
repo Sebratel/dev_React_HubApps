@@ -7,6 +7,7 @@ import {
 } from 'framer-motion'
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { resolveAssetUrl } from '@/lib/api'
 import type { HighlightModel } from '@/types/models'
 
 const ROT_DEG = 22
@@ -97,7 +98,7 @@ function CarouselCard({ item, idx, n, pos, cardW, cardH, step, rotDeg, onNavigat
 
       {/* Blurred colour backdrop */}
       <img
-        src={item.imageUrl}
+        src={resolveAssetUrl(item.imageUrl)}
         alt=""
         aria-hidden
         className="absolute inset-0 h-full w-full object-cover scale-150"
@@ -107,7 +108,7 @@ function CarouselCard({ item, idx, n, pos, cardW, cardH, step, rotDeg, onNavigat
 
       {/* Main image — gentle Ken Burns zoom on hover */}
       <img
-        src={item.imageUrl}
+        src={resolveAssetUrl(item.imageUrl)}
         alt={item.title}
         className="absolute inset-0 h-full w-full"
         style={{

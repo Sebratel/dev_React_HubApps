@@ -5,6 +5,15 @@ import { ApiError, type PaginatedResponse, type QueryParams } from '@/types/api'
 const configuredApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
 export const API_URL = configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:3000' : '')
 
+/** Normaliza URLs de assets servidos pela API (uploads, imagens legadas). */
+export function resolveAssetUrl(url: string): string {
+  if (!url) return url
+  if (/^(data:|https?:)/i.test(url)) return url
+  if (url.startsWith('/api/')) return url
+  if (url.startsWith('/uploads/')) return `${API_URL}${url}`
+  return url
+}
+
 async function getToken(): Promise<string> {
   const user = auth.currentUser
   if (!user) throw new ApiError('Usuário não autenticado', 401)
