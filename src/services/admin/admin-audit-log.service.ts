@@ -8,6 +8,7 @@ interface AuditLogRow {
   id: string
   user_id: string
   user_name: string
+  user_photo_url: string | null
   action: string
   details: string | null
   ip_address: string | null
@@ -19,6 +20,7 @@ function rowToModel(row: AuditLogRow): AuditLogModel {
     id: row.id,
     userId: row.user_id,
     userName: row.user_name,
+    userPhotoUrl: row.user_photo_url ?? null,
     action: row.action,
     details: row.details ?? '',
     timestamp: new Date(row.created_at),

@@ -40,22 +40,27 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
         s.status === 'rejected' && 'opacity-80',
       )}
     >
-      <span className={cn('absolute inset-y-0 left-0 w-1', type.accent)} aria-hidden />
+      <span className={cn('absolute inset-y-0 left-0 w-1', status.accent)} aria-hidden />
 
       <div className="flex flex-col lg:flex-row">
         {/* Main content */}
         <div className="flex min-w-0 flex-1 flex-col gap-3 p-5 pl-6">
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', status.badge)}>
+            <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-semibold', status.badge)}>
               {status.label}
             </span>
             <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide', type.badge)}>
               <TypeIcon className="h-3 w-3" aria-hidden />
               {type.label}
             </span>
-            {s.appName && (
+            {s.sector && (
               <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {s.sector}
+              </span>
+            )}
+            {s.appName && (
+              <span className="rounded-full border border-primary/25 bg-primary/5 px-2.5 py-0.5 text-[11px] font-medium text-primary">
                 {s.appName}
               </span>
             )}
@@ -76,7 +81,7 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
 
           {/* Author */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <UserAvatar name={s.userName} size="xs" />
+            <UserAvatar name={s.userName} photoUrl={s.userPhotoUrl} size="xs" />
             <span>
               Enviado por <span className="font-semibold text-foreground">{s.userName}</span> em {formatDateTime(s.createdAt)}
             </span>
@@ -85,10 +90,16 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
           {/* Footer: supporters + comments */}
           <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/60 pt-3">
             <div className="flex items-center gap-2">
-              {s.upVoterNames.length > 0 && (
+              {s.upVoters.length > 0 && (
                 <div className="flex -space-x-2">
-                  {s.upVoterNames.slice(0, 3).map((name) => (
-                    <UserAvatar key={name} name={name} size="xs" className="ring-2 ring-card" />
+                  {s.upVoters.slice(0, 3).map((voter) => (
+                    <UserAvatar
+                      key={voter.name}
+                      name={voter.name}
+                      photoUrl={voter.photoUrl}
+                      size="xs"
+                      className="ring-2 ring-card"
+                    />
                   ))}
                 </div>
               )}
@@ -125,7 +136,7 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
           {/* Status */}
           <div className="hidden flex-col gap-1 lg:flex">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Status</span>
-            <span className={cn('w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold', status.badge)}>
+            <span className={cn('w-fit rounded-full border px-2.5 py-0.5 text-xs font-semibold', status.badge)}>
               {status.label}
             </span>
           </div>

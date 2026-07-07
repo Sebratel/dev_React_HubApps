@@ -1,4 +1,5 @@
 import { api } from '@/lib/api'
+import { ApiError } from '@/types/api'
 import type { UserModel } from '@/types/models'
 
 // Subset returned by /users/me and /users/provision (Sprint 2.5: SELECT * removed).
@@ -17,6 +18,14 @@ interface UserRow {
   online?: number
   created_at: string
   updated_at?: string
+}
+
+function assertUserRow(row: UserRow | undefined): UserRow {
+  if (!row) {
+    throw new ApiError('Nao foi possivel carregar seu perfil. A API retornou uma resposta vazia.', 502)
+  }
+
+  return row
 }
 
 function rowToUserModel(row: UserRow): UserModel {
@@ -57,7 +66,7 @@ export async function provisionUserOnFirstLogin(
   photoUrl: string | null
 ): Promise<UserModel> {
   const row = await api.post<UserRow>('/users/provision', { name, email, photoUrl })
-  return rowToUserModel(row)
+  return rowToUserModel(assertUserRow(row))
 }
 
 export async function updateMe(name: string): Promise<UserModel> {

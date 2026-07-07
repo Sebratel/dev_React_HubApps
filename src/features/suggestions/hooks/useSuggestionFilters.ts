@@ -96,7 +96,7 @@ export function useSuggestionFilters(suggestions: SuggestionModel[]): UseSuggest
       if (type !== 'all' && s.type !== type) return false
       if (status !== 'all' && s.status !== status) return false
       if (term) {
-        const haystack = `${s.title} ${s.body ?? ''} ${s.appName ?? ''}`.toLowerCase()
+        const haystack = `${s.title} ${s.body ?? ''} ${s.appName ?? ''} ${s.sector ?? ''}`.toLowerCase()
         if (!haystack.includes(term)) return false
       }
       return true

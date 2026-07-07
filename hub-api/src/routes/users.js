@@ -24,19 +24,26 @@ router.get('/me', requireAuth, async (req, res, next) => {
 router.post('/provision', requireAuth, provisionLimiter, async (req, res, next) => {
   const { name, email, photoUrl } = req.body
   if (!name || !email) return res.status(400).json({ error: 'name e email obrigatórios' })
+  const normalEmail = email.trim().toLowerCase()
 
   try {
     await pool.query(
       `INSERT INTO users (id, email, name, photo_url, profile, is_active, is_admin, permissions, last_login, online)
        VALUES (?, ?, ?, ?, '', 0, 0, '[]', NOW(), 1)
-       ON DUPLICATE KEY UPDATE last_login = NOW(), online = 1`,
-      [req.uid, email, name, photoUrl || null]
+       ON DUPLICATE KEY UPDATE
+         id = VALUES(id),
+         email = VALUES(email),
+         photo_url = COALESCE(VALUES(photo_url), photo_url),
+         last_login = NOW(),
+         online = 1`,
+      [req.uid, normalEmail, name, photoUrl || null]
     )
 
     const [rows] = await pool.query(
       `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
       [req.uid]
     )
+    if (!rows.length) return res.status(500).json({ error: 'Não foi possível provisionar o usuário' })
     res.json(rows[0])
   } catch (err) { next(err) }
 })

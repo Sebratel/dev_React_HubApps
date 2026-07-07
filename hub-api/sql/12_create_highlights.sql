@@ -1,5 +1,4 @@
 -- Migration 12: cria tabela highlights (banners de destaque no dashboard)
-USE DB_Hub_Apps;
 
 CREATE TABLE highlights (
   id          VARCHAR(36)   NOT NULL PRIMARY KEY,

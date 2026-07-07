@@ -2,28 +2,11 @@ import { useRef, useEffect } from 'react'
 import { Eye, CheckCircle, XCircle, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { UserAvatar } from '@/components/UserAvatar'
 import { formatRelativeTime } from '@/utils/relative-time'
 import { cn } from '@/lib/utils'
 import type { AccessRequestModel } from '@/types/models'
 import { AccessRequestStatusBadge } from './AccessRequestStatusBadge'
-
-// ── Avatar utils ──────────────────────────────────────────────────────────────
-
-const AVATAR_PALETTE = [
-  { bg: '#E6F1FB', text: '#185FA5' },
-  { bg: '#FAEEDA', text: '#854F0B' },
-  { bg: '#E1F5EE', text: '#0F6E56' },
-  { bg: '#EEEDFE', text: '#534AB7' },
-  { bg: '#EAF3DE', text: '#3B6D11' },
-]
-
-function getAvatarColors(name: string) {
-  return AVATAR_PALETTE[name.charCodeAt(0) % AVATAR_PALETTE.length]
-}
-
-function getInitials(name: string): string {
-  return name.split(' ').slice(0, 2).map((w) => w[0] ?? '').join('').toUpperCase()
-}
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -91,8 +74,6 @@ export function AccessRequestsTable({
       {/* Rows */}
       <div className="divide-y divide-border">
         {requests.map((req) => {
-          const avatarColors = getAvatarColors(req.userName || req.userId)
-          const initials = getInitials(req.userName || req.userId)
           const isPending = req.status === 'pending'
 
           return (
@@ -123,12 +104,12 @@ export function AccessRequestsTable({
 
               {/* User */}
               <div className="flex flex-1 min-w-0 items-center gap-2.5">
-                <div
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
-                  style={{ background: avatarColors.bg, color: avatarColors.text }}
-                >
-                  {initials}
-                </div>
+                <UserAvatar
+                  name={req.userName || req.userId}
+                  photoUrl={req.userPhotoUrl}
+                  size="sm"
+                  className="flex-shrink-0"
+                />
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
                     {req.userName || req.userId}

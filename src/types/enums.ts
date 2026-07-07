@@ -20,4 +20,9 @@ export type AnnouncementType = 'info' | 'warning' | 'urgent' | 'success'
 export type SuggestionType = 'feature' | 'bug' | 'improvement' | 'other'
 
 // Status de sugestão
-export type SuggestionStatus = 'pending' | 'in_review' | 'done' | 'rejected'
+export type SuggestionStatus =
+  | 'pending'
+  | 'in_review'
+  | 'in_development'
+  | 'done'
+  | 'rejected'

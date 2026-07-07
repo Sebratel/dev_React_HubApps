@@ -9,6 +9,7 @@
     "test": "jest --runInBand",
     "test:coverage": "jest --runInBand --coverage",
     "migrate": "node sql/run-migrations.js",
+    "migrate:database": "node sql/migrate-database.js",
     "smoke:staging": "node _smoke_staging.js"
   },
   "dependencies": {

@@ -3,7 +3,6 @@
 -- DB: DB_Hub_Apps
 -- ============================================================
 
-USE DB_Hub_Apps;
 
 -- apps: query principal WHERE is_active = 1 ORDER BY name
 ALTER TABLE apps

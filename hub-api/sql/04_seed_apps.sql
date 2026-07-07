@@ -1,6 +1,5 @@
 -- Seed 04: apps iniciais da Sebratel
 -- INSERT IGNORE garante idempotência (não duplica se rodar novamente)
-USE DB_Hub_Apps;
 
 INSERT IGNORE INTO apps
   (id, name, url, description, icon_url, pass_token, pass_user, is_active, status, allowed_profiles, allowed_users, allowed_teams)

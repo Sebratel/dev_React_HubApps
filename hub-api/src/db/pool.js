@@ -9,7 +9,9 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit:    10,
   queueLimit:         0,
-  timezone:           'Z',
+  // MySQL DATETIME é gravado em horário de Brasília (sem offset no valor).
+  // 'Z' fazia o driver interpretar como UTC → "há 3 h" para solicitações recentes.
+  timezone:           process.env.DB_TIMEZONE || '-03:00',
 })
 
 module.exports = pool

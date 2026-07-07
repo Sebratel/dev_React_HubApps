@@ -1,34 +1,11 @@
 import { ShieldCheck, Users2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { UserAvatar } from '@/components/UserAvatar'
 import { UserStatusBadge } from './UserStatusBadge'
 import { UserProfileBadge } from './UserProfileBadge'
 import { UserPermissionsPreview } from './UserPermissionsPreview'
 import { UserActionsMenu } from './UserActionsMenu'
 import type { UserModel } from '@/types/models'
-
-// ─── Avatar helpers ───────────────────────────────────────────────────────────
-
-const AVATAR_PALETTE = [
-  { bg: '#E6F1FB', text: '#185FA5' },
-  { bg: '#FAEEDA', text: '#854F0B' },
-  { bg: '#E1F5EE', text: '#0F6E56' },
-  { bg: '#EEEDFE', text: '#534AB7' },
-  { bg: '#EAF3DE', text: '#3B6D11' },
-  { bg: '#FCEBEB', text: '#A32D2D' },
-]
-
-function getAvatarColors(name: string) {
-  return AVATAR_PALETTE[name.charCodeAt(0) % AVATAR_PALETTE.length]
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0] ?? '')
-    .join('')
-    .toUpperCase()
-}
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
@@ -120,11 +97,7 @@ export function UsersTable({
       </div>
 
       {/* Rows */}
-      {users.map((user) => {
-        const colors = getAvatarColors(user.name)
-        const initials = getInitials(user.name)
-
-        return (
+      {users.map((user) => (
           <div
             key={user.id}
             role="row"
@@ -134,13 +107,7 @@ export function UsersTable({
           >
             {/* Avatar + name + email */}
             <div className="flex items-center gap-2.5 min-w-0 flex-1 sm:flex-none">
-              <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
-                style={{ background: colors.bg, color: colors.text }}
-                aria-hidden
-              >
-                {initials}
-              </div>
+              <UserAvatar name={user.name} photoUrl={user.photoUrl} size="sm" className="shrink-0" />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-sm font-medium text-foreground truncate">{user.name}</span>
@@ -186,8 +153,7 @@ export function UsersTable({
               />
             </div>
           </div>
-        )
-      })}
+        ))}
     </div>
   )
 }

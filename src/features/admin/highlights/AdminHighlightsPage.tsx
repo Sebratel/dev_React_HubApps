@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical, Sparkles, CheckCircle2, EyeOffIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { resolveAssetUrl } from '@/lib/api'
 import { ApiError } from '@/types/api'
 import { PageHero, type HeroStat } from '@/components/PageHero'
 import {
@@ -61,21 +62,21 @@ export function AdminHighlightsPage() {
 
   function handleConfirm(values: HighlightFormValues) {
     if (selected) {
-      updateMutation.mutate({
-        id: selected.id,
-        payload: {
-          title:           values.title,
-          description:     values.description || null,
-          badge_text:      values.badgeText   || null,
-          cta_label:       values.ctaLabel    || null,
-          cta_url:         values.ctaUrl      || null,
-          image_url:       values.imageUrl,
-          object_fit:      values.objectFit,
-          object_position: values.objectPosition,
-          sort_order:      values.sortOrder   ?? 0,
-          is_active:       values.isActive,
-        },
-      })
+      const payload: Parameters<typeof updateHighlight>[1] = {
+        title:           values.title,
+        description:     values.description || null,
+        badge_text:      values.badgeText   || null,
+        cta_label:       values.ctaLabel    || null,
+        cta_url:         values.ctaUrl      || null,
+        object_fit:      values.objectFit,
+        object_position: values.objectPosition,
+        sort_order:      values.sortOrder   ?? 0,
+        is_active:       values.isActive,
+      }
+      if (values.imageUrl !== selected.imageUrl) {
+        payload.image_url = values.imageUrl
+      }
+      updateMutation.mutate({ id: selected.id, payload })
     } else {
       createMutation.mutate({
         title:          values.title,
@@ -153,7 +154,7 @@ export function AdminHighlightsPage() {
 
               {/* Thumbnail */}
               <div className="h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-                <img src={h.imageUrl} alt="" className="h-full w-full object-cover" />
+                <img src={resolveAssetUrl(h.imageUrl)} alt="" className="h-full w-full object-cover" />
               </div>
 
               {/* Info */}

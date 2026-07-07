@@ -1,4 +1,3 @@
-USE DB_Hub_Apps;
 
 CREATE TABLE IF NOT EXISTS suggestions (
   id         VARCHAR(36)                                         NOT NULL PRIMARY KEY,

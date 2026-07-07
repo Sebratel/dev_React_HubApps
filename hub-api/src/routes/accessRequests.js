@@ -10,9 +10,10 @@ const AUDIT_ACTIONS = require('../utils/auditActions')
 const ADMIN_SELECT = `
   ar.id, ar.user_id, ar.app_id, ar.app_name, ar.reason, ar.status,
   ar.reviewed_by, ar.reviewed_at, ar.created_at, ar.updated_at,
-  u.name  AS user_name,
-  u.email AS user_email,
-  u.team  AS user_team,
+  u.name       AS user_name,
+  u.email      AS user_email,
+  u.team       AS user_team,
+  u.photo_url  AS user_photo_url,
   r.name  AS reviewer_name
 FROM access_requests ar
 LEFT JOIN users u ON ar.user_id  = u.id
