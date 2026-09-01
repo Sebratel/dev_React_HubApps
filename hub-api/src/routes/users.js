@@ -6,13 +6,14 @@ const { provisionLimiter, adminWriteLimiter } = require('../middleware/rateLimit
 const logAudit       = require('../utils/logAudit')
 const AUDIT_ACTIONS  = require('../utils/auditActions')
 
-const USER_FIELDS = 'id, email, name, photo_url, profile, team, is_active, is_admin, last_login, created_at'
+const USER_FIELDS = 'u.id, u.email, u.name, u.photo_url, u.profile, u.team, t.name AS team_name, u.is_active, u.is_admin, u.last_login, u.created_at'
+const USER_FROM   = 'users u LEFT JOIN teams t ON t.id = u.team'
 
 // GET /users/me
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
     const [rows] = await pool.query(
-      `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+      `SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`,
       [req.uid]
     )
     if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' })
@@ -40,7 +41,7 @@ router.post('/provision', requireAuth, provisionLimiter, async (req, res, next) 
     )
 
     const [rows] = await pool.query(
-      `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+      `SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`,
       [req.uid]
     )
     if (!rows.length) return res.status(500).json({ error: 'Não foi possível provisionar o usuário' })
@@ -92,7 +93,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res, next) => {
 
     const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users')
     const [data] = await pool.query(
-      `SELECT ${USER_FIELDS} FROM users ORDER BY COALESCE(name, email) LIMIT ? OFFSET ?`,
+      `SELECT ${USER_FIELDS} FROM ${USER_FROM} ORDER BY COALESCE(u.name, u.email) LIMIT ? OFFSET ?`,
       [limit, offset]
     )
 
@@ -152,7 +153,7 @@ router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, r
   }
 
   const [rows] = await pool.query(
-    `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+    `SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`,
     [req.params.id]
   )
 
@@ -215,7 +216,7 @@ router.post('/create-external', requireAuth, requireAdmin, adminWriteLimiter, as
     conn.release()
   }
 
-  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM users WHERE id = ?`, [firebaseUid])
+  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`, [firebaseUid])
   res.status(201).json(rows[0])
 })
 
@@ -246,7 +247,7 @@ router.patch('/me', requireAuth, async (req, res, next) => {
     conn.release()
   }
 
-  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM users WHERE id = ?`, [req.uid])
+  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`, [req.uid])
   res.json(rows[0])
 })
 

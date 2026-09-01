@@ -40,6 +40,7 @@ function rowToUserModel(row: UserRow): UserModel {
     photoUrl: row.photo_url,
     profile: row.profile,
     team: row.team,
+    teamName: null, // not returned by /users/me endpoint
     permissions,
     isActive: !!row.is_active,
     isAdmin: !!row.is_admin,

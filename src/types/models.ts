@@ -19,7 +19,8 @@ export interface UserModel {
   photoUrl: string | null
   // Legacy profile field — kept for compatibility with existing Firestore data
   profile: string // 'employee' | 'user' | 'third_party' | 'admin'
-  team: string | null // FK → teams/{teamId}
+  team: string | null     // FK → teams/{teamId}
+  teamName: string | null // denormalized team name (read-only, set by API JOIN)
   permissions: string[]
   isActive: boolean
   isAdmin: boolean // Stored field — NOT computed from permissions array

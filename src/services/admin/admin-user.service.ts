@@ -11,6 +11,7 @@ interface AdminUserRow {
   photo_url: string | null
   profile: string
   team: string | null
+  team_name: string | null
   is_active: number
   is_admin: number
   last_login: string | null
@@ -25,6 +26,7 @@ function rowToUserModel(row: AdminUserRow): UserModel {
     photoUrl: row.photo_url,
     profile: row.profile,
     team: row.team,
+    teamName: row.team_name ?? null,
     permissions: [],
     isActive: !!row.is_active,
     isAdmin: !!row.is_admin,
