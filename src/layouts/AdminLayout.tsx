@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   Menu, X, LayoutDashboard, Users, ClipboardList, LayoutGrid,
-  Bell, UsersRound, MessageSquare, ArrowLeft, ScrollText, Sparkles, BookOpen,
+  Bell, UsersRound, MessageSquare, ArrowLeft, ScrollText, Sparkles, BookOpen, BarChart2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SebratelLogo } from '@/components/SebratelLogo'
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { to: '/admin/announcements',   label: 'Avisos',       icon: Bell,            end: false },
   { to: '/admin/suggestions',     label: 'Sugestões',    icon: MessageSquare,   end: false },
   { to: '/admin/manuals',          label: 'Manuais',      icon: BookOpen,        end: false },
+  { to: '/admin/analytics',       label: 'Analytics',    icon: BarChart2,       end: false },
   { to: '/admin/audit-logs',      label: 'Auditoria',    icon: ScrollText,      end: false },
 ]
 

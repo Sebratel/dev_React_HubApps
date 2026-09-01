@@ -4,7 +4,11 @@ import type { AppItemModel, UserModel } from '@/types/models'
 
 export { AUDIT_ACTION }
 
-async function logEvent(_user: UserModel, action: AuditAction, details?: string): Promise<void> {
+async function logEvent(
+  _user: UserModel,
+  action: AuditAction,
+  details?: string | Record<string, unknown>,
+): Promise<void> {
   try {
     // userName is not sent — backend derives it from the Firebase token server-side.
     await api.post<{ ok: boolean }>('/audit-logs', { action, details: details ?? null })
@@ -23,7 +27,8 @@ export async function logLogout(user: UserModel): Promise<void> {
 }
 
 export async function logAppOpen(user: UserModel, app: AppItemModel): Promise<void> {
-  await logEvent(user, AUDIT_ACTION.APP_OPEN, `Abriu: ${app.name}`)
+  // Structured JSON so the backend can aggregate by appId and appName reliably.
+  await logEvent(user, AUDIT_ACTION.APP_OPEN, { appId: app.id, appName: app.name })
 }
 
 // NOTE: The backend also logs ACCESS_REQUEST_CREATE when POST /access-requests is processed.

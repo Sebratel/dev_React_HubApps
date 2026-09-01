@@ -20,6 +20,7 @@ import { AdminSuggestionsPage } from '@/features/admin/suggestions/AdminSuggesti
 import { AuditLogsManagementPage } from '@/features/admin/audit-logs/AuditLogsManagementPage'
 import { AdminHighlightsPage } from '@/features/admin/highlights/AdminHighlightsPage'
 import { AdminManualsPage } from '@/features/admin/manuals/AdminManualsPage'
+import { AdminAnalyticsPage } from '@/features/admin/analytics/AdminAnalyticsPage'
 import { SuggestionsPage } from '@/features/suggestions/SuggestionsPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
 import { MyRequestsPage } from '@/features/my-requests/MyRequestsPage'
@@ -119,6 +120,10 @@ export const router = createBrowserRouter(
                     {
                       path: '/admin/manuals',
                       element: <AdminManualsPage />,
+                    },
+                    {
+                      path: '/admin/analytics',
+                      element: <AdminAnalyticsPage />,
                     },
                   ],
                 },
