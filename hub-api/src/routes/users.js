@@ -68,6 +68,59 @@ router.patch('/me/heartbeat', requireAuth, async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
+// PATCH /users/me — usuário atualiza o próprio nome e/ou data de nascimento
+// IMPORTANTE: deve ficar ANTES de PATCH /:id, senão Express casa /me como id="me"
+router.patch('/me', requireAuth, async (req, res, next) => {
+  const { name, birth_date } = req.body
+  const updates = []
+  const values  = []
+  const fields  = []
+
+  if (name !== undefined) {
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name inválido' })
+    }
+    updates.push('name = ?')
+    values.push(name.trim().slice(0, 120))
+    fields.push('name')
+  }
+
+  if (birth_date !== undefined) {
+    if (birth_date !== null && !/^\d{4}-\d{2}-\d{2}$/.test(String(birth_date))) {
+      return res.status(400).json({ error: 'birth_date inválido — use o formato YYYY-MM-DD' })
+    }
+    updates.push('birth_date = ?')
+    values.push(birth_date || null)
+    fields.push('birth_date')
+  }
+
+  if (!updates.length) {
+    return res.status(400).json({ error: 'Nenhum campo válido para atualizar' })
+  }
+
+  const conn = await pool.getConnection()
+  try {
+    await conn.beginTransaction()
+    await conn.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, [...values, req.uid])
+    await logAudit({
+      uid:     req.uid,
+      action:  AUDIT_ACTIONS.USER_UPDATE,
+      details: { selfUpdate: true, fields },
+      req,
+      conn,
+    })
+    await conn.commit()
+  } catch (err) {
+    await conn.rollback()
+    return next(err)
+  } finally {
+    conn.release()
+  }
+
+  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`, [req.uid])
+  res.json(rows[0])
+})
+
 // GET /users/online — admin: usuários ativos nos últimos 2 minutos
 router.get('/online', requireAuth, requireAdmin, async (_req, res, next) => {
   try {
@@ -288,58 +341,6 @@ router.post('/create-external', requireAuth, requireAdmin, adminWriteLimiter, as
 
   const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`, [firebaseUid])
   res.status(201).json(rows[0])
-})
-
-// PATCH /users/me — usuário atualiza o próprio nome e/ou data de nascimento
-router.patch('/me', requireAuth, async (req, res, next) => {
-  const { name, birth_date } = req.body
-  const updates = []
-  const values  = []
-  const fields  = []
-
-  if (name !== undefined) {
-    if (!name || typeof name !== 'string' || !name.trim()) {
-      return res.status(400).json({ error: 'name inválido' })
-    }
-    updates.push('name = ?')
-    values.push(name.trim().slice(0, 120))
-    fields.push('name')
-  }
-
-  if (birth_date !== undefined) {
-    if (birth_date !== null && !/^\d{4}-\d{2}-\d{2}$/.test(String(birth_date))) {
-      return res.status(400).json({ error: 'birth_date inválido — use o formato YYYY-MM-DD' })
-    }
-    updates.push('birth_date = ?')
-    values.push(birth_date || null)
-    fields.push('birth_date')
-  }
-
-  if (!updates.length) {
-    return res.status(400).json({ error: 'Nenhum campo válido para atualizar' })
-  }
-
-  const conn = await pool.getConnection()
-  try {
-    await conn.beginTransaction()
-    await conn.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, [...values, req.uid])
-    await logAudit({
-      uid:     req.uid,
-      action:  AUDIT_ACTIONS.USER_UPDATE,
-      details: { selfUpdate: true, fields },
-      req,
-      conn,
-    })
-    await conn.commit()
-  } catch (err) {
-    await conn.rollback()
-    return next(err)
-  } finally {
-    conn.release()
-  }
-
-  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`, [req.uid])
-  res.json(rows[0])
 })
 
 // GET /users/me/favorites
