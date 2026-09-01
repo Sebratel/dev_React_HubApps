@@ -71,11 +71,18 @@ router.patch('/me/heartbeat', requireAuth, async (req, res, next) => {
 // GET /users/online — admin: usuários ativos nos últimos 2 minutos
 router.get('/online', requireAuth, requireAdmin, async (_req, res, next) => {
   try {
+    // Corrige flags `online` desatualizadas (browser fechado sem disparar /offline)
+    await pool.query(
+      `UPDATE users
+       SET online = 0
+       WHERE online = 1
+         AND (last_heartbeat IS NULL OR last_heartbeat < DATE_SUB(NOW(), INTERVAL 2 MINUTE))`
+    )
+
     const [rows] = await pool.query(
       `SELECT id, name, email, photo_url, profile, is_active, last_heartbeat
        FROM users
        WHERE last_heartbeat >= DATE_SUB(NOW(), INTERVAL 2 MINUTE)
-         AND is_active = 1
        ORDER BY last_heartbeat DESC
        LIMIT 30`
     )
