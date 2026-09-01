@@ -9,7 +9,7 @@ import { AdminRecentActivityList } from './components/AdminRecentActivityList'
 import { AdminErrorState } from './components/AdminErrorState'
 import { AdminListSkeleton } from './components/AdminSkeleton'
 import { AdminProfileChart } from './components/AdminProfileChart'
-import { AdminTopAppsCard } from './components/AdminTopAppsCard'
+import { AdminAnalyticsShortcut } from './components/AdminAnalyticsShortcut'
 import { AdminOnlineWidget } from './components/AdminOnlineWidget'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -238,8 +238,8 @@ export function AdminDashboard() {
           data={stats?.profileDistribution ?? []}
           isLoading={isLoading}
         />
-        <AdminTopAppsCard
-          data={stats?.topApps ?? []}
+        <AdminAnalyticsShortcut
+          topApps={stats?.topApps ?? []}
           isLoading={isLoading}
         />
         <AdminOnlineWidget />
