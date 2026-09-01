@@ -6,7 +6,7 @@ const { provisionLimiter, adminWriteLimiter } = require('../middleware/rateLimit
 const logAudit       = require('../utils/logAudit')
 const AUDIT_ACTIONS  = require('../utils/auditActions')
 
-const USER_FIELDS = 'u.id, u.email, u.name, u.photo_url, u.profile, u.team, t.name AS team_name, u.is_active, u.is_admin, u.last_login, u.created_at'
+const USER_FIELDS = 'u.id, u.email, u.name, u.photo_url, u.profile, u.team, t.name AS team_name, u.is_active, u.is_admin, u.last_login, u.created_at, u.birth_date, u.hire_date'
 const USER_FROM   = 'users u LEFT JOIN teams t ON t.id = u.team'
 
 // GET /users/me
@@ -108,6 +108,69 @@ router.get('/', requireAuth, requireAdmin, async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
+// GET /users/directory — lista básica de usuários ativos (para seletor de destinatário em kudos, etc.)
+router.get('/directory', requireAuth, async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, name, photo_url FROM users WHERE is_active = 1 ORDER BY COALESCE(name, email)'
+    )
+    res.json(rows)
+  } catch (err) { next(err) }
+})
+
+// GET /users/celebrations — aniversários e datas de empresa de hoje
+router.get('/celebrations', requireAuth, async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT id, name, photo_url, birth_date, hire_date
+      FROM users
+      WHERE is_active = 1
+        AND (
+          (birth_date IS NOT NULL AND MONTH(birth_date) = MONTH(CURDATE()) AND DAY(birth_date) = DAY(CURDATE()))
+          OR
+          (hire_date IS NOT NULL
+            AND hire_date < CURDATE()
+            AND MONTH(hire_date) = MONTH(CURDATE())
+            AND DAY(hire_date)   = DAY(CURDATE()))
+        )
+      ORDER BY name
+    `)
+
+    const currentYear = new Date().getFullYear()
+    const currentMonth = new Date().getMonth() + 1 // 1-based
+    const currentDay   = new Date().getDate()
+
+    const result = rows.map((r) => {
+      let isBirthday    = false
+      let isAnniversary = false
+      let anniversaryYears = null
+
+      if (r.birth_date) {
+        const bd = new Date(r.birth_date)
+        isBirthday = (bd.getUTCMonth() + 1) === currentMonth && bd.getUTCDate() === currentDay
+      }
+      if (r.hire_date) {
+        const hd = new Date(r.hire_date)
+        isAnniversary = (hd.getUTCMonth() + 1) === currentMonth && hd.getUTCDate() === currentDay
+        if (isAnniversary) {
+          anniversaryYears = currentYear - hd.getUTCFullYear()
+        }
+      }
+
+      return {
+        id:              r.id,
+        name:            r.name,
+        photoUrl:        r.photo_url,
+        isBirthday,
+        isAnniversary,
+        anniversaryYears,
+      }
+    })
+
+    res.json(result)
+  } catch (err) { next(err) }
+})
+
 // PATCH /users/:id — atualiza usuário (admin only)
 router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
   if (req.params.id === req.uid && 'is_admin' in req.body) {
@@ -118,7 +181,7 @@ router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, r
     return res.status(400).json({ error: 'is_active e is_admin não podem ser alterados na mesma requisição' })
   }
 
-  const allowed = ['is_active', 'is_admin', 'profile', 'team', 'permissions']
+  const allowed = ['is_active', 'is_admin', 'profile', 'team', 'permissions', 'hire_date']
   const fields  = Object.keys(req.body).filter(k => allowed.includes(k))
   if (!fields.length) return res.status(400).json({ error: 'Nenhum campo válido' })
 
@@ -227,22 +290,43 @@ router.post('/create-external', requireAuth, requireAdmin, adminWriteLimiter, as
   res.status(201).json(rows[0])
 })
 
-// PATCH /users/me — usuário atualiza o próprio nome
+// PATCH /users/me — usuário atualiza o próprio nome e/ou data de nascimento
 router.patch('/me', requireAuth, async (req, res, next) => {
-  const { name } = req.body
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    return res.status(400).json({ error: 'name é obrigatório' })
+  const { name, birth_date } = req.body
+  const updates = []
+  const values  = []
+  const fields  = []
+
+  if (name !== undefined) {
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name inválido' })
+    }
+    updates.push('name = ?')
+    values.push(name.trim().slice(0, 120))
+    fields.push('name')
   }
-  const trimmedName = name.trim().slice(0, 120)
+
+  if (birth_date !== undefined) {
+    if (birth_date !== null && !/^\d{4}-\d{2}-\d{2}$/.test(String(birth_date))) {
+      return res.status(400).json({ error: 'birth_date inválido — use o formato YYYY-MM-DD' })
+    }
+    updates.push('birth_date = ?')
+    values.push(birth_date || null)
+    fields.push('birth_date')
+  }
+
+  if (!updates.length) {
+    return res.status(400).json({ error: 'Nenhum campo válido para atualizar' })
+  }
 
   const conn = await pool.getConnection()
   try {
     await conn.beginTransaction()
-    await conn.query('UPDATE users SET name = ? WHERE id = ?', [trimmedName, req.uid])
+    await conn.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, [...values, req.uid])
     await logAudit({
       uid:     req.uid,
       action:  AUDIT_ACTIONS.USER_UPDATE,
-      details: { selfUpdate: true, fields: ['name'] },
+      details: { selfUpdate: true, fields },
       req,
       conn,
     })

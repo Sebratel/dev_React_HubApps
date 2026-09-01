@@ -16,6 +16,8 @@ interface AdminUserRow {
   is_admin: number
   last_login: string | null
   created_at: string
+  birth_date?: string | null
+  hire_date?: string | null
 }
 
 function rowToUserModel(row: AdminUserRow): UserModel {
@@ -34,6 +36,8 @@ function rowToUserModel(row: AdminUserRow): UserModel {
     updatedAt: new Date(row.created_at),
     online: false,
     lastLogin: row.last_login ? new Date(row.last_login) : null,
+    birthDate: row.birth_date ?? null,
+    hireDate:  row.hire_date  ?? null,
   }
 }
 
@@ -89,11 +93,12 @@ export async function createExternalUser(payload: CreateExternalUserPayload): Pr
 
 export async function updateUserProfile(
   userId: string,
-  data: Partial<Pick<UserModel, 'profile' | 'team'>>
+  data: Partial<Pick<UserModel, 'profile' | 'team' | 'hireDate'>>
 ): Promise<UserModel> {
   const payload: Record<string, unknown> = {}
-  if (data.profile !== undefined) payload.profile = data.profile
-  if (data.team !== undefined) payload.team = data.team
+  if (data.profile   !== undefined) payload.profile   = data.profile
+  if (data.team      !== undefined) payload.team      = data.team
+  if (data.hireDate  !== undefined) payload.hire_date = data.hireDate || null
   const row = await api.patch<AdminUserRow>(`/users/${userId}`, payload)
   return rowToUserModel(row)
 }

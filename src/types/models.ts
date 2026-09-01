@@ -29,6 +29,24 @@ export interface UserModel {
   online: boolean
   lastLogin: Date | null
   dashboard?: DashboardPreferences
+  /** Data de nascimento — YYYY-MM-DD — editável pelo próprio usuário */
+  birthDate?: string | null
+  /** Data de admissão — YYYY-MM-DD — editável apenas por admins */
+  hireDate?: string | null
+}
+
+// ─── KudoModel ────────────────────────────────────────────────────────────────
+
+export interface KudoModel {
+  id: string
+  message: string
+  createdAt: Date
+  fromId: string
+  fromName: string
+  fromPhoto: string | null
+  toId: string
+  toName: string
+  toPhoto: string | null
 }
 
 // ─── AuthResult ──────────────────────────────────────────────────────────────

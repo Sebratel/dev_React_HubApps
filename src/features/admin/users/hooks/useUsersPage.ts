@@ -91,7 +91,7 @@ export function useUsersPage() {
       patch,
     }: {
       userId: string
-      patch: Partial<Pick<UserModel, 'profile' | 'team'>>
+      patch: Partial<Pick<UserModel, 'profile' | 'team' | 'hireDate'>>
     }) => updateUserProfile(userId, patch),
     onSuccess: invalidateUsers,
   })

@@ -33,6 +33,7 @@ const AUDIT_ACTIONS = Object.freeze({
   MANUAL_CREATE:            'MANUAL_CREATE',
   MANUAL_UPDATE:            'MANUAL_UPDATE',
   MANUAL_DELETE:            'MANUAL_DELETE',
+  KUDO_SENT:                'KUDO_SENT',
 })
 
 module.exports = AUDIT_ACTIONS

@@ -16,6 +16,8 @@ import { getManuals } from '@/services/manual.service'
 import { logAppOpen } from '@/services/audit-log.service'
 import { useFavoritesSync } from './hooks/useFavoritesSync'
 import { usePendingRequestAppIds } from './hooks/usePendingRequestAppIds'
+import { KudosWidget } from '@/features/kudos/KudosWidget'
+import { CelebrationsWidget } from '@/features/celebrations/CelebrationsWidget'
 import { cn } from '@/lib/utils'
 import type { AppItemModel } from '@/types/models'
 
@@ -319,6 +321,12 @@ export function DashboardPage() {
           {notice}
         </div>
       )}
+
+      {/* ── Kudos & Celebrações ──────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <KudosWidget />
+        <CelebrationsWidget />
+      </div>
 
       {/* ── Conteúdo principal ───────────────────────────────────────────────── */}
       <AnimatePresence mode="wait" initial={false}>

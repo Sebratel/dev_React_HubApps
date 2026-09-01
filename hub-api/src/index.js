@@ -82,6 +82,7 @@ app.use('/admin',           require('./routes/admin'))
 app.use('/highlights',      require('./routes/highlights'))
 app.use('/manuals',         require('./routes/manuals'))
 app.use('/upload',          require('./routes/upload'))
+app.use('/kudos',           require('./routes/kudos'))
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 

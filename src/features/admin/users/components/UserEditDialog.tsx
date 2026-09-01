@@ -15,15 +15,16 @@ interface UserEditDialogProps {
   open: boolean
   isPending: boolean
   error: string | null
-  onConfirm: (patch: Partial<Pick<UserModel, 'profile' | 'team'>>) => void
+  onConfirm: (patch: Partial<Pick<UserModel, 'profile' | 'team' | 'hireDate'>>) => void
   onClose: () => void
 }
 
 export function UserEditDialog({
   user, open, isPending, error, onConfirm, onClose,
 }: UserEditDialogProps) {
-  const [profile, setProfile] = useState('')
-  const [teamId, setTeamId]   = useState<string>('')
+  const [profile,  setProfile]  = useState('')
+  const [teamId,   setTeamId]   = useState<string>('')
+  const [hireDate, setHireDate] = useState<string>('')
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
@@ -40,15 +41,18 @@ export function UserEditDialog({
       const resolved = validValues.includes(user.profile) ? user.profile : SEBRATEL_PROFILES[0].value
       setProfile(resolved)
       setTeamId(user.team ?? '')
+      setHireDate(user.hireDate ?? '')
     }
   }, [user])
 
   function handleSubmit() {
     if (!user) return
-    const patch: Partial<Pick<UserModel, 'profile' | 'team'>> = {}
+    const patch: Partial<Pick<UserModel, 'profile' | 'team' | 'hireDate'>> = {}
     if (profile !== user.profile) patch.profile = profile
     const newTeam = teamId || null
     if (newTeam !== (user.team ?? null)) patch.team = newTeam
+    const newHireDate = hireDate || null
+    if (newHireDate !== (user.hireDate ?? null)) patch.hireDate = newHireDate
     if (Object.keys(patch).length === 0) { onClose(); return }
     onConfirm(patch)
   }
@@ -98,6 +102,24 @@ export function UserEditDialog({
               <a href="/admin/teams" className="underline hover:text-foreground">
                 Admin → Times
               </a>.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="edit-hire-date" className="text-sm font-medium">
+              Data de admissão <span className="text-muted-foreground font-normal">(opcional)</span>
+            </label>
+            <input
+              id="edit-hire-date"
+              type="date"
+              value={hireDate}
+              onChange={(e) => setHireDate(e.target.value)}
+              disabled={isPending}
+              max={new Date().toISOString().slice(0, 10)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+            <p className="text-xs text-muted-foreground">
+              Usado para celebrar aniversários de empresa no dashboard.
             </p>
           </div>
 

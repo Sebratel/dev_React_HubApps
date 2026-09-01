@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   updateProfile,
@@ -8,7 +8,7 @@ import {
 } from 'firebase/auth'
 import { auth } from '@/firebase'
 import { useAuthStore } from '@/stores/auth.store'
-import { updateMe } from '@/services/user.service'
+import { updateMe, updateMyBirthDate } from '@/services/user.service'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -87,6 +87,18 @@ export function ProfilePage() {
   const [error,    setError]    = useState<string | null>(null)
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Birth date state
+  const [birthDate,        setBirthDate]        = useState(user?.birthDate ?? '')
+  const [isSavingBirth,    setIsSavingBirth]    = useState(false)
+  const [birthSuccess,     setBirthSuccess]     = useState(false)
+  const [birthError,       setBirthError]       = useState<string | null>(null)
+  const birthSuccessTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Sync birth date when user changes (e.g. after save)
+  useEffect(() => {
+    setBirthDate(user?.birthDate ?? '')
+  }, [user?.birthDate])
+
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword,     setNewPassword]     = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -103,6 +115,7 @@ export function ProfilePage() {
   const isDirty = name.trim() !== (user.name ?? '').trim()
   const isValid = name.trim().length >= 2
   const appsCount = user.permissions?.length ?? 0
+  const isBirthDirty = birthDate !== (user.birthDate ?? '')
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -120,6 +133,23 @@ export function ProfilePage() {
       setError(err instanceof Error ? err.message : 'Erro ao salvar. Tente novamente.')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  async function handleSaveBirthDate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!isBirthDirty || isSavingBirth) return
+    setIsSavingBirth(true); setBirthError(null); setBirthSuccess(false)
+    try {
+      const updatedUser = await updateMyBirthDate(birthDate || null)
+      setUser(updatedUser)
+      setBirthSuccess(true)
+      if (birthSuccessTimer.current) clearTimeout(birthSuccessTimer.current)
+      birthSuccessTimer.current = setTimeout(() => setBirthSuccess(false), 3000)
+    } catch (err) {
+      setBirthError(err instanceof Error ? err.message : 'Erro ao salvar. Tente novamente.')
+    } finally {
+      setIsSavingBirth(false)
     }
   }
 
@@ -286,6 +316,64 @@ export function ProfilePage() {
               <div className="flex justify-end">
                 <Button type="submit" disabled={!isDirty || !isValid || isSaving}>
                   {isSaving ? 'Salvando...' : 'Salvar alterações'}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          {/* Data de aniversário */}
+          <div className="rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-5 py-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
+                <h2 className="text-sm font-semibold text-foreground">Aniversário</h2>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Sua data de aniversário aparece nas celebrações do dashboard.
+              </p>
+            </div>
+            <form onSubmit={handleSaveBirthDate} className="flex flex-col gap-5 p-5">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="profile-birth-date" className="text-sm font-medium text-foreground">
+                  Data de nascimento
+                </label>
+                <input
+                  id="profile-birth-date"
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  max={new Date().toISOString().slice(0, 10)}
+                  disabled={isSavingBirth}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <p className="text-xs text-muted-foreground">
+                  O ano de nascimento não é exibido publicamente — só o dia e mês aparecem nas celebrações.
+                </p>
+              </div>
+
+              {birthError && (
+                <div
+                  role="alert"
+                  className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                >
+                  <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+                  {birthError}
+                </div>
+              )}
+
+              {birthSuccess && (
+                <div
+                  role="status"
+                  className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary"
+                >
+                  <CheckCircle className="h-4 w-4 shrink-0" aria-hidden />
+                  Data de aniversário salva com sucesso.
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button type="submit" disabled={!isBirthDirty || isSavingBirth}>
+                  {isSavingBirth ? 'Salvando...' : 'Salvar aniversário'}
                 </Button>
               </div>
             </form>

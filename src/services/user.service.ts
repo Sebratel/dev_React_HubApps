@@ -18,6 +18,8 @@ interface UserRow {
   online?: number
   created_at: string
   updated_at?: string
+  birth_date?: string | null
+  hire_date?: string | null
 }
 
 function assertUserRow(row: UserRow | undefined): UserRow {
@@ -48,6 +50,8 @@ function rowToUserModel(row: UserRow): UserModel {
     updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(row.created_at),
     online: !!row.online,
     lastLogin: row.last_login ? new Date(row.last_login) : null,
+    birthDate: row.birth_date ?? null,
+    hireDate:  row.hire_date  ?? null,
   }
 }
 
@@ -72,6 +76,11 @@ export async function provisionUserOnFirstLogin(
 
 export async function updateMe(name: string): Promise<UserModel> {
   const row = await api.patch<UserRow>('/users/me', { name })
+  return rowToUserModel(row)
+}
+
+export async function updateMyBirthDate(birthDate: string | null): Promise<UserModel> {
+  const row = await api.patch<UserRow>('/users/me', { birth_date: birthDate })
   return rowToUserModel(row)
 }
 
