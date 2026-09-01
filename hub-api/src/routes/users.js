@@ -87,12 +87,12 @@ router.get('/online', requireAuth, requireAdmin, async (_req, res, next) => {
 // GET /users — lista todos (admin only) com paginação
 router.get('/', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const limit  = Math.min(Math.max(Number(req.query.limit)  || 50, 1), 200)
+    const limit  = Math.min(Math.max(Number(req.query.limit)  || 50, 1), 2000)
     const offset = Math.max(Number(req.query.offset) || 0, 0)
 
     const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users')
     const [data] = await pool.query(
-      `SELECT ${USER_FIELDS} FROM users ORDER BY name LIMIT ? OFFSET ?`,
+      `SELECT ${USER_FIELDS} FROM users ORDER BY COALESCE(name, email) LIMIT ? OFFSET ?`,
       [limit, offset]
     )
 

@@ -32,7 +32,7 @@ export function useUsersPage() {
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin', 'users', 'list'],
-    queryFn: () => listUsers({ limit: 500 }),
+    queryFn: () => listUsers({ limit: 2000 }),
     staleTime: 60_000,
   })
 
