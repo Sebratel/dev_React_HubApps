@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { OnboardingModal, useOnboardingNeeded } from '@/features/onboarding/OnboardingModal'
 import { Outlet, NavLink, Link } from 'react-router-dom'
 import { LayoutGrid, Bell, MessageSquare, ShieldCheck, Menu, X, LogOut, ClipboardList } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -24,6 +25,9 @@ export function DashboardLayout() {
   const user = useAuthStore((s) => s.user)
   const secureSignOut = useSecureSignOut()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false)
+  const onboardingNeeded = useOnboardingNeeded()
+  const showOnboarding = onboardingNeeded && !onboardingDismissed
   useHeartbeat()
 
   const readIds = useNotificationsStore((s) => s.readAnnouncementIds)
@@ -208,6 +212,12 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Onboarding: aparece para quem ainda não preencheu o aniversário */}
+      <OnboardingModal
+        open={showOnboarding}
+        onClose={() => setOnboardingDismissed(true)}
+      />
     </div>
   )
 }
