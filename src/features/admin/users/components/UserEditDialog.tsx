@@ -34,7 +34,11 @@ export function UserEditDialog({
 
   useEffect(() => {
     if (user) {
-      setProfile(user.profile)
+      // If the stored profile is no longer a valid option, fall back to the first
+      // available option so the state matches what the <select> displays.
+      const validValues = SEBRATEL_PROFILES.map((p) => p.value as string)
+      const resolved = validValues.includes(user.profile) ? user.profile : SEBRATEL_PROFILES[0].value
+      setProfile(resolved)
       setTeamId(user.team ?? '')
     }
   }, [user])
