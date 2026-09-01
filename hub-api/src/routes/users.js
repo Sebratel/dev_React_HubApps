@@ -29,7 +29,7 @@ router.post('/provision', requireAuth, provisionLimiter, async (req, res, next) 
   try {
     await pool.query(
       `INSERT INTO users (id, email, name, photo_url, profile, is_active, is_admin, permissions, last_login, online)
-       VALUES (?, ?, ?, ?, '', 0, 0, '[]', NOW(), 1)
+       VALUES (?, ?, ?, ?, '', 1, 0, '[]', NOW(), 1)
        ON DUPLICATE KEY UPDATE
          id = VALUES(id),
          email = VALUES(email),

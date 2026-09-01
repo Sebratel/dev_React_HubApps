@@ -21,8 +21,15 @@ async function requireAuth(req, res, next) {
   const token = header.slice(7)
   try {
     const decoded = await admin.auth().verifyIdToken(token)
+    const email = decoded.email || ''
+
+    // Apenas contas do domínio corporativo @sebratel.com.br são aceitas
+    if (!email.endsWith('@sebratel.com.br')) {
+      return res.status(403).json({ error: 'Acesso restrito ao domínio @sebratel.com.br' })
+    }
+
     req.uid   = decoded.uid
-    req.email = decoded.email || ''
+    req.email = email
     next()
   } catch {
     return res.status(401).json({ error: 'Token inválido ou expirado' })
