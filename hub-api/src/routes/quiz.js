@@ -76,10 +76,14 @@ router.get('/today', requireAuth, async (req, res) => {
   try {
     conn = await pool.getConnection()
 
-    // Já jogou esta semana?
+    // Já jogou esta semana? (aceita tanto o Monday-date quanto datas diárias legadas da mesma semana)
     const [[attempt]] = await conn.query(
-      'SELECT * FROM quiz_attempts WHERE user_id = ? AND played_date = ?',
-      [userId, ws]
+      `SELECT * FROM quiz_attempts
+        WHERE user_id = ?
+          AND played_date BETWEEN ? AND DATE_ADD(?, INTERVAL 6 DAY)
+        ORDER BY played_date DESC
+        LIMIT 1`,
+      [userId, ws, ws]
     )
 
     if (attempt) {
@@ -151,10 +155,13 @@ router.post('/submit', requireAuth, async (req, res) => {
   try {
     conn = await pool.getConnection()
 
-    // Evita submissão dupla na semana
+    // Evita submissão dupla na semana (verifica segunda a domingo)
     const [[existing]] = await conn.query(
-      'SELECT id FROM quiz_attempts WHERE user_id = ? AND played_date = ?',
-      [userId, ws]
+      `SELECT id FROM quiz_attempts
+        WHERE user_id = ?
+          AND played_date BETWEEN ? AND DATE_ADD(?, INTERVAL 6 DAY)
+        LIMIT 1`,
+      [userId, ws, ws]
     )
     if (existing) {
       return res.status(409).json({ error: 'Você já jogou esta semana. Volte na próxima segunda-feira!' })
@@ -230,17 +237,17 @@ router.get('/ranking', requireAuth, async (req, res) => {
   try {
     conn = await pool.getConnection()
 
-    // Ranking desta semana
+    // Ranking desta semana (segunda a domingo, cobre datas legadas)
     const [weekly] = await conn.query(`
       SELECT a.user_id, u.name, u.photo_url,
              a.score AS total_score,
              1       AS weeks_played
         FROM quiz_attempts a
         LEFT JOIN users u ON u.id = a.user_id
-       WHERE a.played_date = ?
+       WHERE a.played_date BETWEEN ? AND DATE_ADD(?, INTERVAL 6 DAY)
        ORDER BY total_score DESC
        LIMIT 20
-    `, [ws])
+    `, [ws, ws])
 
     // Ranking mensal — acumula todas as semanas do mês
     const [monthly] = await conn.query(`
@@ -255,10 +262,13 @@ router.get('/ranking', requireAuth, async (req, res) => {
        LIMIT 20
     `, [ms])
 
-    // Dados do usuário atual
+    // Dados do usuário atual nesta semana
     const [[weekAttempt]] = await conn.query(
-      'SELECT score FROM quiz_attempts WHERE user_id = ? AND played_date = ?',
-      [userId, ws]
+      `SELECT score FROM quiz_attempts
+        WHERE user_id = ?
+          AND played_date BETWEEN ? AND DATE_ADD(?, INTERVAL 6 DAY)
+        LIMIT 1`,
+      [userId, ws, ws]
     )
     const myMonthlyRow    = monthly.find(r => r.user_id === userId)
     const myMonthlyRank   = monthly.findIndex(r => r.user_id === userId)
