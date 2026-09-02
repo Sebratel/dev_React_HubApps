@@ -266,8 +266,9 @@ export function QuizPage() {
       setResult({ score: todayData.score, answers: todayData.answers })
       setPhase('result')
     } else {
+      // Não sobrescreve 'result' — pode ter vindo de submitMutation.onSuccess
       setQuestions(todayData.questions)
-      setPhase('intro')
+      setPhase(prev => prev === 'result' ? 'result' : 'intro')
     }
   }, [todayData, isLoading, isError])
 
@@ -275,12 +276,13 @@ export function QuizPage() {
   const submitMutation = useMutation({
     mutationFn: submitQuiz,
     onSuccess: (data) => {
-      qClient.invalidateQueries({ queryKey: ['quiz'] })
+      // Só invalida o ranking — não refetch 'today' para não interferir no phase
+      qClient.invalidateQueries({ queryKey: ['quiz', 'ranking'] })
       setResult({ score: data.score, answers: data.answers })
       setPhase('result')
     },
     onError: () => {
-      // Se conflito 409 (já jogou), recarrega
+      // Se conflito 409 (já jogou hoje), força retorno ao resultado via cache
       qClient.invalidateQueries({ queryKey: ['quiz', 'today'] })
     },
   })
