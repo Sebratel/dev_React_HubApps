@@ -256,6 +256,70 @@ router.get('/ranking', requireAuth, async (req, res) => {
   }
 })
 
+// ── Admin: POST /quiz/questions/import ───────────────────────────────────────
+
+router.post('/questions/import', requireAuth, requireAdmin, async (req, res) => {
+
+  const { questions } = req.body
+
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ error: 'Envie um array de perguntas.' })
+  }
+  if (questions.length > 200) {
+    return res.status(400).json({ error: 'Máximo de 200 perguntas por importação.' })
+  }
+
+  const VALID_CORRECT = ['a', 'b', 'c', 'd']
+  const VALID_DIFF    = ['facil', 'medio', 'dificil']
+  const REQUIRED      = ['question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct']
+
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i]
+    for (const field of REQUIRED) {
+      if (!q[field] || typeof q[field] !== 'string' || !q[field].trim()) {
+        return res.status(400).json({ error: `Pergunta ${i + 1}: campo "${field}" obrigatório.` })
+      }
+    }
+    if (!VALID_CORRECT.includes(q.correct)) {
+      return res.status(400).json({ error: `Pergunta ${i + 1}: "correct" deve ser a, b, c ou d.` })
+    }
+    if (q.difficulty && !VALID_DIFF.includes(q.difficulty)) {
+      return res.status(400).json({ error: `Pergunta ${i + 1}: "difficulty" deve ser facil, medio ou dificil.` })
+    }
+  }
+
+  let conn
+  try {
+    conn = await pool.getConnection()
+    await conn.beginTransaction()
+
+    const ids = []
+    for (const q of questions) {
+      const [result] = await conn.query(
+        `INSERT INTO quiz_questions
+           (question, option_a, option_b, option_c, option_d, correct, category, difficulty)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          q.question.trim(), q.option_a.trim(), q.option_b.trim(),
+          q.option_c.trim(), q.option_d.trim(), q.correct,
+          (q.category || 'geral').trim().toLowerCase(),
+          q.difficulty || 'facil',
+        ]
+      )
+      ids.push(result.insertId)
+    }
+
+    await conn.commit()
+    res.status(201).json({ imported: ids.length, ids })
+  } catch (err) {
+    if (conn) await conn.rollback().catch(() => {})
+    console.error('[quiz/questions/import]', err)
+    res.status(500).json({ error: 'Erro interno ao importar perguntas.' })
+  } finally {
+    conn?.release()
+  }
+})
+
 // ── Admin: GET /quiz/questions ────────────────────────────────────────────────
 
 router.get('/questions', requireAuth, requireAdmin, async (req, res) => {

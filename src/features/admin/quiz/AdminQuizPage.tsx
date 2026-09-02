@@ -4,15 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, ChevronDown, ChevronUp, Pencil, ToggleLeft, ToggleRight,
   Brain, CheckCircle2, XCircle, CalendarDays, Filter, X,
+  Upload, Copy, Check, AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHero } from '@/components/PageHero'
 import { cn } from '@/lib/utils'
@@ -20,6 +19,7 @@ import {
   getAdminQuizQuestions,
   createAdminQuizQuestion,
   updateAdminQuizQuestion,
+  importAdminQuizQuestions,
 } from '@/services/quiz.service'
 import type { QuizAdminQuestion } from '@/types/models'
 
@@ -210,16 +210,12 @@ function QuestionForm({
           <label className="text-xs font-semibold text-foreground">Dificuldade</label>
           <Select
             value={form.difficulty}
-            onValueChange={v => set('difficulty')(v)}
+            onChange={e => set('difficulty')(e.target.value)}
+            className="rounded-xl h-9 text-sm"
           >
-            <SelectTrigger className="rounded-xl h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="facil">🟢 Fácil</SelectItem>
-              <SelectItem value="medio">🟡 Médio</SelectItem>
-              <SelectItem value="dificil">🔴 Difícil</SelectItem>
-            </SelectContent>
+            <option value="facil">🟢 Fácil</option>
+            <option value="medio">🟡 Médio</option>
+            <option value="dificil">🔴 Difícil</option>
           </Select>
         </div>
       </div>
@@ -409,6 +405,273 @@ function QuestionCard({
   )
 }
 
+// ── Prompt template para ChatGPT ─────────────────────────────────────────────
+
+function buildPrompt(topic: string, count: number): string {
+  return `Crie ${count} perguntas de múltipla escolha sobre "${topic}" para um quiz corporativo.
+
+Retorne APENAS um array JSON válido, sem texto antes ou depois, neste formato exato:
+
+[
+  {
+    "question": "Texto completo da pergunta?",
+    "option_a": "Primeira alternativa",
+    "option_b": "Segunda alternativa",
+    "option_c": "Terceira alternativa",
+    "option_d": "Quarta alternativa",
+    "correct": "a",
+    "category": "${topic.toLowerCase().replace(/\s+/g, '-')}",
+    "difficulty": "facil"
+  }
+]
+
+Regras obrigatórias:
+- "correct" deve ser exatamente "a", "b", "c" ou "d" (letra minúscula)
+- "difficulty" deve ser exatamente "facil", "medio" ou "dificil"
+- "category" deve ser uma palavra ou expressão curta em minúsculo
+- Cada pergunta deve ter apenas uma resposta correta
+- Retorne SOMENTE o JSON puro, sem bloco de código markdown, sem explicações`
+}
+
+// ── Sheet de importação ───────────────────────────────────────────────────────
+
+type ParsedQuestion = Omit<QuizAdminQuestion, 'id' | 'active'>
+type ParseState = 'idle' | 'ok' | 'error'
+
+function ImportSheet({
+  open,
+  onClose,
+  onImported,
+}: {
+  open:       boolean
+  onClose:    () => void
+  onImported: (count: number) => void
+}) {
+  const [raw,       setRaw]       = useState('')
+  const [topic,     setTopic]     = useState('')
+  const [count,     setCount]     = useState('10')
+  const [parseState,setParseState]= useState<ParseState>('idle')
+  const [parsed,    setParsed]    = useState<ParsedQuestion[]>([])
+  const [parseError,setParseError]= useState('')
+  const [copied,    setCopied]    = useState(false)
+  const [imported,  setImported]  = useState(false)
+
+  const importMutation = useMutation({
+    mutationFn: importAdminQuizQuestions,
+    onSuccess: (data) => {
+      setImported(true)
+      setTimeout(() => {
+        onImported(data.imported)
+        onClose()
+        reset()
+      }, 1200)
+    },
+  })
+
+  function reset() {
+    setRaw(''); setTopic(''); setCount('10')
+    setParseState('idle'); setParsed([]); setParseError('')
+    setCopied(false); setImported(false)
+  }
+
+  // Valida o JSON colado
+  function validate(text: string) {
+    setRaw(text)
+    const trimmed = text.trim()
+    if (!trimmed) { setParseState('idle'); setParsed([]); setParseError(''); return }
+
+    try {
+      const data = JSON.parse(trimmed)
+      if (!Array.isArray(data)) throw new Error('O JSON deve ser um array [ ].')
+      if (data.length === 0) throw new Error('O array está vazio.')
+      if (data.length > 200) throw new Error('Máximo de 200 perguntas por importação.')
+
+      const REQUIRED = ['question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct']
+      const VALID_C  = ['a', 'b', 'c', 'd']
+      const VALID_D  = ['facil', 'medio', 'dificil']
+
+      for (let i = 0; i < data.length; i++) {
+        const q = data[i]
+        for (const f of REQUIRED) {
+          if (!q[f] || typeof q[f] !== 'string') throw new Error(`Pergunta ${i + 1}: campo "${f}" obrigatório.`)
+        }
+        if (!VALID_C.includes(q.correct)) throw new Error(`Pergunta ${i + 1}: "correct" deve ser a, b, c ou d.`)
+        if (q.difficulty && !VALID_D.includes(q.difficulty)) throw new Error(`Pergunta ${i + 1}: "difficulty" inválido — use facil, medio ou dificil.`)
+      }
+
+      setParsed(data as ParsedQuestion[])
+      setParseState('ok')
+      setParseError('')
+    } catch (e) {
+      setParsed([])
+      setParseState('error')
+      setParseError(e instanceof Error ? e.message : 'JSON inválido.')
+    }
+  }
+
+  function copyPrompt() {
+    navigator.clipboard.writeText(buildPrompt(topic || 'tecnologia', Number(count) || 10))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const DIFF_LABEL_MAP: Record<string, string> = { facil: 'Fácil', medio: 'Médio', dificil: 'Difícil' }
+
+  return (
+    <Sheet open={open} onOpenChange={v => { if (!v) { onClose(); reset() } }}>
+      <SheetContent className="w-full sm:max-w-lg flex flex-col overflow-hidden p-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
+          <SheetTitle className="flex items-center gap-2">
+            <Upload className="h-4 w-4 text-violet-600" />
+            Importar perguntas
+          </SheetTitle>
+          <SheetDescription>
+            Gere perguntas com o ChatGPT e cole o JSON aqui para importar em lote.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+
+          {/* Gerador de prompt */}
+          <div className="rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/20 p-4">
+            <p className="text-xs font-semibold text-violet-700 dark:text-violet-300 mb-3 uppercase tracking-wider">
+              1 · Gere o prompt para o ChatGPT
+            </p>
+            <div className="flex gap-2 mb-3">
+              <input
+                value={topic}
+                onChange={e => setTopic(e.target.value)}
+                placeholder="Tema (ex: telecomunicações, vendas…)"
+                className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+              />
+              <input
+                type="number"
+                value={count}
+                onChange={e => setCount(e.target.value)}
+                min={1} max={50}
+                className="w-16 rounded-xl border border-border bg-background px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                title="Quantidade de perguntas"
+              />
+            </div>
+            <button
+              onClick={copyPrompt}
+              className={cn(
+                'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150',
+                copied
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-violet-600 hover:bg-violet-700 text-white',
+              )}
+            >
+              {copied
+                ? <><Check className="h-4 w-4" />Copiado! Cole no ChatGPT</>
+                : <><Copy className="h-4 w-4" />Copiar prompt para o ChatGPT</>}
+            </button>
+          </div>
+
+          {/* Cola o JSON */}
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
+              2 · Cole o JSON gerado
+            </p>
+            <textarea
+              value={raw}
+              onChange={e => validate(e.target.value)}
+              rows={10}
+              placeholder={'[\n  {\n    "question": "...",\n    "option_a": "...",\n    ...\n  }\n]'}
+              spellCheck={false}
+              className={cn(
+                'w-full resize-none rounded-xl border bg-background px-3 py-2.5 text-xs font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 transition-colors',
+                parseState === 'ok'    && 'border-emerald-400 focus:ring-emerald-400/40',
+                parseState === 'error' && 'border-rose-400    focus:ring-rose-400/40',
+                parseState === 'idle'  && 'border-border      focus:ring-violet-500/40',
+              )}
+            />
+            {/* Feedback de validação */}
+            {parseState === 'ok' && (
+              <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {parsed.length} pergunta{parsed.length !== 1 ? 's' : ''} válida{parsed.length !== 1 ? 's' : ''} — pronto para importar
+              </p>
+            )}
+            {parseState === 'error' && (
+              <p className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                {parseError}
+              </p>
+            )}
+          </div>
+
+          {/* Preview das perguntas */}
+          {parseState === 'ok' && parsed.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                3 · Pré-visualização
+              </p>
+              <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
+                {parsed.map((q, i) => (
+                  <div key={i} className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
+                    <div className="flex items-start gap-2 mb-1.5">
+                      <span className="text-[10px] font-mono text-muted-foreground mt-0.5 shrink-0">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <p className="text-xs text-foreground leading-snug flex-1">{q.question}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-1 pl-5">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground capitalize">
+                        {q.category}
+                      </span>
+                      <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', DIFF_COLOR[q.difficulty] ?? DIFF_COLOR.facil)}>
+                        {DIFF_LABEL_MAP[q.difficulty] ?? q.difficulty}
+                      </span>
+                      <span className="rounded-full bg-violet-100 dark:bg-violet-950/50 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:text-violet-300">
+                        ✓ {OPTION_LABEL[q.correct as keyof typeof OPTION_LABEL]}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Erro da API */}
+          {importMutation.isError && (
+            <p className="flex items-center gap-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 px-3 py-2.5 text-xs text-rose-700 dark:text-rose-400">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              {importMutation.error instanceof Error ? importMutation.error.message : 'Erro ao importar.'}
+            </p>
+          )}
+
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-border shrink-0 flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={() => { onClose(); reset() }}>
+            Cancelar
+          </Button>
+          <Button
+            className={cn(
+              'flex-1 gap-2 border-transparent text-white transition-colors',
+              imported
+                ? 'bg-emerald-600 hover:bg-emerald-700'
+                : 'bg-violet-600 hover:bg-violet-700',
+            )}
+            disabled={parseState !== 'ok' || importMutation.isPending || imported}
+            onClick={() => importMutation.mutate(parsed)}
+          >
+            {imported ? (
+              <><Check className="h-4 w-4" />Importado!</>
+            ) : importMutation.isPending ? (
+              'Importando…'
+            ) : (
+              <><Upload className="h-4 w-4" />Importar {parsed.length > 0 ? parsed.length : ''} pergunta{parsed.length !== 1 ? 's' : ''}</>
+            )}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
 // ── Página principal ──────────────────────────────────────────────────────────
 
 type FilterStatus = 'all' | 'active' | 'inactive'
@@ -433,10 +696,11 @@ export function AdminQuizPage() {
   const [showTodayOnly,   setShowTodayOnly]   = useState(false)
 
   // ── Panel ──
-  const [panelOpen,  setPanelOpen]  = useState(false)
-  const [editingQ,   setEditingQ]   = useState<QuizAdminQuestion | null>(null)
-  const [form,       setForm]       = useState<FormState>(EMPTY_FORM)
-  const [togglingId, setTogglingId] = useState<number | null>(null)
+  const [panelOpen,   setPanelOpen]   = useState(false)
+  const [importOpen,  setImportOpen]  = useState(false)
+  const [editingQ,    setEditingQ]    = useState<QuizAdminQuestion | null>(null)
+  const [form,        setForm]        = useState<FormState>(EMPTY_FORM)
+  const [togglingId,  setTogglingId]  = useState<number | null>(null)
 
   // ── Stats ──
   const total      = questions.length
@@ -525,13 +789,23 @@ export function AdminQuizPage() {
         title="Quiz do Dia"
         subtitle="Gerencie o banco de perguntas · seleção automática diária por sorteio semeado"
         actions={
-          <Button
-            onClick={openCreate}
-            className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-transparent"
-          >
-            <Plus className="h-4 w-4" />
-            Nova pergunta
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Importar
+            </Button>
+            <Button
+              onClick={openCreate}
+              className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-transparent"
+            >
+              <Plus className="h-4 w-4" />
+              Nova pergunta
+            </Button>
+          </div>
         }
         stats={[
           { icon: Brain,        value: total,        label: 'Total',       tone: 'primary' },
@@ -555,41 +829,38 @@ export function AdminQuizPage() {
         </div>
 
         {/* Categoria */}
-        <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-40 rounded-xl h-9 text-sm">
-            <SelectValue placeholder="Categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas categorias</SelectItem>
-            {categories.map(c => (
-              <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>
-            ))}
-          </SelectContent>
+        <Select
+          value={filterCategory}
+          onChange={e => setFilterCategory(e.target.value)}
+          className="w-40 rounded-xl h-9 text-sm"
+        >
+          <option value="all">Todas categorias</option>
+          {categories.map(c => (
+            <option key={c} value={c} className="capitalize">{c}</option>
+          ))}
         </Select>
 
         {/* Dificuldade */}
-        <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
-          <SelectTrigger className="w-36 rounded-xl h-9 text-sm">
-            <SelectValue placeholder="Dificuldade" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            <SelectItem value="facil">🟢 Fácil</SelectItem>
-            <SelectItem value="medio">🟡 Médio</SelectItem>
-            <SelectItem value="dificil">🔴 Difícil</SelectItem>
-          </SelectContent>
+        <Select
+          value={filterDifficulty}
+          onChange={e => setFilterDifficulty(e.target.value)}
+          className="w-36 rounded-xl h-9 text-sm"
+        >
+          <option value="all">Todas dific.</option>
+          <option value="facil">🟢 Fácil</option>
+          <option value="medio">🟡 Médio</option>
+          <option value="dificil">🔴 Difícil</option>
         </Select>
 
         {/* Status */}
-        <Select value={filterStatus} onValueChange={v => setFilterStatus(v as FilterStatus)}>
-          <SelectTrigger className="w-32 rounded-xl h-9 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            <SelectItem value="active">Ativas</SelectItem>
-            <SelectItem value="inactive">Inativas</SelectItem>
-          </SelectContent>
+        <Select
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value as FilterStatus)}
+          className="w-32 rounded-xl h-9 text-sm"
+        >
+          <option value="all">Todas</option>
+          <option value="active">Ativas</option>
+          <option value="inactive">Inativas</option>
         </Select>
 
         {/* Hoje */}
@@ -673,6 +944,16 @@ export function AdminQuizPage() {
           </AnimatePresence>
         </motion.div>
       )}
+
+      {/* Sheet de importação */}
+      <ImportSheet
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={(n) => {
+          qClient.invalidateQueries({ queryKey: ['admin', 'quiz', 'questions'] })
+          void n
+        }}
+      />
 
       {/* Sheet de criação / edição */}
       <Sheet open={panelOpen} onOpenChange={setPanelOpen}>

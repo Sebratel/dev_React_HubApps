@@ -37,3 +37,9 @@ export async function updateAdminQuizQuestion(
 ): Promise<QuizAdminQuestion> {
   return api.patch<QuizAdminQuestion>(`/quiz/questions/${id}`, data)
 }
+
+export async function importAdminQuizQuestions(
+  questions: Omit<QuizAdminQuestion, 'id' | 'active'>[],
+): Promise<{ imported: number; ids: number[] }> {
+  return api.post<{ imported: number; ids: number[] }>('/quiz/questions/import', { questions })
+}
