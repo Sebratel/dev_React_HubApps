@@ -9,7 +9,7 @@
  */
 const express = require('express')
 const router  = express.Router()
-const { requireAuth } = require('../middleware/auth')
+const { requireAuth, requireAdmin } = require('../middleware/auth')
 
 // ── Seeded random (Mulberry32) ────────────────────────────────────────────────
 
@@ -48,9 +48,7 @@ function selectTodaysQuestions(all, n = 5) {
 
 router.get('/today', requireAuth, async (req, res) => {
   const { pool } = req.app.locals
-  const userId   = req.user?.uid
-
-  if (!userId) return res.status(401).json({ error: 'Não autenticado.' })
+  const userId   = req.uid
 
   let conn
   try {
@@ -124,10 +122,8 @@ router.get('/today', requireAuth, async (req, res) => {
 
 router.post('/submit', requireAuth, async (req, res) => {
   const { pool } = req.app.locals
-  const userId   = req.user?.uid
+  const userId   = req.uid
   const today    = todayDate()
-
-  if (!userId) return res.status(401).json({ error: 'Não autenticado.' })
 
   let conn
   try {
@@ -202,9 +198,7 @@ router.post('/submit', requireAuth, async (req, res) => {
 
 router.get('/ranking', requireAuth, async (req, res) => {
   const { pool } = req.app.locals
-  const userId   = req.user?.uid
-
-  if (!userId) return res.status(401).json({ error: 'Não autenticado.' })
+  const userId   = req.uid
 
   let conn
   try {
@@ -263,8 +257,7 @@ router.get('/ranking', requireAuth, async (req, res) => {
 
 // ── Admin: GET /quiz/questions ────────────────────────────────────────────────
 
-router.get('/questions', requireAuth, async (req, res) => {
-  if (!req.user?.isAdmin) return res.status(403).json({ error: 'Proibido.' })
+router.get('/questions', requireAuth, requireAdmin, async (req, res) => {
   const { pool } = req.app.locals
   let conn
   try {
@@ -281,8 +274,7 @@ router.get('/questions', requireAuth, async (req, res) => {
 
 // ── Admin: POST /quiz/questions ───────────────────────────────────────────────
 
-router.post('/questions', requireAuth, async (req, res) => {
-  if (!req.user?.isAdmin) return res.status(403).json({ error: 'Proibido.' })
+router.post('/questions', requireAuth, requireAdmin, async (req, res) => {
   const { pool } = req.app.locals
   const { question, option_a, option_b, option_c, option_d, correct, category, difficulty } = req.body
 
@@ -312,8 +304,7 @@ router.post('/questions', requireAuth, async (req, res) => {
 
 // ── Admin: DELETE /quiz/questions/:id ─────────────────────────────────────────
 
-router.delete('/questions/:id', requireAuth, async (req, res) => {
-  if (!req.user?.isAdmin) return res.status(403).json({ error: 'Proibido.' })
+router.delete('/questions/:id', requireAuth, requireAdmin, async (req, res) => {
   const { pool } = req.app.locals
   let conn
   try {
