@@ -229,7 +229,8 @@ export function FeaturedBanner({ highlights }: FeaturedBannerProps) {
   const isMobile = cw < 600
   const cardRatio = isMobile ? 0.82 : 0.40
   const rotDeg    = isMobile ? 6    : ROT_DEG
-  const cardW = cw * cardRatio
+  // Cap the card width so the 3D depth effect stays pronounced in wider containers
+  const cardW = Math.min(cw * cardRatio, 680)
   const cardH = Math.round(cardW * (9 / 16))
   const step  = isMobile ? cw * 0.86 : cardW
 

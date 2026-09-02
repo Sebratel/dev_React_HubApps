@@ -7,7 +7,8 @@ interface KudoRow {
   id: string
   message: string
   created_at: string
-  from_id: string
+  is_anonymous: 0 | 1
+  from_id: string | null
   from_name: string
   from_photo: string | null
   to_id: string
@@ -42,15 +43,16 @@ export interface CelebrationItem {
 
 function rowToKudo(row: KudoRow): KudoModel {
   return {
-    id:        row.id,
-    message:   row.message,
-    createdAt: new Date(row.created_at),
-    fromId:    row.from_id,
-    fromName:  row.from_name,
-    fromPhoto: row.from_photo,
-    toId:      row.to_id,
-    toName:    row.to_name,
-    toPhoto:   row.to_photo,
+    id:          row.id,
+    message:     row.message,
+    createdAt:   new Date(row.created_at),
+    isAnonymous: row.is_anonymous === 1,
+    fromId:      row.from_id,
+    fromName:    row.from_name,
+    fromPhoto:   row.from_photo,
+    toId:        row.to_id,
+    toName:      row.to_name,
+    toPhoto:     row.to_photo,
   }
 }
 
@@ -63,8 +65,12 @@ export async function getKudosFeed(): Promise<KudoModel[]> {
 }
 
 /** Envia um kudo para um colega */
-export async function sendKudo(toUserId: string, message: string): Promise<KudoModel> {
-  const row = await api.post<KudoRow>('/kudos', { toUserId, message })
+export async function sendKudo(
+  toUserId: string,
+  message: string,
+  isAnonymous = false,
+): Promise<KudoModel> {
+  const row = await api.post<KudoRow>('/kudos', { toUserId, message, isAnonymous })
   return rowToKudo(row)
 }
 
@@ -77,4 +83,25 @@ export async function getDirectory(): Promise<DirectoryUser[]> {
 /** Celebrações do dia: aniversários e datas de empresa */
 export async function getCelebrations(): Promise<CelebrationItem[]> {
   return api.get<CelebrationItem[]>('/users/celebrations')
+}
+
+// ─── MVP da Semana ────────────────────────────────────────────────────────────
+
+export interface MvpUser {
+  id: string
+  name: string
+  photoUrl: string | null
+  kudoCount: number
+}
+
+/** Top 3 usuários com mais kudos recebidos nos últimos 7 dias */
+export async function getWeeklyMvp(): Promise<MvpUser[]> {
+  const rows = await api.get<{ id: string; name: string; photo_url: string | null; kudo_count: number }[]>('/kudos/mvp')
+  return rows.map((r) => ({ id: r.id, name: r.name, photoUrl: r.photo_url, kudoCount: r.kudo_count }))
+}
+
+/** Últimos kudos recebidos por um usuário (para o perfil público) */
+export async function getUserKudos(userId: string): Promise<KudoModel[]> {
+  const rows = await api.get<KudoRow[]>(`/kudos/user/${userId}`)
+  return rows.map(rowToKudo)
 }

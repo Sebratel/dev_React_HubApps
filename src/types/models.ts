@@ -33,6 +33,8 @@ export interface UserModel {
   birthDate?: string | null
   /** Data de admissão — YYYY-MM-DD — editável apenas por admins */
   hireDate?: string | null
+  /** Status do momento — ex: "🎯 Focado", "🏠 Home office" */
+  status?: string | null
 }
 
 // ─── KudoModel ────────────────────────────────────────────────────────────────
@@ -41,12 +43,14 @@ export interface KudoModel {
   id: string
   message: string
   createdAt: Date
-  fromId: string
+  /** null quando isAnonymous — a API já mascara antes de enviar */
+  fromId: string | null
   fromName: string
   fromPhoto: string | null
   toId: string
   toName: string
   toPhoto: string | null
+  isAnonymous: boolean
 }
 
 // ─── AuthResult ──────────────────────────────────────────────────────────────
@@ -219,3 +223,66 @@ export interface ExternalAppLaunchSession {
   launchContext: string | null
   launchContextExpiresAt: Date | null
 }
+
+// ─── Quiz do Dia ──────────────────────────────────────────────────────────────
+
+export interface QuizQuestion {
+  id: number
+  question: string
+  options: { a: string; b: string; c: string; d: string }
+  category: string
+}
+
+export interface QuizAnswerResult {
+  questionId: number
+  chosen: string | null
+  correct: string
+  correctAnswer?: string   // alias returned by /today (played state)
+  timeMs: number
+  pts: number
+  question?: string
+  options?: { a: string; b: string; c: string; d: string }
+}
+
+export interface QuizTodayPending {
+  status: 'pending'
+  date: string
+  questions: QuizQuestion[]
+}
+
+export interface QuizTodayPlayed {
+  status: 'played'
+  score: number
+  answers: QuizAnswerResult[]
+}
+
+export type QuizToday = QuizTodayPending | QuizTodayPlayed
+
+export interface QuizRankingEntry {
+  position: number
+  userId: string
+  name: string
+  photoUrl: string | null
+  totalScore: number
+  daysPlayed: number
+}
+
+export interface QuizRanking {
+  weekly: QuizRankingEntry[]
+  myPosition: number | null
+  myWeeklyScore: number
+  todayScore: number | null
+  weekStartDate: string
+}
+
+export interface QuizSubmitAnswer {
+  questionId: number
+  chosen: string | null
+  timeMs: number
+}
+
+export interface QuizSubmitResult {
+  score: number
+  answers: QuizAnswerResult[]
+}
+

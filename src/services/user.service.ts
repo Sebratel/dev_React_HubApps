@@ -20,6 +20,15 @@ interface UserRow {
   updated_at?: string
   birth_date?: string | null
   hire_date?: string | null
+  status?: string | null
+}
+
+// Usuário presente (online agora) — retornado por /users/presence
+export interface PresenceUser {
+  id: string
+  name: string
+  photoUrl: string | null
+  status: string | null
 }
 
 function assertUserRow(row: UserRow | undefined): UserRow {
@@ -52,6 +61,7 @@ function rowToUserModel(row: UserRow): UserModel {
     lastLogin: row.last_login ? new Date(row.last_login) : null,
     birthDate: row.birth_date ?? null,
     hireDate:  row.hire_date  ?? null,
+    status:    row.status     ?? null,
   }
 }
 
@@ -82,6 +92,54 @@ export async function updateMe(name: string): Promise<UserModel> {
 export async function updateMyBirthDate(birthDate: string | null): Promise<UserModel> {
   const row = await api.patch<UserRow>('/users/me', { birth_date: birthDate })
   return rowToUserModel(row)
+}
+
+export async function updateMyStatus(status: string | null): Promise<UserModel> {
+  const row = await api.patch<UserRow>('/users/me', { status })
+  return rowToUserModel(row)
+}
+
+// ─── Diretório de pessoas ─────────────────────────────────────────────────────
+
+export interface DirectoryPerson {
+  id: string
+  name: string
+  photoUrl: string | null
+  profile: string
+  status: string | null
+  teamName: string | null
+  kudoCount: number
+  birthMonth: number | null
+  birthDay: number | null
+  birthdayToday: boolean
+  birthdayThisMonth: boolean
+  tenureYears: number | null
+}
+
+export interface UserStats {
+  kudosSent: number
+  kudosReceived: number
+  tenureYears: number | null
+}
+
+export type PublicProfile = DirectoryPerson  // mesma forma, reutilizamos
+
+export async function getPublicProfile(userId: string): Promise<PublicProfile> {
+  return api.get<PublicProfile>(`/users/${userId}/public`)
+}
+
+export async function getPeople(): Promise<DirectoryPerson[]> {
+  return api.get<DirectoryPerson[]>('/users/people')
+}
+
+export async function getMyStats(): Promise<UserStats> {
+  return api.get<UserStats>('/users/me/stats')
+}
+
+/** Lista usuários ativos agora (últimos 2 min de heartbeat) */
+export async function getPresence(): Promise<PresenceUser[]> {
+  const rows = await api.get<{ id: string; name: string; photo_url: string | null; status: string | null }[]>('/users/presence')
+  return rows.map((r) => ({ id: r.id, name: r.name, photoUrl: r.photo_url, status: r.status }))
 }
 
 export async function saveUser(

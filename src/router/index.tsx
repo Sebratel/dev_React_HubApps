@@ -24,6 +24,10 @@ import { AdminAnalyticsPage } from '@/features/admin/analytics/AdminAnalyticsPag
 import { SuggestionsPage } from '@/features/suggestions/SuggestionsPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
 import { MyRequestsPage } from '@/features/my-requests/MyRequestsPage'
+import { DirectoryPage } from '@/features/directory/DirectoryPage'
+import { PublicProfilePage } from '@/features/directory/PublicProfilePage'
+import { BoardPage } from '@/features/board/BoardPage'
+import { QuizPage } from '@/features/quiz/QuizPage'
 
 export const router = createBrowserRouter(
   [
@@ -72,6 +76,22 @@ export const router = createBrowserRouter(
                 {
                   path: '/minhas-solicitacoes',
                   element: <MyRequestsPage />,
+                },
+                {
+                  path: '/pessoas',
+                  element: <DirectoryPage />,
+                },
+                {
+                  path: '/pessoas/:id',
+                  element: <PublicProfilePage />,
+                },
+                {
+                  path: '/mural',
+                  element: <BoardPage />,
+                },
+                {
+                  path: '/quiz',
+                  element: <QuizPage />,
                 },
               ],
             },

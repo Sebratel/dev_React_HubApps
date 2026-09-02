@@ -24,19 +24,34 @@ function timeAgo(date: Date): string {
 
 // ─── Kudo item ────────────────────────────────────────────────────────────────
 
+// Avatar anônimo — ponto de interrogação estilizado
+function AnonymousAvatar() {
+  return (
+    <div className="w-6 h-6 rounded-full flex items-center justify-center bg-muted border-2 border-card ring-2 ring-card text-[11px] font-bold text-muted-foreground select-none shrink-0">
+      ?
+    </div>
+  )
+}
+
 function KudoItem({ kudo }: { kudo: KudoModel }) {
   return (
     <li className="flex items-start gap-3 px-5 py-3">
       {/* Stacked avatars: from → to */}
       <div className="flex shrink-0 -space-x-2 mt-0.5">
-        <UserAvatar name={kudo.fromName} photoUrl={kudo.fromPhoto} size="xs" className="ring-2 ring-card" />
-        <UserAvatar name={kudo.toName}   photoUrl={kudo.toPhoto}   size="xs" className="ring-2 ring-card" />
+        {kudo.isAnonymous
+          ? <AnonymousAvatar />
+          : <UserAvatar name={kudo.fromName} photoUrl={kudo.fromPhoto} size="xs" className="ring-2 ring-card" />
+        }
+        <UserAvatar name={kudo.toName} photoUrl={kudo.toPhoto} size="xs" className="ring-2 ring-card" />
       </div>
 
       {/* Text */}
       <div className="flex-1 min-w-0">
         <p className="text-xs text-foreground leading-snug">
-          <span className="font-semibold">{kudo.fromName.split(' ')[0]}</span>
+          {kudo.isAnonymous
+            ? <span className="font-medium text-muted-foreground italic">Anônimo</span>
+            : <span className="font-semibold">{kudo.fromName.split(' ')[0]}</span>
+          }
           <span className="text-muted-foreground mx-1">→</span>
           <span className="font-semibold">{kudo.toName.split(' ')[0]}</span>
         </p>

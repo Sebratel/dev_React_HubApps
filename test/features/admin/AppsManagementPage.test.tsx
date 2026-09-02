@@ -190,9 +190,8 @@ describe('AppsManagementPage', () => {
     render(<AppsManagementPage />, { wrapper: createWrapper() })
     await waitFor(() => expect(screen.getByText('Portal RH')).toBeTruthy())
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Filtrar por status' }), {
-      target: { value: 'inactive' },
-    })
+    // Status filter is now chip-based buttons instead of a <select> combobox
+    fireEvent.click(screen.getByRole('button', { name: /Inativos/i }))
 
     expect(screen.queryByText('Portal RH')).toBeNull()
     expect(screen.getByText('CRM Legado')).toBeTruthy()

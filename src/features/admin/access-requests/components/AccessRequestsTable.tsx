@@ -92,7 +92,9 @@ export function AccessRequestsTable({
                     <input
                       type="checkbox"
                       className="h-4 w-4 cursor-pointer rounded"
+                      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                       checked={selectedIds!.has(req.id)}
+                      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                       onChange={() => onToggleSelect!(req.id)}
                       aria-label={`Selecionar ${req.appName}`}
                     />

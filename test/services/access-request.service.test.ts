@@ -101,7 +101,7 @@ describe('getUserAccessRequests', () => {
 
 const user: UserModel = {
   id: 'uid-1', email: 'alice@sebratel.com.br', name: 'Alice',
-  photoUrl: null, profile: 'employee', team: null, permissions: [],
+  photoUrl: null, profile: 'employee', team: null, teamName: null, permissions: [],
   isActive: true, isAdmin: false,
   createdAt: new Date(), updatedAt: new Date(), online: true, lastLogin: null,
 }

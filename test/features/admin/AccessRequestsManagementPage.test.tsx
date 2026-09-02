@@ -56,8 +56,9 @@ function makeRequest(overrides: Partial<AccessRequestModel> = {}): AccessRequest
     appName: 'Portal RH',
     reason: 'Preciso acessar para trabalho.',
     status: 'pending',
-    requestedAt: new Date('2024-01-15T10:00:00Z'),
-    updatedAt: new Date('2024-01-15T10:00:00Z'),
+    // Use a recent date so the "overdue" alert (>3 days) does not appear in tests
+    requestedAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
+    updatedAt:   new Date(Date.now() - 60 * 60 * 1000),
     reviewedByUserId: null,
     reviewedByName: null,
     reviewedAt: null,
@@ -124,7 +125,8 @@ describe('AccessRequestsManagementPage', () => {
     render(<AccessRequestsManagementPage />, { wrapper: createWrapper() })
     await waitFor(() => {
       expect(screen.getByText('Alice')).toBeTruthy()
-      expect(screen.getByText('Portal RH')).toBeTruthy()
+      // 'Portal RH' may appear multiple times (table row + insights mini-bar)
+      expect(screen.getAllByText('Portal RH').length).toBeGreaterThan(0)
     })
   })
 
@@ -286,7 +288,8 @@ describe('AccessRequestsManagementPage', () => {
     )
 
     render(<AccessRequestsManagementPage />, { wrapper: createWrapper() })
-    await waitFor(() => expect(screen.getByText('Portal RH')).toBeTruthy())
+    // 'Portal RH' may appear in multiple places (table + insights panel)
+    await waitFor(() => expect(screen.getAllByText('Portal RH').length).toBeGreaterThan(0))
 
     fireEvent.click(screen.getByRole('button', { name: 'Detalhes de Portal RH' }))
 

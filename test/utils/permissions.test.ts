@@ -17,6 +17,7 @@ function makeUser(overrides: Partial<UserModel> = {}): UserModel {
     photoUrl: null,
     profile: 'employee',
     team: null,
+    teamName: null,
     permissions: [],
     isActive: true,
     isAdmin: false,

@@ -186,21 +186,7 @@ export function AdminSuggestionsPage() {
   const [mutationError, setMutationError] = useState<string | null>(null)
   const reduced = useReducedMotion()
 
-  if (!user || !canAccessAdminDashboard(user)) return null
-
-  const filtered = statusFilter === 'all'
-    ? suggestions
-    : suggestions.filter((s) => s.status === statusFilter)
-
-  const counts = {
-    pending:        suggestions.filter((s) => s.status === 'pending').length,
-    in_review:      suggestions.filter((s) => s.status === 'in_review').length,
-    in_development: suggestions.filter((s) => s.status === 'in_development').length,
-    done:           suggestions.filter((s) => s.status === 'done').length,
-    rejected:       suggestions.filter((s) => s.status === 'rejected').length,
-  }
-
-  // ── Insights ───────────────────────────────────────────────────────────────
+  // ── Insights (hooks — devem ficar antes de qualquer early return) ───────────
 
   const topVoted = useMemo(() =>
     [...suggestions].sort((a, b) => b.score - a.score).slice(0, 3).filter((s) => s.score > 0),
@@ -222,10 +208,25 @@ export function AdminSuggestionsPage() {
   const byApp = useMemo(() => {
     const map = new Map<string, number>()
     suggestions.filter((s) => s.appName).forEach((s) => {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       map.set(s.appName!, (map.get(s.appName!) ?? 0) + 1)
     })
     return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4)
   }, [suggestions])
+
+  if (!user || !canAccessAdminDashboard(user)) return null
+
+  const filtered = statusFilter === 'all'
+    ? suggestions
+    : suggestions.filter((s) => s.status === statusFilter)
+
+  const counts = {
+    pending:        suggestions.filter((s) => s.status === 'pending').length,
+    in_review:      suggestions.filter((s) => s.status === 'in_review').length,
+    in_development: suggestions.filter((s) => s.status === 'in_development').length,
+    done:           suggestions.filter((s) => s.status === 'done').length,
+    rejected:       suggestions.filter((s) => s.status === 'rejected').length,
+  }
 
   const showInsights = !isLoading && suggestions.length >= 2
 

@@ -6,7 +6,7 @@ const { provisionLimiter, adminWriteLimiter } = require('../middleware/rateLimit
 const logAudit       = require('../utils/logAudit')
 const AUDIT_ACTIONS  = require('../utils/auditActions')
 
-const USER_FIELDS = 'u.id, u.email, u.name, u.photo_url, u.profile, u.team, t.name AS team_name, u.is_active, u.is_admin, u.last_login, u.created_at, u.birth_date, u.hire_date'
+const USER_FIELDS = 'u.id, u.email, u.name, u.photo_url, u.profile, u.team, t.name AS team_name, u.is_active, u.is_admin, u.last_login, u.created_at, u.birth_date, u.hire_date, u.status'
 const USER_FROM   = 'users u LEFT JOIN teams t ON t.id = u.team'
 
 // GET /users/me
@@ -94,6 +94,16 @@ router.patch('/me', requireAuth, async (req, res, next) => {
     fields.push('birth_date')
   }
 
+  if ('status' in req.body) {
+    const { status } = req.body
+    if (status !== null && (typeof status !== 'string' || status.length > 80)) {
+      return res.status(400).json({ error: 'status inválido — máximo 80 caracteres' })
+    }
+    updates.push('status = ?')
+    values.push(status || null)
+    fields.push('status')
+  }
+
   if (!updates.length) {
     return res.status(400).json({ error: 'Nenhum campo válido para atualizar' })
   }
@@ -161,12 +171,102 @@ router.get('/', requireAuth, requireAdmin, async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
+// GET /users/people — diretório enriquecido para a página /pessoas
+// ⚠️ deve ficar ANTES de /:id
+router.get('/people', requireAuth, async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT u.id, u.name, u.photo_url, u.profile, u.status,
+             t.name AS team_name,
+             u.birth_date, u.hire_date,
+             COALESCE(kc.kudo_count, 0) AS kudo_count
+      FROM users u
+      LEFT JOIN teams t ON t.id = u.team
+      LEFT JOIN (
+        SELECT to_user_id, COUNT(*) AS kudo_count
+        FROM kudos
+        GROUP BY to_user_id
+      ) kc ON kc.to_user_id = u.id
+      WHERE u.is_active = 1
+      ORDER BY COALESCE(u.name, u.email)
+    `)
+
+    const today        = new Date()
+    const currentMonth = today.getUTCMonth() + 1
+    const currentDay   = today.getUTCDate()
+    const currentYear  = today.getUTCFullYear()
+
+    const result = rows.map(r => {
+      let birthdayToday = false
+      let birthdayThisMonth = false
+      let birthMonth = null
+      let birthDay   = null
+      let tenureYears = null
+
+      if (r.birth_date) {
+        const parts = String(r.birth_date).split('-')
+        birthMonth = Number(parts[1])
+        birthDay   = Number(parts[2])
+        birthdayToday     = birthMonth === currentMonth && birthDay === currentDay
+        birthdayThisMonth = birthMonth === currentMonth
+      }
+
+      if (r.hire_date) {
+        const hd    = new Date(r.hire_date)
+        const years = currentYear - hd.getUTCFullYear()
+        if (years >= 1) tenureYears = years
+      }
+
+      return {
+        id: r.id, name: r.name, photoUrl: r.photo_url,
+        profile: r.profile, status: r.status, teamName: r.team_name,
+        kudoCount: Number(r.kudo_count),
+        birthMonth, birthDay,
+        birthdayToday, birthdayThisMonth,
+        tenureYears,
+      }
+    })
+
+    res.json(result)
+  } catch (err) { next(err) }
+})
+
+// GET /users/me/stats — estatísticas do usuário logado (kudos enviados/recebidos)
+router.get('/me/stats', requireAuth, async (req, res, next) => {
+  try {
+    const [[sent]]     = await pool.query('SELECT COUNT(*) AS c FROM kudos WHERE from_user_id = ?', [req.uid])
+    const [[received]] = await pool.query('SELECT COUNT(*) AS c FROM kudos WHERE to_user_id = ?', [req.uid])
+    const [[userRow]]  = await pool.query('SELECT hire_date FROM users WHERE id = ?', [req.uid])
+    let tenureYears = null
+    if (userRow?.hire_date) {
+      const hd = new Date(userRow.hire_date)
+      tenureYears = new Date().getUTCFullYear() - hd.getUTCFullYear()
+    }
+    res.json({ kudosSent: Number(sent.c), kudosReceived: Number(received.c), tenureYears })
+  } catch (err) { next(err) }
+})
+
 // GET /users/directory — lista básica de usuários ativos (para seletor de destinatário em kudos, etc.)
 router.get('/directory', requireAuth, async (_req, res, next) => {
   try {
     const [rows] = await pool.query(
       'SELECT id, name, photo_url FROM users WHERE is_active = 1 ORDER BY COALESCE(name, email)'
     )
+    res.json(rows)
+  } catch (err) { next(err) }
+})
+
+// GET /users/presence — usuários ativos agora (público, info básica sem e-mail)
+router.get('/presence', requireAuth, async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT id, name, photo_url, status
+      FROM users
+      WHERE is_active = 1
+        AND last_heartbeat >= DATE_SUB(NOW(), INTERVAL 2 MINUTE)
+      ORDER BY name
+      LIMIT 50
+    `)
     res.json(rows)
   } catch (err) { next(err) }
 })
@@ -221,6 +321,56 @@ router.get('/celebrations', requireAuth, async (_req, res, next) => {
     })
 
     res.json(result)
+  } catch (err) { next(err) }
+})
+
+// GET /users/:id/public — perfil público de um colega (sem e-mail, sem is_admin)
+// ⚠️ deve ficar ANTES de PATCH /:id para que Express não confunda o segmento
+router.get('/:id/public', requireAuth, async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT u.id, u.name, u.photo_url, u.profile, u.status,
+             t.name AS team_name,
+             u.birth_date, u.hire_date,
+             COALESCE(kc.kudo_count, 0) AS kudo_count
+      FROM users u
+      LEFT JOIN teams t ON t.id = u.team
+      LEFT JOIN (
+        SELECT to_user_id, COUNT(*) AS kudo_count FROM kudos GROUP BY to_user_id
+      ) kc ON kc.to_user_id = u.id
+      WHERE u.id = ? AND u.is_active = 1
+    `, [req.params.id])
+
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' })
+    const r = rows[0]
+
+    const today        = new Date()
+    const currentMonth = today.getUTCMonth() + 1
+    const currentDay   = today.getUTCDate()
+    const currentYear  = today.getUTCFullYear()
+
+    let birthdayToday = false, birthdayThisMonth = false
+    let birthMonth = null, birthDay = null, tenureYears = null
+
+    if (r.birth_date) {
+      const parts = String(r.birth_date).split('-')
+      birthMonth = Number(parts[1])
+      birthDay   = Number(parts[2])
+      birthdayToday     = birthMonth === currentMonth && birthDay === currentDay
+      birthdayThisMonth = birthMonth === currentMonth
+    }
+    if (r.hire_date) {
+      const hd    = new Date(r.hire_date)
+      const years = currentYear - hd.getUTCFullYear()
+      if (years >= 1) tenureYears = years
+    }
+
+    res.json({
+      id: r.id, name: r.name, photoUrl: r.photo_url,
+      profile: r.profile, status: r.status, teamName: r.team_name,
+      kudoCount: Number(r.kudo_count),
+      birthMonth, birthDay, birthdayToday, birthdayThisMonth, tenureYears,
+    })
   } catch (err) { next(err) }
 })
 

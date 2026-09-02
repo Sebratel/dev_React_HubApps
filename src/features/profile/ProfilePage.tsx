@@ -1,4 +1,5 @@
 ﻿import { useState, useRef, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   updateProfile,
@@ -8,7 +9,9 @@ import {
 } from 'firebase/auth'
 import { auth } from '@/firebase'
 import { useAuthStore } from '@/stores/auth.store'
-import { updateMe, updateMyBirthDate } from '@/services/user.service'
+import { updateMe, updateMyBirthDate, getMyStats } from '@/services/user.service'
+import type { UserStats } from '@/services/user.service'
+import { isBirthdayToday } from '@/utils/isBirthdayToday'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -44,6 +47,64 @@ function formatRelative(d: Date | null | undefined): string {
   if (days === 1) return 'ontem'
   if (days < 7)   return `há ${days} dias`
   return formatDate(d)
+}
+
+// ─── Badges computados ────────────────────────────────────────────────────────
+
+interface Badge { emoji: string; label: string; description: string; earned: boolean }
+
+function computeBadges(user: { name?: string | null; photoUrl?: string | null; birthDate?: string | null }, stats: UserStats | undefined): Badge[] {
+  const s = stats ?? { kudosSent: 0, kudosReceived: 0, tenureYears: null }
+  return [
+    {
+      emoji:       '✅',
+      label:       'Perfil Completo',
+      description: 'Nome, foto e data de aniversário preenchidos',
+      earned: !!(user.name && user.photoUrl && user.birthDate),
+    },
+    {
+      emoji:       '💌',
+      label:       'Primeiro Kudo',
+      description: 'Enviou seu primeiro kudo para um colega',
+      earned: s.kudosSent >= 1,
+    },
+    {
+      emoji:       '🏆',
+      label:       'Reconhecido',
+      description: 'Recebeu pelo menos 1 kudo',
+      earned: s.kudosReceived >= 1,
+    },
+    {
+      emoji:       '⭐',
+      label:       'Estrela da Equipe',
+      description: 'Recebeu 5 ou mais kudos',
+      earned: s.kudosReceived >= 5,
+    },
+    {
+      emoji:       '🌟',
+      label:       'MVP',
+      description: 'Recebeu 10 ou mais kudos',
+      earned: s.kudosReceived >= 10,
+    },
+    {
+      emoji:       '🎂',
+      label:       'Aniversariante',
+      description: 'Hoje é o seu aniversário! 🎉',
+      earned: isBirthdayToday(user.birthDate),
+    },
+    {
+      emoji:       '🎖️',
+      label:       '1 Ano de Empresa',
+      description: 'Completou 1 ano na Sebratel',
+      earned: (s.tenureYears ?? 0) >= 1,
+    },
+    {
+      emoji:       '🏅',
+      label:       '5 Anos de Empresa',
+      description: 'Completou 5 anos na Sebratel',
+      earned: (s.tenureYears ?? 0) >= 5,
+    },
+  ]
 }
 
 // ─── Small info row ───────────────────────────────────────────────────────────
@@ -109,7 +170,18 @@ export function ProfilePage() {
 
   const reduced = useReducedMotion()
 
+  const { data: stats } = useQuery<UserStats>({
+    queryKey: ['users', 'me', 'stats'],
+    queryFn:  getMyStats,
+    staleTime: 5 * 60_000,
+    enabled:  !!user,
+  })
+
   if (!user) return null
+
+  const badges = computeBadges(user, stats)
+  const earnedBadges = badges.filter((b) => b.earned)
+  const unearnedBadges = badges.filter((b) => !b.earned)
 
   const isPasswordUser = auth.currentUser?.providerData.some((p) => p.providerId === 'password') ?? false
   const isDirty = name.trim() !== (user.name ?? '').trim()
@@ -498,6 +570,50 @@ export function ProfilePage() {
                   label="Aplicativos"
                   value={`${appsCount} com acesso`}
                 />
+              )}
+            </div>
+          </div>
+
+          {/* Conquistas / Badges */}
+          <div className="rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-5 py-4">
+              <h2 className="text-sm font-semibold text-foreground">Conquistas</h2>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {earnedBadges.length} de {badges.length} desbloqueadas
+              </p>
+            </div>
+            <div className="px-5 py-4 flex flex-col gap-2">
+              {earnedBadges.map((b) => (
+                <div key={b.label} className="flex items-center gap-2.5">
+                  <span className="text-xl leading-none select-none" aria-hidden>{b.emoji}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground leading-tight">{b.label}</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight">{b.description}</p>
+                  </div>
+                </div>
+              ))}
+              {earnedBadges.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  Nenhuma conquista ainda. Comece enviando um kudo! 💌
+                </p>
+              )}
+              {unearnedBadges.length > 0 && (
+                <details className="mt-1">
+                  <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                    + {unearnedBadges.length} por desbloquear
+                  </summary>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {unearnedBadges.map((b) => (
+                      <div key={b.label} className="flex items-center gap-2.5 opacity-40">
+                        <span className="text-xl leading-none select-none grayscale" aria-hidden>{b.emoji}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground leading-tight">{b.label}</p>
+                          <p className="text-[10px] text-muted-foreground leading-tight">{b.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
               )}
             </div>
           </div>

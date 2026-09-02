@@ -8,6 +8,7 @@ export function usePendingRequestAppIds(): Set<string> {
 
   const { data: requests = [] } = useQuery({
     queryKey: ['access-requests', 'me'],
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     queryFn: () => getUserAccessRequests(user!.id),
     enabled: !!user,
     staleTime: 60_000,

@@ -136,7 +136,8 @@ describe('AuditLogsManagementPage', () => {
       makePagedResponse([makeLog({ action: 'LOGIN' })]),
     )
     render(<AuditLogsManagementPage />, { wrapper: createWrapper() })
-    await waitFor(() => expect(screen.getByText('Login')).toBeTruthy())
+    // 'Login' appears in both the log row and the sidebar quick-actions, use getAllByText
+    await waitFor(() => expect(screen.getAllByText('Login').length).toBeGreaterThan(0))
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Filtrar por ação' }), {
       target: { value: 'LOGIN' },

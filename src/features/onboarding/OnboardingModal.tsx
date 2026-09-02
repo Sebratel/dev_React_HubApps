@@ -14,11 +14,12 @@ function hasSkippedThisSession(): boolean {
   try { return !!sessionStorage.getItem(SESSION_KEY) } catch { return false }
 }
 function markSkippedThisSession() {
-  try { sessionStorage.setItem(SESSION_KEY, '1') } catch {}
+  try { sessionStorage.setItem(SESSION_KEY, '1') } catch { /* storage unavailable */ }
 }
 
 // ─── Hook: decide se mostra o modal ──────────────────────────────────────────
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useOnboardingNeeded(): boolean {
   const birthDate = useAuthStore((s) => s.user?.birthDate)
   // Mostra se: (1) birthDate nunca foi preenchida E (2) não foi descartada nesta sessão
