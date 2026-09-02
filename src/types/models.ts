@@ -286,3 +286,17 @@ export interface QuizSubmitResult {
   answers: QuizAnswerResult[]
 }
 
+/** Pergunta completa retornada para admins (inclui gabarito e estado active) */
+export interface QuizAdminQuestion {
+  id: number
+  question: string
+  option_a: string
+  option_b: string
+  option_c: string
+  option_d: string
+  correct: 'a' | 'b' | 'c' | 'd'
+  category: string
+  difficulty: 'facil' | 'medio' | 'dificil'
+  active: 0 | 1
+}
+

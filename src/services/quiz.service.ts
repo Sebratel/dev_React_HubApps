@@ -4,6 +4,7 @@ import type {
   QuizRanking,
   QuizSubmitAnswer,
   QuizSubmitResult,
+  QuizAdminQuestion,
 } from '@/types/models'
 
 export async function getTodayQuiz(): Promise<QuizToday> {
@@ -16,4 +17,23 @@ export async function submitQuiz(answers: QuizSubmitAnswer[]): Promise<QuizSubmi
 
 export async function getQuizRanking(): Promise<QuizRanking> {
   return api.get<QuizRanking>('/quiz/ranking')
+}
+
+// ── Admin ────────────────────────────────────────────────────────────────────
+
+export async function getAdminQuizQuestions(): Promise<QuizAdminQuestion[]> {
+  return api.get<QuizAdminQuestion[]>('/quiz/questions')
+}
+
+export async function createAdminQuizQuestion(
+  data: Omit<QuizAdminQuestion, 'id' | 'active'>,
+): Promise<{ id: number }> {
+  return api.post<{ id: number }>('/quiz/questions', data)
+}
+
+export async function updateAdminQuizQuestion(
+  id: number,
+  data: Partial<Omit<QuizAdminQuestion, 'id'>>,
+): Promise<QuizAdminQuestion> {
+  return api.patch<QuizAdminQuestion>(`/quiz/questions/${id}`, data)
 }

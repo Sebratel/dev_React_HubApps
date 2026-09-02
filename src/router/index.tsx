@@ -28,6 +28,7 @@ import { DirectoryPage } from '@/features/directory/DirectoryPage'
 import { PublicProfilePage } from '@/features/directory/PublicProfilePage'
 import { BoardPage } from '@/features/board/BoardPage'
 import { QuizPage } from '@/features/quiz/QuizPage'
+import { AdminQuizPage } from '@/features/admin/quiz/AdminQuizPage'
 
 export const router = createBrowserRouter(
   [
@@ -144,6 +145,10 @@ export const router = createBrowserRouter(
                     {
                       path: '/admin/analytics',
                       element: <AdminAnalyticsPage />,
+                    },
+                    {
+                      path: '/admin/quiz',
+                      element: <AdminQuizPage />,
                     },
                   ],
                 },

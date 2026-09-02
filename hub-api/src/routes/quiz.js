@@ -303,6 +303,46 @@ router.post('/questions', requireAuth, requireAdmin, async (req, res) => {
   }
 })
 
+// ── Admin: PATCH /quiz/questions/:id ─────────────────────────────────────────
+
+router.patch('/questions/:id', requireAuth, requireAdmin, async (req, res) => {
+
+  const allowed = ['question', 'option_a', 'option_b', 'option_c', 'option_d',
+                   'correct', 'category', 'difficulty', 'active']
+
+  const fields = []
+  const values = []
+
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) {
+      fields.push(`${key} = ?`)
+      values.push(key === 'active' ? (req.body[key] ? 1 : 0) : req.body[key])
+    }
+  }
+
+  if (fields.length === 0) {
+    return res.status(400).json({ error: 'Nenhum campo para atualizar.' })
+  }
+
+  if (req.body.correct && !['a', 'b', 'c', 'd'].includes(req.body.correct)) {
+    return res.status(400).json({ error: 'Resposta correta inválida.' })
+  }
+
+  let conn
+  try {
+    conn = await pool.getConnection()
+    values.push(req.params.id)
+    await conn.query(`UPDATE quiz_questions SET ${fields.join(', ')} WHERE id = ?`, values)
+    const [[updated]] = await conn.query('SELECT * FROM quiz_questions WHERE id = ?', [req.params.id])
+    res.json(updated)
+  } catch (err) {
+    console.error('[quiz/questions PATCH]', err)
+    res.status(500).json({ error: 'Erro interno.' })
+  } finally {
+    conn?.release()
+  }
+})
+
 // ── Admin: DELETE /quiz/questions/:id ─────────────────────────────────────────
 
 router.delete('/questions/:id', requireAuth, requireAdmin, async (req, res) => {
