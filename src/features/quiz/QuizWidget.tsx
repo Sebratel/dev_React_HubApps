@@ -30,7 +30,8 @@ export function QuizWidget() {
   })
 
   const played = today?.status === 'played'
-  const top3   = ranking?.weekly.slice(0, 3) ?? []
+  // Widget mostra top 3 do ranking MENSAL
+  const top3   = ranking?.monthly.slice(0, 3) ?? []
 
   return (
     <div className="flex flex-col h-full">
@@ -38,7 +39,7 @@ export function QuizWidget() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-base">🧠</span>
-          <span className="text-sm font-semibold text-foreground">Quiz do Dia</span>
+          <span className="text-sm font-semibold text-foreground">Quiz da Semana</span>
           {played && (
             <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
               <CheckCircle2 className="h-3 w-3" />
@@ -46,14 +47,14 @@ export function QuizWidget() {
             </span>
           )}
         </div>
-        {ranking?.todayScore != null && (
+        {ranking?.weekScore != null && (
           <span className="text-xs font-semibold text-violet-600 dark:text-violet-400 tabular-nums">
-            {ranking.todayScore} pts
+            {ranking.weekScore} pts esta semana
           </span>
         )}
       </div>
 
-      {/* Ranking */}
+      {/* Ranking mensal */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-2">
         {(loadingToday || loadingRanking) ? (
           Array.from({ length: 3 }).map((_, i) => (
@@ -111,14 +112,14 @@ export function QuizWidget() {
                 />
                 <span className="text-xs font-semibold text-foreground flex-1 truncate">Você</span>
                 <span className="text-xs font-semibold text-muted-foreground tabular-nums shrink-0">
-                  {ranking.myWeeklyScore.toLocaleString('pt-BR')} pts
+                  {ranking.myMonthlyScore.toLocaleString('pt-BR')} pts
                 </span>
               </div>
             )}
 
-            {/* Info semana */}
+            {/* Info mês */}
             <p className="text-[11px] text-muted-foreground/70 text-center pt-1">
-              Ranking semanal · reinicia toda segunda
+              Ranking mensal · reinicia todo mês
             </p>
           </>
         )}

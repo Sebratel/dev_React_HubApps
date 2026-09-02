@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, ChevronDown, ChevronUp, Pencil, ToggleLeft, ToggleRight,
   Brain, CheckCircle2, XCircle, CalendarDays, Filter, X,
-  Upload, Copy, Check, AlertCircle,
+  Upload, Copy, Check, AlertCircle, Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,10 +20,11 @@ import {
   createAdminQuizQuestion,
   updateAdminQuizQuestion,
   importAdminQuizQuestions,
+  deleteAdminQuizQuestion,
 } from '@/services/quiz.service'
 import type { QuizAdminQuestion } from '@/types/models'
 
-// ── Seeded RNG — replica do backend para calcular perguntas de hoje ────────────
+// ── Seeded RNG — replica do backend para calcular perguntas desta semana ────────
 
 function mulberry32(seed: number) {
   return function () {
@@ -34,19 +35,34 @@ function mulberry32(seed: number) {
   }
 }
 
-function todaySeed() {
+/** Segunda-feira desta semana em Brasília (UTC-3) como número YYYYMMDD */
+function weekSeed(): number {
   const now = new Date(Date.now() - 3 * 60 * 60 * 1000)
+  const day = now.getUTCDay() // 0 = dom
+  const monday = new Date(now)
+  monday.setUTCDate(now.getUTCDate() - (day === 0 ? 6 : day - 1))
   return (
-    now.getUTCFullYear() * 10000 +
-    (now.getUTCMonth() + 1) * 100 +
-    now.getUTCDate()
+    monday.getUTCFullYear() * 10000 +
+    (monday.getUTCMonth() + 1) * 100 +
+    monday.getUTCDate()
   )
 }
 
-function computeTodayIds(all: QuizAdminQuestion[]): Set<number> {
+/** Rótulo da segunda-feira desta semana para exibição */
+function weekLabel(): string {
+  const now = new Date(Date.now() - 3 * 60 * 60 * 1000)
+  const day = now.getUTCDay()
+  const monday = new Date(now)
+  monday.setUTCDate(now.getUTCDate() - (day === 0 ? 6 : day - 1))
+  return monday.toLocaleDateString('pt-BR', {
+    day: '2-digit', month: 'short', timeZone: 'UTC'
+  })
+}
+
+function computeWeekIds(all: QuizAdminQuestion[]): Set<number> {
   const active = all.filter(q => q.active === 1).sort((a, b) => a.id - b.id)
   if (active.length < 5) return new Set()
-  const rand     = mulberry32(todaySeed())
+  const rand     = mulberry32(weekSeed())
   const shuffled = [...active].sort(() => rand() - 0.5)
   return new Set(shuffled.slice(0, 5).map(q => q.id))
 }
@@ -225,7 +241,7 @@ function QuestionForm({
         <label className="flex items-center justify-between rounded-xl border border-border px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors">
           <div>
             <p className="text-sm font-medium text-foreground">Pergunta ativa</p>
-            <p className="text-xs text-muted-foreground">Inativa não entra no sorteio diário</p>
+            <p className="text-xs text-muted-foreground">Inativa não entra no sorteio semanal</p>
           </div>
           <button
             type="button"
@@ -261,18 +277,23 @@ function QuestionForm({
 
 function QuestionCard({
   q,
-  isToday,
+  isWeek,
   onEdit,
   onToggle,
+  onDelete,
   isToggling,
+  isDeleting,
 }: {
   q:          QuizAdminQuestion
-  isToday:    boolean
+  isWeek:     boolean
   onEdit:     () => void
   onToggle:   () => void
+  onDelete:   () => void
   isToggling: boolean
+  isDeleting: boolean
 }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded,   setExpanded]   = useState(false)
+  const [confirmDel, setConfirmDel] = useState(false)
   const active = q.active === 1
 
   return (
@@ -282,7 +303,7 @@ function QuestionCard({
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         'rounded-2xl border bg-card transition-colors duration-150',
-        isToday
+        isWeek
           ? 'border-violet-400/60 ring-1 ring-violet-400/30 dark:border-violet-600/50'
           : 'border-border',
         !active && 'opacity-60',
@@ -306,10 +327,10 @@ function QuestionCard({
 
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-1.5 mt-2">
-            {isToday && (
+            {isWeek && (
               <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 dark:bg-violet-950/50 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:text-violet-300">
                 <CalendarDays className="h-2.5 w-2.5" />
-                Hoje
+                Esta semana
               </span>
             )}
             <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground capitalize">
@@ -348,6 +369,34 @@ function QuestionCard({
               ? <ToggleRight className="h-4 w-4 text-emerald-600" />
               : <ToggleLeft  className="h-4 w-4" />}
           </button>
+          {/* Delete com confirmação inline */}
+          {confirmDel ? (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => { onDelete(); setConfirmDel(false) }}
+                disabled={isDeleting}
+                className="flex items-center gap-1 rounded-lg bg-rose-600 hover:bg-rose-700 px-2 h-7 text-[11px] font-semibold text-white transition-colors disabled:opacity-50"
+                title="Confirmar exclusão"
+              >
+                {isDeleting ? '…' : 'Excluir'}
+              </button>
+              <button
+                onClick={() => setConfirmDel(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent"
+                title="Cancelar"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDel(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600"
+              title="Excluir permanentemente"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
           <button
             onClick={() => setExpanded(e => !e)}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -686,14 +735,15 @@ export function AdminQuizPage() {
     staleTime: 30_000,
   })
 
-  const todayIds = useMemo(() => computeTodayIds(questions), [questions])
+  const weekIds  = useMemo(() => computeWeekIds(questions), [questions])
+  const weekLbl  = useMemo(() => weekLabel(), [])
 
   // ── Filters ──
-  const [search,          setSearch]          = useState('')
-  const [filterCategory,  setFilterCategory]  = useState('all')
-  const [filterDifficulty,setFilterDifficulty]= useState('all')
-  const [filterStatus,    setFilterStatus]    = useState<FilterStatus>('all')
-  const [showTodayOnly,   setShowTodayOnly]   = useState(false)
+  const [search,           setSearch]           = useState('')
+  const [filterCategory,   setFilterCategory]   = useState('all')
+  const [filterDifficulty, setFilterDifficulty] = useState('all')
+  const [filterStatus,     setFilterStatus]     = useState<FilterStatus>('all')
+  const [showWeekOnly,     setShowWeekOnly]     = useState(false)
 
   // ── Panel ──
   const [panelOpen,   setPanelOpen]   = useState(false)
@@ -701,6 +751,7 @@ export function AdminQuizPage() {
   const [editingQ,    setEditingQ]    = useState<QuizAdminQuestion | null>(null)
   const [form,        setForm]        = useState<FormState>(EMPTY_FORM)
   const [togglingId,  setTogglingId]  = useState<number | null>(null)
+  const [deletingId,  setDeletingId]  = useState<number | null>(null)
 
   // ── Stats ──
   const total      = questions.length
@@ -712,7 +763,7 @@ export function AdminQuizPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return questions.filter(item => {
-      if (showTodayOnly && !todayIds.has(item.id)) return false
+      if (showWeekOnly && !weekIds.has(item.id)) return false
       if (filterCategory   !== 'all' && item.category   !== filterCategory)   return false
       if (filterDifficulty !== 'all' && item.difficulty !== filterDifficulty) return false
       if (filterStatus === 'active'   && item.active !== 1) return false
@@ -720,9 +771,9 @@ export function AdminQuizPage() {
       if (q && !item.question.toLowerCase().includes(q) && !item.category.toLowerCase().includes(q)) return false
       return true
     })
-  }, [questions, search, filterCategory, filterDifficulty, filterStatus, showTodayOnly, todayIds])
+  }, [questions, search, filterCategory, filterDifficulty, filterStatus, showWeekOnly, weekIds])
 
-  const hasFilters = search || filterCategory !== 'all' || filterDifficulty !== 'all' || filterStatus !== 'all' || showTodayOnly
+  const hasFilters = search || filterCategory !== 'all' || filterDifficulty !== 'all' || filterStatus !== 'all' || showWeekOnly
 
   // ── Mutations ──
   const createMutation = useMutation({
@@ -742,6 +793,22 @@ export function AdminQuizPage() {
       setTogglingId(null)
     },
   })
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteAdminQuizQuestion,
+    onSuccess: () => {
+      qClient.invalidateQueries({ queryKey: ['admin', 'quiz', 'questions'] })
+      setDeletingId(null)
+    },
+    onError: () => {
+      setDeletingId(null)
+    },
+  })
+
+  function handleDelete(q: QuizAdminQuestion) {
+    setDeletingId(q.id)
+    deleteMutation.mutate(q.id)
+  }
 
   function openCreate() {
     setEditingQ(null)
@@ -786,8 +853,8 @@ export function AdminQuizPage() {
       {/* Hero */}
       <PageHero
         icon={Brain}
-        title="Quiz do Dia"
-        subtitle="Gerencie o banco de perguntas · seleção automática diária por sorteio semeado"
+        title="Quiz da Semana"
+        subtitle={`Gerencie o banco de perguntas · 5 perguntas sorteiadas toda segunda-feira · semana de ${weekLbl}`}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -808,10 +875,10 @@ export function AdminQuizPage() {
           </div>
         }
         stats={[
-          { icon: Brain,        value: total,        label: 'Total',       tone: 'primary' },
-          { icon: CheckCircle2, value: activeCount,   label: 'Ativas',      tone: 'green'   },
-          { icon: XCircle,      value: inactiveCount, label: 'Inativas',    tone: 'muted'   },
-          { icon: CalendarDays, value: todayIds.size, label: 'Hoje',        tone: 'amber'   },
+          { icon: Brain,        value: total,        label: 'Total',         tone: 'primary' },
+          { icon: CheckCircle2, value: activeCount,   label: 'Ativas',        tone: 'green'   },
+          { icon: XCircle,      value: inactiveCount, label: 'Inativas',      tone: 'muted'   },
+          { icon: CalendarDays, value: weekIds.size,  label: 'Esta semana',   tone: 'amber'   },
         ]}
       />
 
@@ -863,18 +930,18 @@ export function AdminQuizPage() {
           <option value="inactive">Inativas</option>
         </Select>
 
-        {/* Hoje */}
+        {/* Esta semana */}
         <button
-          onClick={() => setShowTodayOnly(o => !o)}
+          onClick={() => setShowWeekOnly(o => !o)}
           className={cn(
             'flex items-center gap-1.5 rounded-xl border px-3 h-9 text-sm font-medium transition-colors',
-            showTodayOnly
+            showWeekOnly
               ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300'
               : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground',
           )}
         >
           <CalendarDays className="h-3.5 w-3.5" />
-          Hoje
+          Esta semana
         </button>
 
         {/* Limpar filtros */}
@@ -885,7 +952,7 @@ export function AdminQuizPage() {
               setFilterCategory('all')
               setFilterDifficulty('all')
               setFilterStatus('all')
-              setShowTodayOnly(false)
+              setShowWeekOnly(false)
             }}
             className="flex items-center gap-1 rounded-xl border border-border px-3 h-9 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
           >
@@ -918,7 +985,7 @@ export function AdminQuizPage() {
           <div>
             <p className="text-sm font-medium text-foreground">Nenhuma pergunta encontrada</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {hasFilters ? 'Tente ajustar os filtros.' : 'Crie a primeira pergunta do banco.'}
+              {hasFilters ? 'Tente ajustar os filtros.' : 'Adicione perguntas ao banco para o quiz funcionar.'}
             </p>
           </div>
           {!hasFilters && (
@@ -935,10 +1002,12 @@ export function AdminQuizPage() {
               <QuestionCard
                 key={q.id}
                 q={q}
-                isToday={todayIds.has(q.id)}
+                isWeek={weekIds.has(q.id)}
                 onEdit={() => openEdit(q)}
                 onToggle={() => handleToggle(q)}
+                onDelete={() => handleDelete(q)}
                 isToggling={togglingId === q.id && updateMutation.isPending}
+                isDeleting={deletingId === q.id && deleteMutation.isPending}
               />
             ))}
           </AnimatePresence>
@@ -963,7 +1032,7 @@ export function AdminQuizPage() {
             <SheetDescription>
               {editingQ
                 ? 'Altere os campos e salve para atualizar no banco.'
-                : 'A pergunta entra no pool de sorteio assim que for criada.'}
+                : 'A pergunta entra no pool de sorteio semanal assim que for criada.'}
             </SheetDescription>
           </SheetHeader>
           <QuestionForm

@@ -2,6 +2,7 @@ import { api } from '@/lib/api'
 import type {
   QuizToday,
   QuizRanking,
+  QuizRankingEntry,
   QuizSubmitAnswer,
   QuizSubmitResult,
   QuizAdminQuestion,
@@ -17,6 +18,16 @@ export async function submitQuiz(answers: QuizSubmitAnswer[]): Promise<QuizSubmi
 
 export async function getQuizRanking(): Promise<QuizRanking> {
   return api.get<QuizRanking>('/quiz/ranking')
+}
+
+export interface QuizHistoryMonth {
+  month: string
+  label: string
+  ranking: (QuizRankingEntry & { position: number })[]
+}
+
+export async function getQuizHistory(): Promise<QuizHistoryMonth[]> {
+  return api.get<QuizHistoryMonth[]>('/quiz/history')
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────────
@@ -42,4 +53,8 @@ export async function importAdminQuizQuestions(
   questions: Omit<QuizAdminQuestion, 'id' | 'active'>[],
 ): Promise<{ imported: number; ids: number[] }> {
   return api.post<{ imported: number; ids: number[] }>('/quiz/questions/import', { questions })
+}
+
+export async function deleteAdminQuizQuestion(id: number): Promise<{ ok: boolean }> {
+  return api.delete<{ ok: boolean }>(`/quiz/questions/${id}`)
 }

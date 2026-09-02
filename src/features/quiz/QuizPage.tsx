@@ -52,10 +52,13 @@ function IntroScreen({
   ranking?: QuizRanking
   user?:    UserModel | null
 }) {
-  const myEntry   = ranking?.weekly.find(e => e.userId === user?.id)
-  const daysPlayed = myEntry?.daysPlayed ?? 0
-  const weekPct   = Math.min(100, Math.round((daysPlayed / 7) * 100))
-  const top3      = ranking?.weekly.slice(0, 3) ?? []
+  // Ranking mensal — mostra o top 3 do mês na intro
+  const top3Monthly = ranking?.monthly.slice(0, 3) ?? []
+  const myMonthly   = ranking?.monthly.find(e => e.userId === user?.id)
+  const weeksPlayed = myMonthly?.weeksPlayed ?? 0
+  // Estima quantas semanas há no mês (aprox. 4–5)
+  const WEEKS_IN_MONTH = 5
+  const monthPct = Math.min(100, Math.round((weeksPlayed / WEEKS_IN_MONTH) * 100))
 
   return (
     <motion.div
@@ -70,22 +73,22 @@ function IntroScreen({
         <div className="flex items-center gap-3.5 mb-5">
           <span className="text-4xl leading-none">🧠</span>
           <div>
-            <h2 className="text-lg font-semibold text-foreground leading-tight">Quiz do Dia</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Ranking semanal · uma tentativa por dia</p>
+            <h2 className="text-lg font-semibold text-foreground leading-tight">Quiz da Semana</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Ranking mensal · uma tentativa por semana</p>
           </div>
         </div>
 
-        {/* Barra de progresso semanal (só exibe se jogou algum dia) */}
-        {daysPlayed > 0 && (
+        {/* Progresso mensal (só exibe se já jogou ao menos uma semana) */}
+        {weeksPlayed > 0 && (
           <div className="mb-5">
             <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-              <span>Progresso desta semana</span>
-              <span>{daysPlayed} de 7 dias</span>
+              <span>Suas semanas este mês</span>
+              <span>{weeksPlayed} semana{weeksPlayed !== 1 ? 's' : ''} jogada{weeksPlayed !== 1 ? 's' : ''}</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-border overflow-hidden">
               <div
                 className="h-full rounded-full bg-violet-500 transition-all duration-500"
-                style={{ width: `${weekPct}%` }}
+                style={{ width: `${monthPct}%` }}
               />
             </div>
           </div>
@@ -93,7 +96,7 @@ function IntroScreen({
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 mb-5">
-          {([['5', 'perguntas'], ['15s', 'por questão'], ['1000', 'pts máx.']] as const).map(([n, l]) => (
+          {([['5', 'perguntas'], ['15s', 'por questão'], ['1000', 'pts/semana']] as const).map(([n, l]) => (
             <div key={l} className="rounded-xl bg-muted/40 px-2 py-3 text-center border border-border/60">
               <span className="block text-lg font-semibold text-foreground leading-tight">{n}</span>
               <span className="block text-[11px] text-muted-foreground mt-0.5">{l}</span>
@@ -109,14 +112,14 @@ function IntroScreen({
         </Button>
       </div>
 
-      {/* Ranking preview */}
-      {top3.length > 0 && (
+      {/* Ranking mensal preview */}
+      {top3Monthly.length > 0 && (
         <div className="rounded-2xl border border-border bg-card px-4 py-3.5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Ranking desta semana
+            Ranking mensal
           </p>
           <div className="flex flex-col gap-2.5">
-            {top3.map((entry, i) => (
+            {top3Monthly.map((entry, i) => (
               <div key={entry.userId} className="flex items-center gap-2.5">
                 <span className="text-sm w-5 text-center shrink-0">{MEDAL[i]}</span>
                 <UserAvatar name={entry.name} photoUrl={entry.photoUrl} size="sm" className="h-7 w-7 shrink-0" />
@@ -178,11 +181,16 @@ function ResultScreen({
           <span className="text-lg text-muted-foreground font-normal"> / 1.000 pts</span>
         </p>
         <p className="text-sm text-muted-foreground mt-1">
-          {correct}/{TOTAL_QUESTIONS} acertos · posição semana: {' '}
+          {correct}/{TOTAL_QUESTIONS} acertos · posição mensal:{' '}
           <span className="font-semibold text-foreground">
             {ranking?.myPosition ? `${ranking.myPosition}°` : '—'}
           </span>
         </p>
+        {ranking && ranking.myMonthlyScore > score && (
+          <p className="text-xs text-violet-600 dark:text-violet-400 mt-1 font-medium">
+            Total acumulado este mês: {ranking.myMonthlyScore.toLocaleString('pt-BR')} pts
+          </p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -226,11 +234,11 @@ function ResultScreen({
           </div>
         </div>
 
-        {/* Ranking semanal */}
+        {/* Ranking mensal */}
         <div className="rounded-2xl border border-border bg-card overflow-hidden">
           <div className="px-4 py-3 border-b border-border bg-muted/30">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Ranking semanal
+              Ranking mensal
             </p>
           </div>
           <div className="divide-y divide-border">
@@ -243,7 +251,7 @@ function ResultScreen({
                   <Skeleton className="h-3 w-10 rounded" />
                 </div>
               ))
-            ) : ranking.weekly.slice(0, 8).map((entry, i) => (
+            ) : ranking.monthly.slice(0, 8).map((entry, i) => (
               <div
                 key={entry.userId}
                 className={cn(
@@ -415,8 +423,8 @@ export function QuizPage() {
       <div className="flex items-center gap-3">
         <span className="text-2xl">🧠</span>
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Quiz do Dia</h1>
-          <p className="text-xs text-muted-foreground">Ranking semanal · uma tentativa por dia</p>
+          <h1 className="text-xl font-semibold text-foreground">Quiz da Semana</h1>
+          <p className="text-xs text-muted-foreground">Ranking mensal · uma tentativa por semana</p>
         </div>
       </div>
 

@@ -246,13 +246,14 @@ export interface QuizAnswerResult {
 
 export interface QuizTodayPending {
   status: 'pending'
-  date: string
+  weekStartDate: string
   questions: QuizQuestion[]
 }
 
 export interface QuizTodayPlayed {
   status: 'played'
   score: number
+  weekStartDate: string
   answers: QuizAnswerResult[]
 }
 
@@ -264,15 +265,21 @@ export interface QuizRankingEntry {
   name: string
   photoUrl: string | null
   totalScore: number
-  daysPlayed: number
+  /** Quantas semanas do mês o usuário já jogou */
+  weeksPlayed: number
 }
 
 export interface QuizRanking {
+  /** Top da semana atual */
   weekly: QuizRankingEntry[]
+  /** Ranking acumulado do mês (soma de todas as semanas) */
+  monthly: QuizRankingEntry[]
   myPosition: number | null
-  myWeeklyScore: number
-  todayScore: number | null
+  myMonthlyScore: number
+  /** Pontuação desta semana (null se ainda não jogou esta semana) */
+  weekScore: number | null
   weekStartDate: string
+  monthStartDate: string
 }
 
 export interface QuizSubmitAnswer {
