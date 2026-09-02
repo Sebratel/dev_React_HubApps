@@ -10,6 +10,7 @@
 const express = require('express')
 const router  = express.Router()
 const { requireAuth, requireAdmin } = require('../middleware/auth')
+const pool = require('../db/pool')
 
 // ── Seeded random (Mulberry32) ────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ function selectTodaysQuestions(all, n = 5) {
 // ── GET /quiz/today ───────────────────────────────────────────────────────────
 
 router.get('/today', requireAuth, async (req, res) => {
-  const { pool } = req.app.locals
+
   const userId   = req.uid
 
   let conn
@@ -121,7 +122,7 @@ router.get('/today', requireAuth, async (req, res) => {
 // ── POST /quiz/submit ─────────────────────────────────────────────────────────
 
 router.post('/submit', requireAuth, async (req, res) => {
-  const { pool } = req.app.locals
+
   const userId   = req.uid
   const today    = todayDate()
 
@@ -197,7 +198,7 @@ router.post('/submit', requireAuth, async (req, res) => {
 // ── GET /quiz/ranking ─────────────────────────────────────────────────────────
 
 router.get('/ranking', requireAuth, async (req, res) => {
-  const { pool } = req.app.locals
+
   const userId   = req.uid
 
   let conn
@@ -258,7 +259,7 @@ router.get('/ranking', requireAuth, async (req, res) => {
 // ── Admin: GET /quiz/questions ────────────────────────────────────────────────
 
 router.get('/questions', requireAuth, requireAdmin, async (req, res) => {
-  const { pool } = req.app.locals
+
   let conn
   try {
     conn = await pool.getConnection()
@@ -275,7 +276,7 @@ router.get('/questions', requireAuth, requireAdmin, async (req, res) => {
 // ── Admin: POST /quiz/questions ───────────────────────────────────────────────
 
 router.post('/questions', requireAuth, requireAdmin, async (req, res) => {
-  const { pool } = req.app.locals
+
   const { question, option_a, option_b, option_c, option_d, correct, category, difficulty } = req.body
 
   if (!question || !option_a || !option_b || !option_c || !option_d
@@ -305,7 +306,7 @@ router.post('/questions', requireAuth, requireAdmin, async (req, res) => {
 // ── Admin: DELETE /quiz/questions/:id ─────────────────────────────────────────
 
 router.delete('/questions/:id', requireAuth, requireAdmin, async (req, res) => {
-  const { pool } = req.app.locals
+
   let conn
   try {
     conn = await pool.getConnection()
