@@ -316,10 +316,12 @@ function ResultScreen({
       </div>
 
       {/* ── Gabarito ───────────────────────────────────────────────────────── */}
+      {/* As respostas corretas só são reveladas após a semana encerrar (próxima segunda).
+          Enquanto isso, mostra apenas acerto/erro para não ajudar quem ainda não jogou. */}
       <div className="rounded-2xl border border-border bg-card overflow-hidden">
         <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Gabarito
+            Resultado desta semana
           </p>
           <span className="text-xs text-muted-foreground">
             {correct}/{TOTAL_QUESTIONS} acertos
@@ -327,10 +329,8 @@ function ResultScreen({
         </div>
         <div className="divide-y divide-border">
           {answers.map((ans, i) => {
-            const q          = questions.find(q => q.id === ans.questionId)
-            const isRight    = ans.pts > 0
-            const correctKey = ans.correct ?? ans.correctAnswer
-            const correctTxt = q?.options[correctKey as keyof typeof q.options] ?? ''
+            const q       = questions.find(q => q.id === ans.questionId)
+            const isRight = ans.pts > 0
             return (
               <div key={ans.questionId} className="px-4 py-3.5 flex items-start gap-3">
                 <div className={cn(
@@ -347,10 +347,8 @@ function ResultScreen({
                     {q?.question ?? ans.question}
                   </p>
                   {!isRight && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Resposta:{' '}
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 uppercase">{correctKey}</span>
-                      {correctTxt && <span className="text-muted-foreground"> — {correctTxt}</span>}
+                    <p className="text-xs text-muted-foreground/60 mt-0.5 italic">
+                      Resposta revelada na próxima segunda-feira
                     </p>
                   )}
                 </div>
@@ -363,6 +361,17 @@ function ResultScreen({
             )
           })}
         </div>
+        {/* Banner de revelação */}
+        {nextMondayLabel && correct < TOTAL_QUESTIONS && (
+          <div className="px-4 py-3 border-t border-border bg-amber-50/60 dark:bg-amber-950/15 flex items-center gap-2.5">
+            <span className="text-base shrink-0">🔒</span>
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              O gabarito completo será revelado{' '}
+              <span className="font-semibold capitalize">{nextMondayLabel}</span>,
+              quando a nova rodada começar.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* ── Como funciona ──────────────────────────────────────────────────── */}
