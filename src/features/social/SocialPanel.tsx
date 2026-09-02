@@ -27,11 +27,15 @@ export function SocialPanel() {
   const [activeTab, setActiveTab] = useState<SocialTab>('mvp')
   const panelRef                  = useRef<HTMLDivElement>(null)
 
-  // Fecha ao clicar fora
+  // Fecha ao clicar fora — mas NÃO fecha se o clique foi dentro de um
+  // diálogo/modal (portais Radix renderizam fora do panelRef no document.body)
   useEffect(() => {
     if (!open) return
     function handler(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+      const target = e.target as Element
+      // Se o clique foi dentro de qualquer dialog/modal aberto, ignora
+      if (target.closest('[role="dialog"]')) return
+      if (panelRef.current && !panelRef.current.contains(target)) {
         setOpen(false)
       }
     }
@@ -39,11 +43,14 @@ export function SocialPanel() {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  // Fecha no Escape
+  // Fecha no Escape — mas NÃO fecha se um dialog/modal está aberto
+  // (o Radix já trata o Escape do próprio modal e não deve fechar o painel junto)
   useEffect(() => {
     if (!open) return
     function handler(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key !== 'Escape') return
+      if (document.querySelector('[role="dialog"]')) return
+      setOpen(false)
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
