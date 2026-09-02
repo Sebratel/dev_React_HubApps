@@ -335,7 +335,7 @@ router.get('/history', requireAuth, async (req, res) => {
       .map(([month, ranking]) => ({
         month,
         label: new Date(`${month}-15`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
-        ranking: (ranking as any[]).map((r, i) => ({ position: i + 1, ...r })),
+        ranking: ranking.map((r, i) => ({ position: i + 1, ...r })),
       }))
 
     res.json(history)
