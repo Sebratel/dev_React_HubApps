@@ -249,18 +249,21 @@ router.get('/ranking', requireAuth, async (req, res) => {
        LIMIT 20
     `, [ws, ws])
 
-    // Ranking mensal — acumula todas as semanas do mês
+    // Ranking mensal — acumula todas as semanas cujo DOMINGO cai no mês atual.
+    // Uma semana que começa em agosto (ex: 31/08) mas termina em setembro (06/09)
+    // pertence a setembro: DATE_ADD(played_date, INTERVAL 6 DAY) >= monthStart.
     const [monthly] = await conn.query(`
       SELECT a.user_id, u.name, u.photo_url,
              SUM(a.score) AS total_score,
              COUNT(*)     AS weeks_played
         FROM quiz_attempts a
         LEFT JOIN users u ON u.id = a.user_id
-       WHERE a.played_date >= ?
+       WHERE DATE_ADD(a.played_date, INTERVAL 6 DAY) >= ?
+         AND DATE_ADD(a.played_date, INTERVAL 6 DAY) < DATE_ADD(?, INTERVAL 1 MONTH)
        GROUP BY a.user_id
        ORDER BY total_score DESC
        LIMIT 20
-    `, [ms])
+    `, [ms, ms])
 
     // Dados do usuário atual nesta semana
     const [[weekAttempt]] = await conn.query(
@@ -314,15 +317,16 @@ router.get('/history', requireAuth, async (req, res) => {
   try {
     conn = await pool.getConnection()
 
-    // Busca todos os meses anteriores ao atual
+    // Busca meses anteriores ao atual agrupando pelo mês em que o DOMINGO da semana cai.
+    // Ex: semana que começa 31/ago e termina 06/set → agrupa em setembro.
     const [rows] = await conn.query(`
-      SELECT DATE_FORMAT(a.played_date, '%Y-%m') AS month,
+      SELECT DATE_FORMAT(DATE_ADD(a.played_date, INTERVAL 6 DAY), '%Y-%m') AS month,
              a.user_id, u.name, u.photo_url,
              SUM(a.score) AS total_score,
              COUNT(*)     AS weeks_played
         FROM quiz_attempts a
         LEFT JOIN users u ON u.id = a.user_id
-       WHERE DATE_FORMAT(a.played_date, '%Y-%m') < DATE_FORMAT(?, '%Y-%m')
+       WHERE DATE_ADD(a.played_date, INTERVAL 6 DAY) < ?
        GROUP BY month, a.user_id
        ORDER BY month DESC, total_score DESC
     `, [ms])
