@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { UserAvatar } from '@/components/UserAvatar'
 import { useAuthStore } from '@/stores/auth.store'
 import { getTodayQuiz, submitQuiz, getQuizRanking } from '@/services/quiz.service'
-import type { QuizQuestion, QuizSubmitAnswer, QuizAnswerResult } from '@/types/models'
+import type { QuizQuestion, QuizSubmitAnswer, QuizAnswerResult, QuizRanking, UserModel } from '@/types/models'
 import { cn } from '@/lib/utils'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
@@ -43,46 +43,94 @@ function TimerBar({ timeLeft }: { timeLeft: number }) {
 
 // ── Tela de intro ─────────────────────────────────────────────────────────────
 
-function IntroScreen({ onStart }: { onStart: () => void }) {
+function IntroScreen({
+  onStart,
+  ranking,
+  user,
+}: {
+  onStart:  () => void
+  ranking?: QuizRanking
+  user?:    UserModel | null
+}) {
+  const myEntry   = ranking?.weekly.find(e => e.userId === user?.id)
+  const daysPlayed = myEntry?.daysPlayed ?? 0
+  const weekPct   = Math.min(100, Math.round((daysPlayed / 7) * 100))
+  const top3      = ranking?.weekly.slice(0, 3) ?? []
+
   return (
     <motion.div
       key="intro"
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center gap-6 py-8 text-center max-w-sm mx-auto"
+      className="flex flex-col gap-3 w-full"
     >
-      <span className="text-6xl">🧠</span>
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground mb-2">Quiz do Dia</h1>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          5 perguntas · 15 segundos cada · pontos por acerto + velocidade.<br />
-          Apenas uma tentativa por dia. Boa sorte!
-        </p>
+      {/* Card principal */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        {/* Header */}
+        <div className="flex items-center gap-3.5 mb-5">
+          <span className="text-4xl leading-none">🧠</span>
+          <div>
+            <h2 className="text-lg font-semibold text-foreground leading-tight">Quiz do Dia</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Ranking semanal · uma tentativa por dia</p>
+          </div>
+        </div>
+
+        {/* Barra de progresso semanal (só exibe se jogou algum dia) */}
+        {daysPlayed > 0 && (
+          <div className="mb-5">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+              <span>Progresso desta semana</span>
+              <span>{daysPlayed} de 7 dias</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-border overflow-hidden">
+              <div
+                className="h-full rounded-full bg-violet-500 transition-all duration-500"
+                style={{ width: `${weekPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {([['5', 'perguntas'], ['15s', 'por questão'], ['1000', 'pts máx.']] as const).map(([n, l]) => (
+            <div key={l} className="rounded-xl bg-muted/40 px-2 py-3 text-center border border-border/60">
+              <span className="block text-lg font-semibold text-foreground leading-tight">{n}</span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">{l}</span>
+            </div>
+          ))}
+        </div>
+
+        <Button
+          className="w-full bg-violet-600 hover:bg-violet-700 text-white border-transparent"
+          onClick={onStart}
+        >
+          Começar
+        </Button>
       </div>
 
-      <div className="flex items-center gap-6 text-sm text-muted-foreground">
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-2xl font-semibold text-foreground">5</span>
-          <span>perguntas</span>
+      {/* Ranking preview */}
+      {top3.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card px-4 py-3.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            Ranking desta semana
+          </p>
+          <div className="flex flex-col gap-2.5">
+            {top3.map((entry, i) => (
+              <div key={entry.userId} className="flex items-center gap-2.5">
+                <span className="text-sm w-5 text-center shrink-0">{MEDAL[i]}</span>
+                <UserAvatar name={entry.name} photoUrl={entry.photoUrl} size="sm" className="h-7 w-7 shrink-0" />
+                <span className={cn('text-sm flex-1 truncate', entry.userId === user?.id && 'font-semibold text-violet-700 dark:text-violet-300')}>
+                  {entry.userId === user?.id ? 'Você' : entry.name}
+                </span>
+                <span className="text-xs font-semibold text-muted-foreground tabular-nums shrink-0">
+                  {entry.totalScore.toLocaleString('pt-BR')} pts
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="h-8 w-px bg-border" />
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-2xl font-semibold text-foreground">15s</span>
-          <span>por questão</span>
-        </div>
-        <div className="h-8 w-px bg-border" />
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-2xl font-semibold text-foreground">1000</span>
-          <span>pts máx.</span>
-        </div>
-      </div>
-
-      <Button
-        className="w-full gap-2 bg-violet-600 hover:bg-violet-700 text-white border-transparent"
-        onClick={onStart}
-      >
-        Começar
-      </Button>
+      )}
     </motion.div>
   )
 }
@@ -257,6 +305,14 @@ export function QuizPage() {
     staleTime: 60_000,
   })
 
+  // Ranking — usado na intro e no resultado
+  const { data: ranking } = useQuery({
+    queryKey:  ['quiz', 'ranking'],
+    queryFn:   getQuizRanking,
+    enabled:   !!user,
+    staleTime: 30_000,
+  })
+
   useEffect(() => {
     if (isLoading) { setPhase('loading'); return }
     if (isError)   { setPhase('error');   return }
@@ -403,6 +459,8 @@ export function QuizPage() {
         {phase === 'intro' && (
           <IntroScreen
             key="intro"
+            ranking={ranking}
+            user={user}
             onStart={() => {
               setCurrentQ(0)
               setAccumulated([])
