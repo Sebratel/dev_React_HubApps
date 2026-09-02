@@ -67,6 +67,243 @@ function computeWeekIds(all: QuizAdminQuestion[]): Set<number> {
   return new Set(shuffled.slice(0, 5).map(q => q.id))
 }
 
+/** Retorna as 5 perguntas selecionadas para um seed específico */
+function computeQuestionsForSeed(seed: number, all: QuizAdminQuestion[]): QuizAdminQuestion[] {
+  const active = all.filter(q => q.active === 1).sort((a, b) => a.id - b.id)
+  if (active.length < 5) return []
+  const rand = mulberry32(seed)
+  return [...active].sort(() => rand() - 0.5).slice(0, 5)
+}
+
+interface WeekInfo {
+  weekStart:  string  // YYYY-MM-DD
+  weekEnd:    string
+  seed:       number
+  label:      string
+  sublabel:   string  // ex: "atual" | "próxima" | "em 2 semanas"
+  isCurrent:  boolean
+  startLabel: string  // ex: "01 set"
+  endLabel:   string  // ex: "07 set"
+}
+
+function getUpcomingWeeks(count = 5): WeekInfo[] {
+  const now = new Date(Date.now() - 3 * 60 * 60 * 1000)
+  const day = now.getUTCDay()
+  const base = new Date(now)
+  base.setUTCDate(now.getUTCDate() - (day === 0 ? 6 : day - 1))
+
+  const sublabels = ['Atual', 'Próxima', 'Em 2 sem.', 'Em 3 sem.', 'Em 4 sem.']
+
+  return Array.from({ length: count }, (_, i) => {
+    const start = new Date(base)
+    start.setUTCDate(base.getUTCDate() + i * 7)
+    const end = new Date(start)
+    end.setUTCDate(start.getUTCDate() + 6)
+
+    const fmt = (d: Date) =>
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+
+    const ws = fmt(start)
+    return {
+      weekStart:  ws,
+      weekEnd:    fmt(end),
+      seed:       parseInt(ws.replace(/-/g, ''), 10),
+      label:      start.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' })
+                + ' – '
+                + end.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' }),
+      sublabel:   sublabels[i] ?? `Em ${i} sem.`,
+      isCurrent:  i === 0,
+      startLabel: start.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' }),
+      endLabel:   end.toLocaleDateString('pt-BR',   { day: '2-digit', month: 'short', timeZone: 'UTC' }),
+    }
+  })
+}
+
+// ── Componente: calendário semanal ────────────────────────────────────────────
+
+function WeekCalendar({ questions }: { questions: QuizAdminQuestion[] }) {
+  const [selectedIdx, setSelectedIdx] = useState(0)
+  const [expandedId,  setExpandedId]  = useState<number | null>(null)
+
+  const weeks       = useMemo(() => getUpcomingWeeks(5), [])
+  const weekQuestions = useMemo(
+    () => weeks.map(w => computeQuestionsForSeed(w.seed, questions)),
+    [weeks, questions],
+  )
+
+  const activeCount = questions.filter(q => q.active === 1).length
+  const current     = weeks[selectedIdx]
+  const currentQs   = weekQuestions[selectedIdx]
+
+  return (
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-violet-500 shrink-0" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Planejamento semanal
+          </p>
+        </div>
+        <p className="text-[11px] text-muted-foreground hidden sm:block">
+          Seleção determinística · muda ao ativar/desativar perguntas
+        </p>
+      </div>
+
+      {/* Warning: insufficient questions */}
+      {activeCount < 5 && (
+        <div className="px-4 py-3.5 flex items-center gap-3 bg-amber-50/60 dark:bg-amber-950/15 border-b border-amber-200 dark:border-amber-900">
+          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+          <p className="text-xs text-amber-800 dark:text-amber-300">
+            <span className="font-semibold">Atenção:</span> são necessárias pelo menos 5 perguntas ativas.
+            Há apenas {activeCount} ativa{activeCount !== 1 ? 's' : ''} no momento.
+          </p>
+        </div>
+      )}
+
+      {/* Week tabs — scroll horizontal em mobile */}
+      <div className="flex border-b border-border overflow-x-auto scrollbar-none">
+        {weeks.map((w, i) => (
+          <button
+            key={w.weekStart}
+            onClick={() => { setSelectedIdx(i); setExpandedId(null) }}
+            className={cn(
+              'flex flex-col items-start px-4 py-3 text-left transition-colors shrink-0 min-w-[130px] relative',
+              selectedIdx === i
+                ? 'bg-violet-50/70 dark:bg-violet-950/20'
+                : 'hover:bg-muted/30',
+            )}
+          >
+            {/* Active indicator underline */}
+            {selectedIdx === i && (
+              <span className="absolute bottom-0 inset-x-0 h-0.5 bg-violet-500" />
+            )}
+            <div className="flex items-center gap-1.5 mb-0.5">
+              {w.isCurrent && (
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500 shrink-0" />
+              )}
+              <span className={cn(
+                'text-[11px] font-bold uppercase tracking-wider',
+                selectedIdx === i
+                  ? 'text-violet-700 dark:text-violet-300'
+                  : w.isCurrent
+                  ? 'text-foreground'
+                  : 'text-muted-foreground',
+              )}>
+                {w.sublabel}
+              </span>
+            </div>
+            <span className="text-[11px] text-muted-foreground">
+              {w.startLabel} – {w.endLabel}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Questions for selected week */}
+      {activeCount < 5 ? (
+        <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+          Adicione perguntas ativas para ver a seleção.
+        </div>
+      ) : (
+        <div className="divide-y divide-border">
+          {currentQs.map((q, i) => {
+            const isExpanded = expandedId === q.id
+            return (
+              <div key={q.id} className="group">
+                <button
+                  onClick={() => setExpandedId(isExpanded ? null : q.id)}
+                  className="w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-muted/20 transition-colors"
+                >
+                  {/* Número */}
+                  <span className="flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950/40 text-[10px] font-bold text-violet-600 dark:text-violet-400">
+                    {i + 1}
+                  </span>
+
+                  <div className="flex-1 min-w-0">
+                    <p className={cn('text-sm text-foreground leading-snug', !isExpanded && 'line-clamp-1')}>
+                      {q.question}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground capitalize">
+                        {q.category}
+                      </span>
+                      <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', DIFF_COLOR[q.difficulty] ?? DIFF_COLOR.facil)}>
+                        {DIFF_LABEL[q.difficulty] ?? q.difficulty}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 mt-0.5">
+                    <span className="text-[11px] font-mono text-muted-foreground/50">#{q.id}</span>
+                    {isExpanded
+                      ? <ChevronUp   className="h-3.5 w-3.5 text-muted-foreground" />
+                      : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
+                  </div>
+                </button>
+
+                {/* Alternativas expandidas */}
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div
+                      key="opts"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-3 pl-12 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {(['a', 'b', 'c', 'd'] as const).map(key => {
+                          const isCorrect = q.correct === key
+                          return (
+                            <div
+                              key={key}
+                              className={cn(
+                                'flex items-start gap-2 rounded-xl px-3 py-2 text-xs border',
+                                isCorrect
+                                  ? 'bg-violet-50 dark:bg-violet-950/30 border-violet-300 dark:border-violet-700'
+                                  : 'bg-muted/30 border-border/60',
+                              )}
+                            >
+                              <span className={cn(
+                                'flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[10px] font-bold mt-0.5',
+                                isCorrect ? 'bg-violet-600 text-white' : 'bg-muted text-muted-foreground',
+                              )}>
+                                {key.toUpperCase()}
+                              </span>
+                              <span className={cn(
+                                'leading-snug',
+                                isCorrect ? 'text-violet-700 dark:text-violet-300 font-medium' : 'text-foreground',
+                              )}>
+                                {q[`option_${key}` as keyof QuizAdminQuestion] as string}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="px-4 py-2.5 border-t border-border bg-muted/20 flex items-center justify-between">
+        <p className="text-[11px] text-muted-foreground">
+          {current.isCurrent ? '🟢 Rodada em andamento' : `🔮 Previsão para ${current.startLabel}`}
+        </p>
+        <p className="text-[11px] text-muted-foreground hidden sm:block">
+          Ativar ou desativar perguntas altera a seleção futura
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const DIFF_LABEL: Record<string, string>  = { facil: 'Fácil', medio: 'Médio', dificil: 'Difícil' }
@@ -881,6 +1118,9 @@ export function AdminQuizPage() {
           { icon: CalendarDays, value: weekIds.size,  label: 'Esta semana',   tone: 'amber'   },
         ]}
       />
+
+      {/* Calendário semanal */}
+      <WeekCalendar questions={questions} />
 
       {/* Filtros */}
       <div className="flex flex-wrap items-center gap-2">

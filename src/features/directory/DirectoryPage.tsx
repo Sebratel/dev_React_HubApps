@@ -11,16 +11,36 @@ import { BirthdayWishesModal } from './BirthdayWishesModal'
 import { useAuthStore } from '@/stores/auth.store'
 import { cn } from '@/lib/utils'
 
-// ─── Badge computados por pessoa ─────────────────────────────────────────────
+// ─── Mapa de cores por status ─────────────────────────────────────────────────
 
-function computedBadges(p: DirectoryPerson): { emoji: string; label: string }[] {
-  const badges: { emoji: string; label: string }[] = []
-  if (p.birthdayToday)         badges.push({ emoji: '🎂', label: 'Aniversário hoje' })
-  if (p.kudoCount >= 10)       badges.push({ emoji: '🌟', label: '10+ kudos recebidos' })
-  else if (p.kudoCount >= 5)   badges.push({ emoji: '⭐', label: '5+ kudos recebidos' })
-  else if (p.kudoCount >= 1)   badges.push({ emoji: '🏆', label: 'Primeiro kudo recebido' })
-  if ((p.tenureYears ?? 0) >= 5)  badges.push({ emoji: '🏅', label: `${p.tenureYears} anos de empresa` })
-  else if ((p.tenureYears ?? 0) >= 1) badges.push({ emoji: '🎖️', label: `${p.tenureYears} ano${(p.tenureYears ?? 0) > 1 ? 's' : ''} de empresa` })
+const STATUS_STYLE: Record<string, string> = {
+  '✅ Disponível':  'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+  '🎯 Focado':      'bg-violet-100  text-violet-700  dark:bg-violet-950/50  dark:text-violet-300',
+  '📞 Em reunião':  'bg-blue-100    text-blue-700    dark:bg-blue-950/50    dark:text-blue-300',
+  '🏠 Home office': 'bg-cyan-100    text-cyan-700    dark:bg-cyan-950/50    dark:text-cyan-300',
+  '☕ Em pausa':    'bg-amber-100   text-amber-700   dark:bg-amber-950/50   dark:text-amber-300',
+  '🌴 De férias':   'bg-teal-100    text-teal-700    dark:bg-teal-950/50    dark:text-teal-300',
+}
+
+// ─── Conquistas computadas por pessoa ────────────────────────────────────────
+
+interface Badge { emoji: string; label: string; short: string }
+
+function computedBadges(p: DirectoryPerson): Badge[] {
+  const badges: Badge[] = []
+  if (p.birthdayToday)
+    badges.push({ emoji: '🎂', label: 'Aniversário hoje',     short: 'Aniversário' })
+  if (p.kudoCount >= 10)
+    badges.push({ emoji: '🌟', label: '10+ kudos recebidos',  short: `${p.kudoCount} kudos` })
+  else if (p.kudoCount >= 5)
+    badges.push({ emoji: '⭐', label: '5+ kudos recebidos',   short: `${p.kudoCount} kudos` })
+  else if (p.kudoCount >= 1)
+    badges.push({ emoji: '🏆', label: '1+ kudo recebido',     short: `${p.kudoCount} kudo${p.kudoCount > 1 ? 's' : ''}` })
+  const yrs = p.tenureYears ?? 0
+  if (yrs >= 5)
+    badges.push({ emoji: '🏅', label: `${yrs} anos de empresa`, short: `${yrs} anos` })
+  else if (yrs >= 1)
+    badges.push({ emoji: '🎖️', label: `${yrs} ano${yrs > 1 ? 's' : ''} de empresa`, short: `${yrs} ano${yrs > 1 ? 's' : ''}` })
   return badges
 }
 
@@ -35,7 +55,8 @@ function PersonCard({
   onWishClick: (p: DirectoryPerson) => void
   onClick: (p: DirectoryPerson) => void
 }) {
-  const badges = computedBadges(person)
+  const badges      = computedBadges(person)
+  const statusStyle = person.status ? (STATUS_STYLE[person.status] ?? 'bg-muted text-muted-foreground') : ''
 
   return (
     <article
@@ -45,25 +66,33 @@ function PersonCard({
       onKeyDown={(e) => e.key === 'Enter' && onClick(person)}
       aria-label={`Ver perfil de ${person.name}`}
       className={cn(
-        'group relative flex flex-col items-center gap-3 rounded-2xl border bg-card px-4 py-5 text-center transition-all cursor-pointer hover:shadow-md hover:border-primary/30',
+        'group relative flex flex-col items-center gap-2.5 rounded-2xl border bg-card px-4 py-5 text-center',
+        'transition-all duration-150 cursor-pointer hover:shadow-md hover:-translate-y-0.5',
         person.birthdayToday
-          ? 'border-amber-400/60 bg-gradient-to-b from-amber-50/60 to-card dark:from-amber-900/10'
-          : 'border-border'
+          ? 'border-amber-400/60 bg-gradient-to-b from-amber-50/60 to-card dark:from-amber-900/10 hover:border-amber-400'
+          : 'border-border hover:border-primary/30',
       )}
     >
       {/* Avatar */}
       <div className="relative">
         <UserAvatar name={person.name} photoUrl={person.photoUrl} size="lg" />
-        {/* Green dot if has status */}
+        {/* Indicador de status no avatar */}
         {person.status && (
           <span
-            className="absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full bg-green-500 ring-2 ring-card"
+            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-card"
+            style={{ background: person.status.startsWith('✅') ? '#10b981'
+                              : person.status.startsWith('🎯') ? '#8b5cf6'
+                              : person.status.startsWith('📞') ? '#3b82f6'
+                              : person.status.startsWith('🏠') ? '#06b6d4'
+                              : person.status.startsWith('☕') ? '#f59e0b'
+                              : person.status.startsWith('🌴') ? '#14b8a6'
+                              : '#6b7280' }}
             aria-hidden
           />
         )}
       </div>
 
-      {/* Name + team */}
+      {/* Nome + time */}
       <div className="min-w-0 w-full">
         <p className="font-semibold text-sm text-foreground truncate leading-tight">{person.name}</p>
         {person.teamName && (
@@ -74,34 +103,38 @@ function PersonCard({
         )}
       </div>
 
-      {/* Status */}
+      {/* Status do momento */}
       {person.status && (
-        <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground max-w-full truncate">
+        <span className={cn(
+          'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium max-w-full',
+          statusStyle,
+        )}>
           {person.status}
         </span>
       )}
 
-      {/* Badges */}
+      {/* Conquistas */}
       {badges.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-1">
+        <div className="flex flex-wrap justify-center gap-1 w-full">
           {badges.map((b) => (
             <span
               key={b.label}
               title={b.label}
-              className="text-base leading-none select-none cursor-default"
               aria-label={b.label}
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground"
             >
-              {b.emoji}
+              <span className="text-xs leading-none">{b.emoji}</span>
+              <span>{b.short}</span>
             </span>
           ))}
         </div>
       )}
 
-      {/* Birthday action */}
+      {/* Ação de aniversário */}
       {person.birthdayToday && (
         <button
           onClick={(e) => { e.stopPropagation(); onWishClick(person) }}
-          className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
+          className="mt-0.5 text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
         >
           🎉 Enviar parabéns
         </button>
