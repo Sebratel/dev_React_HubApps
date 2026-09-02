@@ -288,14 +288,15 @@ export function QuizPage() {
   const [phase,       setPhase]       = useState<Phase>('loading')
   const [currentQ,    setCurrentQ]    = useState(0)
   const [questions,   setQuestions]   = useState<QuizQuestion[]>([])
-  const [, setAccumulated] = useState<QuizSubmitAnswer[]>([])
   const [selected,    setSelected]    = useState<string | null>(null)
   const [feedback,    setFeedback]    = useState<'correct' | 'wrong' | null>(null)
   const [timeLeft,    setTimeLeft]    = useState(TIME_LIMIT_MS)
   const [result,      setResult]      = useState<{ score: number; answers: QuizAnswerResult[] } | null>(null)
 
-  const startTimeRef = useRef<number>(0)
-  const timerRef     = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Ref para acumular respostas sem efeitos colaterais em updaters de estado
+  const accumulatedRef = useRef<QuizSubmitAnswer[]>([])
+  const startTimeRef   = useRef<number>(0)
+  const timerRef       = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Carrega quiz do dia
   const { data: todayData, isLoading, isError } = useQuery({
@@ -344,22 +345,22 @@ export function QuizPage() {
   })
 
   // Avança para próxima pergunta ou encerra
+  // Usa ref para evitar efeitos colaterais dentro de updaters de estado (React StrictMode)
   const advance = useCallback((ans: QuizSubmitAnswer) => {
-    setAccumulated(prev => {
-      const next = [...prev, ans]
-      if (next.length === TOTAL_QUESTIONS) {
-        submitMutation.mutate(next)
-      } else {
-        setTimeout(() => {
-          setCurrentQ(q => q + 1)
-          setSelected(null)
-          setFeedback(null)
-          setTimeLeft(TIME_LIMIT_MS)
-          startTimeRef.current = Date.now()
-        }, FEEDBACK_MS)
-      }
-      return next
-    })
+    accumulatedRef.current = [...accumulatedRef.current, ans]
+    const next = accumulatedRef.current
+
+    if (next.length === TOTAL_QUESTIONS) {
+      submitMutation.mutate(next)
+    } else {
+      setTimeout(() => {
+        setCurrentQ(q => q + 1)
+        setSelected(null)
+        setFeedback(null)
+        setTimeLeft(TIME_LIMIT_MS)
+        startTimeRef.current = Date.now()
+      }, FEEDBACK_MS)
+    }
   }, [submitMutation])
 
   // Timer
@@ -419,7 +420,7 @@ export function QuizPage() {
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
 
         {/* Loading */}
         {phase === 'loading' && (
@@ -463,7 +464,7 @@ export function QuizPage() {
             user={user}
             onStart={() => {
               setCurrentQ(0)
-              setAccumulated([])
+              accumulatedRef.current = []
               setSelected(null)
               setFeedback(null)
               setTimeLeft(TIME_LIMIT_MS)
