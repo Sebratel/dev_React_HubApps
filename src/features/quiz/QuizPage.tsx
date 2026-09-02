@@ -474,16 +474,15 @@ export function QuizPage() {
         )}
 
         {/* Jogando */}
-        {phase === 'playing' && currentQuestion && (
+        {phase === 'playing' && (
           <motion.div
-            key={`q-${currentQ}`}
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30 }}
-            transition={{ duration: 0.22 }}
+            key="playing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="flex flex-col gap-5"
           >
-            {/* Progresso + timer */}
+            {/* Progresso + timer — ficam fixos entre perguntas */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
@@ -505,7 +504,7 @@ export function QuizPage() {
                   <div
                     key={i}
                     className={cn(
-                      'h-1.5 rounded-full transition-all',
+                      'h-1.5 rounded-full transition-all duration-300',
                       i < currentQ  ? 'w-6 bg-violet-400' :
                       i === currentQ ? 'w-6 bg-violet-600' :
                                        'w-3 bg-border'
@@ -515,62 +514,78 @@ export function QuizPage() {
               </div>
             </div>
 
-            {/* Pergunta */}
-            <div className="rounded-2xl border border-border bg-card px-5 py-5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400 mb-2 block">
-                {currentQuestion.category}
-              </span>
-              <p className="text-base font-medium text-foreground leading-relaxed">
-                {currentQuestion.question}
-              </p>
-            </div>
-
-            {/* Opções */}
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              {OPTION_KEYS.map((key, i) => {
-                const isSelected = selected === key
-                return (
-                  <button
-                    key={key}
-                    onClick={() => handleAnswer(key)}
-                    disabled={feedback !== null}
-                    className={cn(
-                      'flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-left text-sm font-medium',
-                      'transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500',
-                      feedback === null && 'hover:border-violet-400 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 cursor-pointer',
-                      isSelected
-                        ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300'
-                        : 'border-border bg-card text-foreground',
-                      feedback !== null && !isSelected && 'opacity-50 cursor-not-allowed',
-                    )}
+            {/* Pergunta + opções — animadas com modo wait para não sobrepor */}
+            <div className="overflow-hidden">
+              <AnimatePresence mode="wait" initial={false}>
+                {currentQuestion && (
+                  <motion.div
+                    key={`q-${currentQ}`}
+                    initial={{ opacity: 0, x: 40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -40 }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex flex-col gap-3"
                   >
-                    <span className={cn(
-                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-xs font-bold',
-                      isSelected
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-muted text-muted-foreground'
-                    )}>
-                      {OPTION_LABELS[i]}
-                    </span>
-                    <span className="leading-snug">
-                      {currentQuestion.options[key]}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+                    {/* Pergunta */}
+                    <div className="rounded-2xl border border-border bg-card px-5 py-5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400 mb-2 block">
+                        {currentQuestion.category}
+                      </span>
+                      <p className="text-base font-medium text-foreground leading-relaxed">
+                        {currentQuestion.question}
+                      </p>
+                    </div>
 
-            {/* Feedback de tempo esgotado */}
-            {feedback === 'wrong' && !selected && (
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 px-4 py-3 text-sm text-rose-700 dark:text-rose-400"
-              >
-                <Clock className="h-4 w-4 shrink-0" />
-                Tempo esgotado!
-              </motion.div>
-            )}
+                    {/* Opções */}
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                      {OPTION_KEYS.map((key, i) => {
+                        const isSelected = selected === key
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => handleAnswer(key)}
+                            disabled={feedback !== null}
+                            className={cn(
+                              'flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-left text-sm font-medium',
+                              'transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500',
+                              feedback === null && 'hover:border-violet-400 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 cursor-pointer',
+                              isSelected
+                                ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300'
+                                : 'border-border bg-card text-foreground',
+                              feedback !== null && !isSelected && 'opacity-50 cursor-not-allowed',
+                            )}
+                          >
+                            <span className={cn(
+                              'flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-xs font-bold',
+                              isSelected
+                                ? 'bg-violet-600 text-white'
+                                : 'bg-muted text-muted-foreground'
+                            )}>
+                              {OPTION_LABELS[i]}
+                            </span>
+                            <span className="leading-snug">
+                              {currentQuestion.options[key]}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {/* Feedback de tempo esgotado */}
+                    {feedback === 'wrong' && !selected && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 px-4 py-3 text-sm text-rose-700 dark:text-rose-400"
+                      >
+                        <Clock className="h-4 w-4 shrink-0" />
+                        Tempo esgotado!
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Carregando submissão */}
             {submitMutation.isPending && (
