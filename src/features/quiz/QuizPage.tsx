@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, XCircle, RotateCcw, Clock } from 'lucide-react'
+import { CheckCircle2, XCircle, RotateCcw, Clock, CalendarDays, Info, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { UserAvatar } from '@/components/UserAvatar'
@@ -149,7 +149,10 @@ function ResultScreen({
   answers: QuizAnswerResult[]
   questions: QuizQuestion[]
 }) {
-  const user     = useAuthStore((s) => s.user)
+  const user = useAuthStore((s) => s.user)
+  const [rankTab,  setRankTab]  = useState<'mensal' | 'semanal'>('mensal')
+  const [showInfo, setShowInfo] = useState(false)
+
   const { data: ranking } = useQuery({
     queryKey:  ['quiz', 'ranking'],
     queryFn:   getQuizRanking,
@@ -160,128 +163,253 @@ function ResultScreen({
   const pct     = Math.round((score / 1000) * 100)
   const correct = answers.filter(a => a.pts > 0).length
 
-  const emoji =
-    pct === 100 ? '🏆' :
-    pct >= 80   ? '🎉' :
-    pct >= 60   ? '👏' :
-    pct >= 40   ? '💪' : '🤔'
+  const emoji = pct === 100 ? '🏆' : pct >= 80 ? '🎉' : pct >= 60 ? '👏' : pct >= 40 ? '💪' : '🤔'
+  const msg   = pct === 100 ? 'Perfeito!' : pct >= 80 ? 'Excelente!' : pct >= 60 ? 'Muito bom!' : pct >= 40 ? 'Continue assim!' : 'Tente na próxima!'
+
+  // Próxima segunda-feira
+  const nextMondayLabel = ranking?.weekStartDate
+    ? (() => {
+        const d = new Date(ranking.weekStartDate + 'T12:00:00Z')
+        d.setUTCDate(d.getUTCDate() + 7)
+        return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', timeZone: 'UTC' })
+      })()
+    : null
+
+  const weeksPlayedThisMonth = ranking?.monthly.find(e => e.userId === user?.id)?.weeksPlayed ?? 0
+
+  const rankList = rankTab === 'mensal' ? (ranking?.monthly ?? []) : (ranking?.weekly ?? [])
 
   return (
     <motion.div
       key="result"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col gap-6 max-w-2xl mx-auto w-full"
+      className="flex flex-col gap-4 max-w-3xl mx-auto w-full"
     >
-      {/* Score card */}
-      <div className="rounded-2xl border border-border bg-card p-6 text-center">
-        <span className="text-5xl">{emoji}</span>
-        <p className="text-4xl font-semibold text-foreground mt-3 tabular-nums">
-          {score.toLocaleString('pt-BR')}
-          <span className="text-lg text-muted-foreground font-normal"> / 1.000 pts</span>
-        </p>
-        <p className="text-sm text-muted-foreground mt-1">
-          {correct}/{TOTAL_QUESTIONS} acertos · posição mensal:{' '}
-          <span className="font-semibold text-foreground">
-            {ranking?.myPosition ? `${ranking.myPosition}°` : '—'}
-          </span>
-        </p>
-        {ranking && ranking.myMonthlyScore > score && (
-          <p className="text-xs text-violet-600 dark:text-violet-400 mt-1 font-medium">
-            Total acumulado este mês: {ranking.myMonthlyScore.toLocaleString('pt-BR')} pts
-          </p>
-        )}
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {/* Gabarito */}
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-muted/30">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Gabarito
-            </p>
-          </div>
-          <div className="divide-y divide-border">
-            {answers.map((ans, i) => {
-              const q      = questions.find(q => q.id === ans.questionId)
-              const isRight = ans.pts > 0
-              const correct = ans.correct ?? ans.correctAnswer
-              return (
-                <div key={ans.questionId} className="px-4 py-3 flex items-start gap-3">
-                  {isRight
-                    ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                    : <XCircle className="h-4 w-4 text-rose-500 mt-0.5 shrink-0" />
-                  }
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-foreground leading-snug">
-                      {i + 1}. {q?.question ?? ans.question}
-                    </p>
-                    {!isRight && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Resposta: <span className="font-semibold text-emerald-600 uppercase">{correct}</span>
-                        {q && ` — ${q.options[correct as keyof typeof q.options]}`}
-                      </p>
-                    )}
-                  </div>
-                  {isRight && (
-                    <span className="text-xs font-semibold text-emerald-600 tabular-nums shrink-0">
-                      +{ans.pts}
-                    </span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+      {/* ── Hero score ─────────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="px-6 py-8 text-center bg-gradient-to-b from-violet-50/70 to-transparent dark:from-violet-950/25">
+          <span className="text-5xl">{emoji}</span>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-400 mt-3 mb-2">
+            {msg}
+          </p>
+          <p className="text-5xl font-bold text-foreground tabular-nums leading-none">
+            {score.toLocaleString('pt-BR')}
+            <span className="text-xl text-muted-foreground font-normal"> / 1.000 pts</span>
+          </p>
         </div>
 
-        {/* Ranking mensal */}
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-muted/30">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Ranking mensal
-            </p>
+        {/* Stats row */}
+        <div className="grid grid-cols-3 divide-x divide-border border-t border-border">
+          <div className="px-4 py-3.5 text-center">
+            <p className="text-xl font-bold text-foreground tabular-nums">{correct}<span className="text-sm text-muted-foreground font-normal">/{TOTAL_QUESTIONS}</span></p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">acertos</p>
           </div>
-          <div className="divide-y divide-border">
-            {!ranking ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="px-4 py-3 flex items-center gap-2.5">
-                  <Skeleton className="h-3 w-4 rounded" />
-                  <Skeleton className="h-7 w-7 rounded-full" />
-                  <Skeleton className="h-3 flex-1 rounded" />
-                  <Skeleton className="h-3 w-10 rounded" />
-                </div>
-              ))
-            ) : ranking.monthly.slice(0, 8).map((entry, i) => (
-              <div
-                key={entry.userId}
-                className={cn(
-                  'px-4 py-2.5 flex items-center gap-2.5',
-                  entry.userId === user?.id && 'bg-violet-50/60 dark:bg-violet-950/20'
-                )}
-              >
-                <span className="text-sm w-5 text-center shrink-0">
-                  {i < 3 ? MEDAL[i] : <span className="text-xs text-muted-foreground">{i + 1}°</span>}
-                </span>
-                <UserAvatar
-                  name={entry.name}
-                  photoUrl={entry.photoUrl}
-                  size="sm"
-                  className="h-7 w-7 shrink-0"
-                />
-                <span className={cn(
-                  'text-xs flex-1 truncate',
-                  entry.userId === user?.id && 'font-semibold text-violet-700 dark:text-violet-300'
+          <div className="px-4 py-3.5 text-center">
+            <p className="text-xl font-bold text-foreground tabular-nums">
+              {ranking?.myPosition ? `${ranking.myPosition}°` : '—'}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">posição mensal</p>
+          </div>
+          <div className="px-4 py-3.5 text-center">
+            <p className="text-xl font-bold text-violet-600 dark:text-violet-400 tabular-nums">
+              {ranking ? ranking.myMonthlyScore.toLocaleString('pt-BR') : '—'}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">acumulado do mês</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Próxima rodada ─────────────────────────────────────────────────── */}
+      {nextMondayLabel && (
+        <div className="flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
+            <CalendarDays className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">Próxima rodada</p>
+            <p className="text-xs text-muted-foreground capitalize truncate">{nextMondayLabel} · 5 novas perguntas</p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-xs font-semibold text-foreground">{weeksPlayedThisMonth} {weeksPlayedThisMonth === 1 ? 'semana' : 'semanas'}</p>
+            <p className="text-[10px] text-muted-foreground">jogadas este mês</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Rankings (Mensal / Semanal) ─────────────────────────────────────── */}
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        {/* Tabs */}
+        <div className="flex border-b border-border">
+          {([['mensal', '🏆 Ranking do Mês'], ['semanal', '📅 Esta Semana']] as const).map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => setRankTab(tab)}
+              className={cn(
+                'flex-1 px-4 py-3 text-xs font-semibold uppercase tracking-wider transition-colors',
+                rankTab === tab
+                  ? 'text-violet-600 dark:text-violet-400 border-b-2 border-violet-500 -mb-px bg-violet-50/50 dark:bg-violet-950/20'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Lista */}
+        <div className="divide-y divide-border">
+          {!ranking ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="px-4 py-3 flex items-center gap-3">
+                <Skeleton className="h-3 w-5 rounded" />
+                <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+                <Skeleton className="h-3 flex-1 rounded" />
+                <Skeleton className="h-3 w-16 rounded" />
+              </div>
+            ))
+          ) : rankList.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Sem dados para esta semana ainda.
+            </p>
+          ) : rankList.slice(0, 10).map((entry, i) => (
+            <div
+              key={entry.userId}
+              className={cn(
+                'px-4 py-3 flex items-center gap-3 transition-colors',
+                entry.userId === user?.id && 'bg-violet-50/60 dark:bg-violet-950/20'
+              )}
+            >
+              <span className="w-6 text-center shrink-0 tabular-nums">
+                {i < 3
+                  ? <span className="text-base leading-none">{MEDAL[i]}</span>
+                  : <span className="text-xs font-bold text-muted-foreground">{i + 1}°</span>}
+              </span>
+              <UserAvatar name={entry.name} photoUrl={entry.photoUrl} size="sm" className="h-8 w-8 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className={cn(
+                  'text-sm truncate',
+                  entry.userId === user?.id ? 'font-semibold text-violet-700 dark:text-violet-300' : 'text-foreground'
                 )}>
                   {entry.userId === user?.id ? 'Você' : entry.name}
-                </span>
-                <span className="text-xs font-semibold text-muted-foreground tabular-nums shrink-0">
-                  {entry.totalScore.toLocaleString('pt-BR')}
-                </span>
+                </p>
+                {rankTab === 'mensal' && entry.weeksPlayed > 1 && (
+                  <p className="text-[11px] text-muted-foreground">{entry.weeksPlayed} semanas jogadas</p>
+                )}
               </div>
-            ))}
-          </div>
+              <span className="text-sm font-semibold text-foreground tabular-nums shrink-0">
+                {entry.totalScore.toLocaleString('pt-BR')} pts
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer info */}
+        <div className="px-4 py-2.5 border-t border-border bg-muted/20">
+          <p className="text-[11px] text-muted-foreground text-center">
+            {rankTab === 'mensal'
+              ? 'Soma de todas as semanas do mês · reinicia no dia 1°'
+              : 'Pontuação desta semana apenas · reinicia toda segunda-feira'}
+          </p>
         </div>
       </div>
+
+      {/* ── Gabarito ───────────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Gabarito
+          </p>
+          <span className="text-xs text-muted-foreground">
+            {correct}/{TOTAL_QUESTIONS} acertos
+          </span>
+        </div>
+        <div className="divide-y divide-border">
+          {answers.map((ans, i) => {
+            const q          = questions.find(q => q.id === ans.questionId)
+            const isRight    = ans.pts > 0
+            const correctKey = ans.correct ?? ans.correctAnswer
+            const correctTxt = q?.options[correctKey as keyof typeof q.options] ?? ''
+            return (
+              <div key={ans.questionId} className="px-4 py-3.5 flex items-start gap-3">
+                <div className={cn(
+                  'flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center rounded-full',
+                  isRight ? 'bg-emerald-100 dark:bg-emerald-950/40' : 'bg-rose-100 dark:bg-rose-950/40'
+                )}>
+                  {isRight
+                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    : <XCircle      className="h-3.5 w-3.5 text-rose-500"    />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-foreground leading-snug">
+                    <span className="font-medium text-muted-foreground mr-1">{i + 1}.</span>
+                    {q?.question ?? ans.question}
+                  </p>
+                  {!isRight && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Resposta:{' '}
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 uppercase">{correctKey}</span>
+                      {correctTxt && <span className="text-muted-foreground"> — {correctTxt}</span>}
+                    </p>
+                  )}
+                </div>
+                {isRight && (
+                  <span className="text-sm font-bold text-emerald-600 tabular-nums shrink-0">
+                    +{ans.pts}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Como funciona ──────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <button
+          onClick={() => setShowInfo(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-muted/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Info className="h-4 w-4 text-violet-500 shrink-0" />
+            <span className="text-sm font-medium text-foreground">Como funciona o Quiz da Semana?</span>
+          </div>
+          {showInfo
+            ? <ChevronUp   className="h-4 w-4 text-muted-foreground shrink-0" />
+            : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+        </button>
+        <AnimatePresence initial={false}>
+          {showInfo && (
+            <motion.div
+              key="info-panel"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="border-t border-border px-4 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {([
+                  { icon: '📅', title: 'Uma vez por semana',    desc: 'As perguntas mudam toda segunda-feira. Você tem de segunda a domingo para jogar — uma única tentativa por semana.' },
+                  { icon: '🎯', title: 'Como pontuar',          desc: 'Acertou? +100 pts garantidos + até 100 pts de bônus pela velocidade. Quanto mais rápido, mais pontos!' },
+                  { icon: '🏆', title: 'Ranking Mensal',        desc: 'Soma de todas as suas pontuações semanais do mês. Jogar toda semana é a chave para subir no ranking!' },
+                  { icon: '🔄', title: 'Renovação',             desc: 'Ranking mensal reinicia no dia 1° de cada mês. O histórico dos meses anteriores fica salvo para consulta.' },
+                ] as const).map(item => (
+                  <div key={item.title} className="flex gap-3 rounded-xl bg-muted/30 border border-border/60 px-3 py-3">
+                    <span className="text-xl shrink-0 mt-0.5">{item.icon}</span>
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">{item.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
     </motion.div>
   )
 }
