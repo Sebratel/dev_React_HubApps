@@ -57,6 +57,8 @@ export function SendKudoDialog({ open, onClose, initialToUserId }: SendKudoDialo
     mutationFn: () => sendKudo(toUserId, message.trim(), isAnonymous),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['kudos', 'feed'] })
+      // Atualiza stats do usuário (kudosSent) para o checklist de onboarding marcar a tarefa
+      void queryClient.invalidateQueries({ queryKey: ['users', 'me', 'stats'] })
       // Mostra a tela de sucesso por SUCCESS_DELAY ms e depois fecha
       setSucceeded(true)
       setTimeout(() => {
