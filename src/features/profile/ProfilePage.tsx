@@ -1,4 +1,5 @@
-﻿import { useState, useRef } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   updateProfile,
@@ -8,7 +9,9 @@ import {
 } from 'firebase/auth'
 import { auth } from '@/firebase'
 import { useAuthStore } from '@/stores/auth.store'
-import { updateMe } from '@/services/user.service'
+import { updateMe, updateMyBirthDate, getMyStats } from '@/services/user.service'
+import type { UserStats } from '@/services/user.service'
+import { isBirthdayToday } from '@/utils/isBirthdayToday'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -44,6 +47,64 @@ function formatRelative(d: Date | null | undefined): string {
   if (days === 1) return 'ontem'
   if (days < 7)   return `há ${days} dias`
   return formatDate(d)
+}
+
+// ─── Badges computados ────────────────────────────────────────────────────────
+
+interface Badge { emoji: string; label: string; description: string; earned: boolean }
+
+function computeBadges(user: { name?: string | null; photoUrl?: string | null; birthDate?: string | null }, stats: UserStats | undefined): Badge[] {
+  const s = stats ?? { kudosSent: 0, kudosReceived: 0, tenureYears: null }
+  return [
+    {
+      emoji:       '✅',
+      label:       'Perfil Completo',
+      description: 'Nome, foto e data de aniversário preenchidos',
+      earned: !!(user.name && user.photoUrl && user.birthDate),
+    },
+    {
+      emoji:       '💌',
+      label:       'Primeiro Kudo',
+      description: 'Enviou seu primeiro kudo para um colega',
+      earned: s.kudosSent >= 1,
+    },
+    {
+      emoji:       '🏆',
+      label:       'Reconhecido',
+      description: 'Recebeu pelo menos 1 kudo',
+      earned: s.kudosReceived >= 1,
+    },
+    {
+      emoji:       '⭐',
+      label:       'Estrela da Equipe',
+      description: 'Recebeu 5 ou mais kudos',
+      earned: s.kudosReceived >= 5,
+    },
+    {
+      emoji:       '🌟',
+      label:       'MVP',
+      description: 'Recebeu 10 ou mais kudos',
+      earned: s.kudosReceived >= 10,
+    },
+    {
+      emoji:       '🎂',
+      label:       'Aniversariante',
+      description: 'Hoje é o seu aniversário! 🎉',
+      earned: isBirthdayToday(user.birthDate),
+    },
+    {
+      emoji:       '🎖️',
+      label:       '1 Ano de Empresa',
+      description: 'Completou 1 ano na Sebratel',
+      earned: (s.tenureYears ?? 0) >= 1,
+    },
+    {
+      emoji:       '🏅',
+      label:       '5 Anos de Empresa',
+      description: 'Completou 5 anos na Sebratel',
+      earned: (s.tenureYears ?? 0) >= 5,
+    },
+  ]
 }
 
 // ─── Small info row ───────────────────────────────────────────────────────────
@@ -87,6 +148,18 @@ export function ProfilePage() {
   const [error,    setError]    = useState<string | null>(null)
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Birth date state
+  const [birthDate,        setBirthDate]        = useState(user?.birthDate ?? '')
+  const [isSavingBirth,    setIsSavingBirth]    = useState(false)
+  const [birthSuccess,     setBirthSuccess]     = useState(false)
+  const [birthError,       setBirthError]       = useState<string | null>(null)
+  const birthSuccessTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Sync birth date when user changes (e.g. after save)
+  useEffect(() => {
+    setBirthDate(user?.birthDate ?? '')
+  }, [user?.birthDate])
+
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword,     setNewPassword]     = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -97,12 +170,24 @@ export function ProfilePage() {
 
   const reduced = useReducedMotion()
 
+  const { data: stats } = useQuery<UserStats>({
+    queryKey: ['users', 'me', 'stats'],
+    queryFn:  getMyStats,
+    staleTime: 5 * 60_000,
+    enabled:  !!user,
+  })
+
   if (!user) return null
+
+  const badges = computeBadges(user, stats)
+  const earnedBadges = badges.filter((b) => b.earned)
+  const unearnedBadges = badges.filter((b) => !b.earned)
 
   const isPasswordUser = auth.currentUser?.providerData.some((p) => p.providerId === 'password') ?? false
   const isDirty = name.trim() !== (user.name ?? '').trim()
   const isValid = name.trim().length >= 2
   const appsCount = user.permissions?.length ?? 0
+  const isBirthDirty = birthDate !== (user.birthDate ?? '')
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -120,6 +205,23 @@ export function ProfilePage() {
       setError(err instanceof Error ? err.message : 'Erro ao salvar. Tente novamente.')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  async function handleSaveBirthDate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!isBirthDirty || isSavingBirth) return
+    setIsSavingBirth(true); setBirthError(null); setBirthSuccess(false)
+    try {
+      const updatedUser = await updateMyBirthDate(birthDate || null)
+      setUser(updatedUser)
+      setBirthSuccess(true)
+      if (birthSuccessTimer.current) clearTimeout(birthSuccessTimer.current)
+      birthSuccessTimer.current = setTimeout(() => setBirthSuccess(false), 3000)
+    } catch (err) {
+      setBirthError(err instanceof Error ? err.message : 'Erro ao salvar. Tente novamente.')
+    } finally {
+      setIsSavingBirth(false)
     }
   }
 
@@ -291,6 +393,64 @@ export function ProfilePage() {
             </form>
           </div>
 
+          {/* Data de aniversário */}
+          <div className="rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-5 py-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
+                <h2 className="text-sm font-semibold text-foreground">Aniversário</h2>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Sua data de aniversário aparece nas celebrações do dashboard.
+              </p>
+            </div>
+            <form onSubmit={handleSaveBirthDate} className="flex flex-col gap-5 p-5">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="profile-birth-date" className="text-sm font-medium text-foreground">
+                  Data de nascimento
+                </label>
+                <input
+                  id="profile-birth-date"
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  max={new Date().toISOString().slice(0, 10)}
+                  disabled={isSavingBirth}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <p className="text-xs text-muted-foreground">
+                  O ano de nascimento não é exibido publicamente — só o dia e mês aparecem nas celebrações.
+                </p>
+              </div>
+
+              {birthError && (
+                <div
+                  role="alert"
+                  className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                >
+                  <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+                  {birthError}
+                </div>
+              )}
+
+              {birthSuccess && (
+                <div
+                  role="status"
+                  className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary"
+                >
+                  <CheckCircle className="h-4 w-4 shrink-0" aria-hidden />
+                  Data de aniversário salva com sucesso.
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button type="submit" disabled={!isBirthDirty || isSavingBirth}>
+                  {isSavingBirth ? 'Salvando...' : 'Salvar aniversário'}
+                </Button>
+              </div>
+            </form>
+          </div>
+
           {/* Alterar senha */}
           {isPasswordUser && (
             <div className="rounded-2xl border border-border bg-card">
@@ -410,6 +570,50 @@ export function ProfilePage() {
                   label="Aplicativos"
                   value={`${appsCount} com acesso`}
                 />
+              )}
+            </div>
+          </div>
+
+          {/* Conquistas / Badges */}
+          <div className="rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-5 py-4">
+              <h2 className="text-sm font-semibold text-foreground">Conquistas</h2>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {earnedBadges.length} de {badges.length} desbloqueadas
+              </p>
+            </div>
+            <div className="px-5 py-4 flex flex-col gap-2">
+              {earnedBadges.map((b) => (
+                <div key={b.label} className="flex items-center gap-2.5">
+                  <span className="text-xl leading-none select-none" aria-hidden>{b.emoji}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground leading-tight">{b.label}</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight">{b.description}</p>
+                  </div>
+                </div>
+              ))}
+              {earnedBadges.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  Nenhuma conquista ainda. Comece enviando um kudo! 💌
+                </p>
+              )}
+              {unearnedBadges.length > 0 && (
+                <details className="mt-1">
+                  <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                    + {unearnedBadges.length} por desbloquear
+                  </summary>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {unearnedBadges.map((b) => (
+                      <div key={b.label} className="flex items-center gap-2.5 opacity-40">
+                        <span className="text-xl leading-none select-none grayscale" aria-hidden>{b.emoji}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground leading-tight">{b.label}</p>
+                          <p className="text-[10px] text-muted-foreground leading-tight">{b.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
               )}
             </div>
           </div>

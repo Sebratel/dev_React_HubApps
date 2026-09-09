@@ -7,37 +7,12 @@ const { randomUUID } = require('crypto')
 const logAudit      = require('../utils/logAudit')
 const AUDIT_ACTIONS = require('../utils/auditActions')
 
-// GET /apps — lista apps acessíveis ao usuário autenticado
-router.get('/', requireAuth, async (req, res) => {
-  const [user] = await pool.query(
-    'SELECT id, profile, team, is_active, is_admin FROM users WHERE id = ?',
-    [req.uid]
-  )
-  if (!user.length || !user[0].is_active) return res.json([])
-
+// GET /apps — lista todos os apps ativos para qualquer usuário autenticado com domínio @sebratel.com.br
+router.get('/', requireAuth, async (_req, res) => {
   const [allApps] = await pool.query(
     'SELECT * FROM apps WHERE is_active = 1 ORDER BY name'
   )
-
-  // Admins veem todos os apps ativos
-  if (user[0].is_admin) return res.json(allApps)
-
-  const u           = user[0]
-  const userProfile = u.profile || ''
-  const userTeam    = u.team    || null
-
-  const visible = allApps.filter(app => {
-    const profiles = JSON.parse(app.allowed_profiles || '[]')
-    const users    = JSON.parse(app.allowed_users    || '[]')
-    const teams    = JSON.parse(app.allowed_teams    || '[]')
-    return (
-      profiles.includes(userProfile) ||
-      users.includes(req.uid)        ||
-      (userTeam && teams.includes(userTeam))
-    )
-  })
-
-  res.json(visible)
+  res.json(allApps)
 })
 
 // GET /apps/all — lista todos (admin only)
@@ -193,25 +168,13 @@ router.post('/:id/launch-token', requireAuth, ssoLaunchLimiter, async (req, res,
     }
 
     const [userRows] = await pool.query(
-      'SELECT id, name, profile, team, is_active FROM users WHERE id = ?',
+      'SELECT id, name FROM users WHERE id = ?',
       [req.uid]
     )
-    if (!userRows.length || !userRows[0].is_active) {
-      return res.status(403).json({ error: 'Usuário inativo ou não encontrado' })
+    if (!userRows.length) {
+      return res.status(403).json({ error: 'Usuário não encontrado' })
     }
     const u = userRows[0]
-
-    const profiles = JSON.parse(app.allowed_profiles || '[]')
-    const users    = JSON.parse(app.allowed_users    || '[]')
-    const teams    = JSON.parse(app.allowed_teams    || '[]')
-    const hasAccess =
-      profiles.includes(u.profile) ||
-      users.includes(req.uid)      ||
-      (u.team && teams.includes(u.team))
-
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Acesso não autorizado a este app' })
-    }
 
     const expSeconds = 300 // 5 minutos
     const token = jwt.sign(

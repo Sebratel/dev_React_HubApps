@@ -32,7 +32,7 @@ export function useUsersPage() {
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin', 'users', 'list'],
-    queryFn: () => listUsers({ limit: 500 }),
+    queryFn: () => listUsers({ limit: 2000 }),
     staleTime: 60_000,
   })
 
@@ -91,7 +91,7 @@ export function useUsersPage() {
       patch,
     }: {
       userId: string
-      patch: Partial<Pick<UserModel, 'profile' | 'team'>>
+      patch: Partial<Pick<UserModel, 'profile' | 'team' | 'hireDate'>>
     }) => updateUserProfile(userId, patch),
     onSuccess: invalidateUsers,
   })

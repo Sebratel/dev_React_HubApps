@@ -56,7 +56,7 @@ function WikiModal({ manual, onClose }: WikiModalProps) {
             <p className="truncate text-sm font-bold" style={{ color: '#2d1800' }}>{manual.appName}</p>
           </div>
           <a
-            href={manual.wikiUrl!}
+            href={manual.wikiUrl ?? ''}
             target="_blank"
             rel="noopener noreferrer"
             className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -85,7 +85,7 @@ function WikiModal({ manual, onClose }: WikiModalProps) {
               </div>
             )}
             <iframe
-              src={manual.wikiUrl!}
+              src={manual.wikiUrl ?? ''}
               className="absolute inset-0 h-full w-full border-0"
               title={`Manual ${manual.appName}`}
               onLoad={() => setLoaded(true)}
@@ -117,7 +117,7 @@ function WikiModal({ manual, onClose }: WikiModalProps) {
             <div className="w-12 h-px rounded-full" style={{ background: 'rgba(45,24,0,0.12)' }} />
             <div className="flex flex-col items-center gap-2 w-full">
               <a
-                href={manual.wikiUrl!}
+                href={manual.wikiUrl ?? ''}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold transition-all hover:opacity-90 hover:scale-[1.02] active:scale-95"

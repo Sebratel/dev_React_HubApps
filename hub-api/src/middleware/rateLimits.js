@@ -38,4 +38,13 @@ const ssoLaunchLimiter = rateLimit({
   message: { error: 'Limite de tokens SSO excedido. Tente novamente em 1 minuto.' },
 })
 
-module.exports = { auditLogLimiter, provisionLimiter, adminWriteLimiter, ssoLaunchLimiter }
+const kudosLimiter = rateLimit({
+  windowMs: 60 * 60_000, // 1 hora
+  max: 10,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Limite de kudos por hora atingido. Tente novamente mais tarde.' },
+})
+
+module.exports = { auditLogLimiter, provisionLimiter, adminWriteLimiter, ssoLaunchLimiter, kudosLimiter }

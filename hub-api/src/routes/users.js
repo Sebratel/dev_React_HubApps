@@ -6,13 +6,14 @@ const { provisionLimiter, adminWriteLimiter } = require('../middleware/rateLimit
 const logAudit       = require('../utils/logAudit')
 const AUDIT_ACTIONS  = require('../utils/auditActions')
 
-const USER_FIELDS = 'id, email, name, photo_url, profile, team, is_active, is_admin, last_login, created_at'
+const USER_FIELDS = 'u.id, u.email, u.name, u.photo_url, u.profile, u.team, t.name AS team_name, u.is_active, u.is_admin, u.last_login, u.created_at, u.birth_date, u.hire_date, u.status'
+const USER_FROM   = 'users u LEFT JOIN teams t ON t.id = u.team'
 
 // GET /users/me
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
     const [rows] = await pool.query(
-      `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+      `SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`,
       [req.uid]
     )
     if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' })
@@ -29,7 +30,7 @@ router.post('/provision', requireAuth, provisionLimiter, async (req, res, next) 
   try {
     await pool.query(
       `INSERT INTO users (id, email, name, photo_url, profile, is_active, is_admin, permissions, last_login, online)
-       VALUES (?, ?, ?, ?, '', 0, 0, '[]', NOW(), 1)
+       VALUES (?, ?, ?, ?, '', 1, 0, '[]', NOW(), 1)
        ON DUPLICATE KEY UPDATE
          id = VALUES(id),
          email = VALUES(email),
@@ -40,7 +41,7 @@ router.post('/provision', requireAuth, provisionLimiter, async (req, res, next) 
     )
 
     const [rows] = await pool.query(
-      `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+      `SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`,
       [req.uid]
     )
     if (!rows.length) return res.status(500).json({ error: 'Não foi possível provisionar o usuário' })
@@ -67,14 +68,84 @@ router.patch('/me/heartbeat', requireAuth, async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
+// PATCH /users/me — usuário atualiza o próprio nome e/ou data de nascimento
+// IMPORTANTE: deve ficar ANTES de PATCH /:id, senão Express casa /me como id="me"
+router.patch('/me', requireAuth, async (req, res, next) => {
+  const { name, birth_date } = req.body
+  const updates = []
+  const values  = []
+  const fields  = []
+
+  if (name !== undefined) {
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name inválido' })
+    }
+    updates.push('name = ?')
+    values.push(name.trim().slice(0, 120))
+    fields.push('name')
+  }
+
+  if (birth_date !== undefined) {
+    if (birth_date !== null && !/^\d{4}-\d{2}-\d{2}$/.test(String(birth_date))) {
+      return res.status(400).json({ error: 'birth_date inválido — use o formato YYYY-MM-DD' })
+    }
+    updates.push('birth_date = ?')
+    values.push(birth_date || null)
+    fields.push('birth_date')
+  }
+
+  if ('status' in req.body) {
+    const { status } = req.body
+    if (status !== null && (typeof status !== 'string' || status.length > 80)) {
+      return res.status(400).json({ error: 'status inválido — máximo 80 caracteres' })
+    }
+    updates.push('status = ?')
+    values.push(status || null)
+    fields.push('status')
+  }
+
+  if (!updates.length) {
+    return res.status(400).json({ error: 'Nenhum campo válido para atualizar' })
+  }
+
+  const conn = await pool.getConnection()
+  try {
+    await conn.beginTransaction()
+    await conn.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, [...values, req.uid])
+    await logAudit({
+      uid:     req.uid,
+      action:  AUDIT_ACTIONS.USER_UPDATE,
+      details: { selfUpdate: true, fields },
+      req,
+      conn,
+    })
+    await conn.commit()
+  } catch (err) {
+    await conn.rollback()
+    return next(err)
+  } finally {
+    conn.release()
+  }
+
+  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`, [req.uid])
+  res.json(rows[0])
+})
+
 // GET /users/online — admin: usuários ativos nos últimos 2 minutos
 router.get('/online', requireAuth, requireAdmin, async (_req, res, next) => {
   try {
+    // Corrige flags `online` desatualizadas (browser fechado sem disparar /offline)
+    await pool.query(
+      `UPDATE users
+       SET online = 0
+       WHERE online = 1
+         AND (last_heartbeat IS NULL OR last_heartbeat < DATE_SUB(NOW(), INTERVAL 2 MINUTE))`
+    )
+
     const [rows] = await pool.query(
       `SELECT id, name, email, photo_url, profile, is_active, last_heartbeat
        FROM users
        WHERE last_heartbeat >= DATE_SUB(NOW(), INTERVAL 2 MINUTE)
-         AND is_active = 1
        ORDER BY last_heartbeat DESC
        LIMIT 30`
     )
@@ -87,16 +158,219 @@ router.get('/online', requireAuth, requireAdmin, async (_req, res, next) => {
 // GET /users — lista todos (admin only) com paginação
 router.get('/', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const limit  = Math.min(Math.max(Number(req.query.limit)  || 50, 1), 200)
+    const limit  = Math.min(Math.max(Number(req.query.limit)  || 50, 1), 2000)
     const offset = Math.max(Number(req.query.offset) || 0, 0)
 
     const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users')
     const [data] = await pool.query(
-      `SELECT ${USER_FIELDS} FROM users ORDER BY name LIMIT ? OFFSET ?`,
+      `SELECT ${USER_FIELDS} FROM ${USER_FROM} ORDER BY COALESCE(u.name, u.email) LIMIT ? OFFSET ?`,
       [limit, offset]
     )
 
     res.json({ data, pagination: { limit, offset, total } })
+  } catch (err) { next(err) }
+})
+
+// GET /users/people — diretório enriquecido para a página /pessoas
+// ⚠️ deve ficar ANTES de /:id
+router.get('/people', requireAuth, async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT u.id, u.name, u.photo_url, u.profile, u.status,
+             t.name AS team_name,
+             u.birth_date, u.hire_date,
+             COALESCE(kc.kudo_count, 0) AS kudo_count
+      FROM users u
+      LEFT JOIN teams t ON t.id = u.team
+      LEFT JOIN (
+        SELECT to_user_id, COUNT(*) AS kudo_count
+        FROM kudos
+        GROUP BY to_user_id
+      ) kc ON kc.to_user_id = u.id
+      WHERE u.is_active = 1
+      ORDER BY COALESCE(u.name, u.email)
+    `)
+
+    const today        = new Date()
+    const currentMonth = today.getUTCMonth() + 1
+    const currentDay   = today.getUTCDate()
+    const currentYear  = today.getUTCFullYear()
+
+    const result = rows.map(r => {
+      let birthdayToday = false
+      let birthdayThisMonth = false
+      let birthMonth = null
+      let birthDay   = null
+      let tenureYears = null
+
+      if (r.birth_date) {
+        const parts = String(r.birth_date).split('-')
+        birthMonth = Number(parts[1])
+        birthDay   = Number(parts[2])
+        birthdayToday     = birthMonth === currentMonth && birthDay === currentDay
+        birthdayThisMonth = birthMonth === currentMonth
+      }
+
+      if (r.hire_date) {
+        const hd    = new Date(r.hire_date)
+        const years = currentYear - hd.getUTCFullYear()
+        if (years >= 1) tenureYears = years
+      }
+
+      return {
+        id: r.id, name: r.name, photoUrl: r.photo_url,
+        profile: r.profile, status: r.status, teamName: r.team_name,
+        kudoCount: Number(r.kudo_count),
+        birthMonth, birthDay,
+        birthdayToday, birthdayThisMonth,
+        tenureYears,
+      }
+    })
+
+    res.json(result)
+  } catch (err) { next(err) }
+})
+
+// GET /users/me/stats — estatísticas do usuário logado (kudos enviados/recebidos)
+router.get('/me/stats', requireAuth, async (req, res, next) => {
+  try {
+    const [[sent]]     = await pool.query('SELECT COUNT(*) AS c FROM kudos WHERE from_user_id = ?', [req.uid])
+    const [[received]] = await pool.query('SELECT COUNT(*) AS c FROM kudos WHERE to_user_id = ?', [req.uid])
+    const [[userRow]]  = await pool.query('SELECT hire_date FROM users WHERE id = ?', [req.uid])
+    let tenureYears = null
+    if (userRow?.hire_date) {
+      const hd = new Date(userRow.hire_date)
+      tenureYears = new Date().getUTCFullYear() - hd.getUTCFullYear()
+    }
+    res.json({ kudosSent: Number(sent.c), kudosReceived: Number(received.c), tenureYears })
+  } catch (err) { next(err) }
+})
+
+// GET /users/directory — lista básica de usuários ativos (para seletor de destinatário em kudos, etc.)
+router.get('/directory', requireAuth, async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, name, photo_url FROM users WHERE is_active = 1 ORDER BY COALESCE(name, email)'
+    )
+    res.json(rows)
+  } catch (err) { next(err) }
+})
+
+// GET /users/presence — usuários ativos agora (público, info básica sem e-mail)
+router.get('/presence', requireAuth, async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT id, name, photo_url, status
+      FROM users
+      WHERE is_active = 1
+        AND last_heartbeat >= DATE_SUB(NOW(), INTERVAL 2 MINUTE)
+      ORDER BY name
+      LIMIT 50
+    `)
+    res.json(rows)
+  } catch (err) { next(err) }
+})
+
+// GET /users/celebrations — aniversários e datas de empresa de hoje
+router.get('/celebrations', requireAuth, async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT id, name, photo_url, birth_date, hire_date
+      FROM users
+      WHERE is_active = 1
+        AND (
+          (birth_date IS NOT NULL AND MONTH(birth_date) = MONTH(CURDATE()) AND DAY(birth_date) = DAY(CURDATE()))
+          OR
+          (hire_date IS NOT NULL
+            AND hire_date < CURDATE()
+            AND MONTH(hire_date) = MONTH(CURDATE())
+            AND DAY(hire_date)   = DAY(CURDATE()))
+        )
+      ORDER BY name
+    `)
+
+    const currentYear = new Date().getFullYear()
+    const currentMonth = new Date().getMonth() + 1 // 1-based
+    const currentDay   = new Date().getDate()
+
+    const result = rows.map((r) => {
+      let isBirthday    = false
+      let isAnniversary = false
+      let anniversaryYears = null
+
+      if (r.birth_date) {
+        const bd = new Date(r.birth_date)
+        isBirthday = (bd.getUTCMonth() + 1) === currentMonth && bd.getUTCDate() === currentDay
+      }
+      if (r.hire_date) {
+        const hd = new Date(r.hire_date)
+        isAnniversary = (hd.getUTCMonth() + 1) === currentMonth && hd.getUTCDate() === currentDay
+        if (isAnniversary) {
+          anniversaryYears = currentYear - hd.getUTCFullYear()
+        }
+      }
+
+      return {
+        id:              r.id,
+        name:            r.name,
+        photoUrl:        r.photo_url,
+        isBirthday,
+        isAnniversary,
+        anniversaryYears,
+      }
+    })
+
+    res.json(result)
+  } catch (err) { next(err) }
+})
+
+// GET /users/:id/public — perfil público de um colega (sem e-mail, sem is_admin)
+// ⚠️ deve ficar ANTES de PATCH /:id para que Express não confunda o segmento
+router.get('/:id/public', requireAuth, async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT u.id, u.name, u.photo_url, u.profile, u.status,
+             t.name AS team_name,
+             u.birth_date, u.hire_date,
+             COALESCE(kc.kudo_count, 0) AS kudo_count
+      FROM users u
+      LEFT JOIN teams t ON t.id = u.team
+      LEFT JOIN (
+        SELECT to_user_id, COUNT(*) AS kudo_count FROM kudos GROUP BY to_user_id
+      ) kc ON kc.to_user_id = u.id
+      WHERE u.id = ? AND u.is_active = 1
+    `, [req.params.id])
+
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' })
+    const r = rows[0]
+
+    const today        = new Date()
+    const currentMonth = today.getUTCMonth() + 1
+    const currentDay   = today.getUTCDate()
+    const currentYear  = today.getUTCFullYear()
+
+    let birthdayToday = false, birthdayThisMonth = false
+    let birthMonth = null, birthDay = null, tenureYears = null
+
+    if (r.birth_date) {
+      const parts = String(r.birth_date).split('-')
+      birthMonth = Number(parts[1])
+      birthDay   = Number(parts[2])
+      birthdayToday     = birthMonth === currentMonth && birthDay === currentDay
+      birthdayThisMonth = birthMonth === currentMonth
+    }
+    if (r.hire_date) {
+      const hd    = new Date(r.hire_date)
+      const years = currentYear - hd.getUTCFullYear()
+      if (years >= 1) tenureYears = years
+    }
+
+    res.json({
+      id: r.id, name: r.name, photoUrl: r.photo_url,
+      profile: r.profile, status: r.status, teamName: r.team_name,
+      kudoCount: Number(r.kudo_count),
+      birthMonth, birthDay, birthdayToday, birthdayThisMonth, tenureYears,
+    })
   } catch (err) { next(err) }
 })
 
@@ -110,7 +384,7 @@ router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, r
     return res.status(400).json({ error: 'is_active e is_admin não podem ser alterados na mesma requisição' })
   }
 
-  const allowed = ['is_active', 'is_admin', 'profile', 'team', 'permissions']
+  const allowed = ['is_active', 'is_admin', 'profile', 'team', 'permissions', 'hire_date']
   const fields  = Object.keys(req.body).filter(k => allowed.includes(k))
   if (!fields.length) return res.status(400).json({ error: 'Nenhum campo válido' })
 
@@ -152,7 +426,7 @@ router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, r
   }
 
   const [rows] = await pool.query(
-    `SELECT ${USER_FIELDS} FROM users WHERE id = ?`,
+    `SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`,
     [req.params.id]
   )
 
@@ -215,39 +489,8 @@ router.post('/create-external', requireAuth, requireAdmin, adminWriteLimiter, as
     conn.release()
   }
 
-  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM users WHERE id = ?`, [firebaseUid])
+  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM ${USER_FROM} WHERE u.id = ?`, [firebaseUid])
   res.status(201).json(rows[0])
-})
-
-// PATCH /users/me — usuário atualiza o próprio nome
-router.patch('/me', requireAuth, async (req, res, next) => {
-  const { name } = req.body
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    return res.status(400).json({ error: 'name é obrigatório' })
-  }
-  const trimmedName = name.trim().slice(0, 120)
-
-  const conn = await pool.getConnection()
-  try {
-    await conn.beginTransaction()
-    await conn.query('UPDATE users SET name = ? WHERE id = ?', [trimmedName, req.uid])
-    await logAudit({
-      uid:     req.uid,
-      action:  AUDIT_ACTIONS.USER_UPDATE,
-      details: { selfUpdate: true, fields: ['name'] },
-      req,
-      conn,
-    })
-    await conn.commit()
-  } catch (err) {
-    await conn.rollback()
-    return next(err)
-  } finally {
-    conn.release()
-  }
-
-  const [rows] = await pool.query(`SELECT ${USER_FIELDS} FROM users WHERE id = ?`, [req.uid])
-  res.json(rows[0])
 })
 
 // GET /users/me/favorites

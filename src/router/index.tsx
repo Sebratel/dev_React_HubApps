@@ -20,9 +20,15 @@ import { AdminSuggestionsPage } from '@/features/admin/suggestions/AdminSuggesti
 import { AuditLogsManagementPage } from '@/features/admin/audit-logs/AuditLogsManagementPage'
 import { AdminHighlightsPage } from '@/features/admin/highlights/AdminHighlightsPage'
 import { AdminManualsPage } from '@/features/admin/manuals/AdminManualsPage'
+import { AdminAnalyticsPage } from '@/features/admin/analytics/AdminAnalyticsPage'
 import { SuggestionsPage } from '@/features/suggestions/SuggestionsPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
 import { MyRequestsPage } from '@/features/my-requests/MyRequestsPage'
+import { DirectoryPage } from '@/features/directory/DirectoryPage'
+import { PublicProfilePage } from '@/features/directory/PublicProfilePage'
+import { BoardPage } from '@/features/board/BoardPage'
+import { QuizPage } from '@/features/quiz/QuizPage'
+import { AdminQuizPage } from '@/features/admin/quiz/AdminQuizPage'
 
 export const router = createBrowserRouter(
   [
@@ -72,6 +78,22 @@ export const router = createBrowserRouter(
                   path: '/minhas-solicitacoes',
                   element: <MyRequestsPage />,
                 },
+                {
+                  path: '/pessoas',
+                  element: <DirectoryPage />,
+                },
+                {
+                  path: '/pessoas/:id',
+                  element: <PublicProfilePage />,
+                },
+                {
+                  path: '/mural',
+                  element: <BoardPage />,
+                },
+                {
+                  path: '/quiz',
+                  element: <QuizPage />,
+                },
               ],
             },
             {
@@ -119,6 +141,14 @@ export const router = createBrowserRouter(
                     {
                       path: '/admin/manuals',
                       element: <AdminManualsPage />,
+                    },
+                    {
+                      path: '/admin/analytics',
+                      element: <AdminAnalyticsPage />,
+                    },
+                    {
+                      path: '/admin/quiz',
+                      element: <AdminQuizPage />,
                     },
                   ],
                 },

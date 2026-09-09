@@ -33,6 +33,7 @@ const user: UserModel = {
   photoUrl: null,
   profile: 'employee',
   team: null,
+  teamName: null,
   permissions: [],
   isActive: true,
   isAdmin: false,
@@ -91,7 +92,9 @@ describe('audit-log.service', () => {
     await logAppOpen(user, app)
     const [, payload] = mockPost.mock.calls[0] as [string, Record<string, unknown>]
     expect(payload.action).toBe(AUDIT_ACTION.APP_OPEN)
-    expect(payload.details as string).toContain('Meu App')
+    // details is now a structured object { appId, appName } for reliable aggregation
+    const details = payload.details as { appId: string; appName: string }
+    expect(details.appName).toBe('Meu App')
   })
 
   it('logAccessRequest sends ACCESS_REQUEST_CREATE (not ACCESS_REQUEST)', async () => {

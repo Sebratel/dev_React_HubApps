@@ -43,7 +43,7 @@ app.set('trust proxy', 1)
 
 app.use(helmet())
 app.use(morgan('combined'))
-app.use(express.json({ limit: '2mb' }))
+app.use(express.json({ limit: '12mb' })) // aumentado para suportar base64 de imagens geradas por IA
 
 // Static uploads — cross-origin allowed so React app (different port/domain) can display images
 app.use('/uploads', (_req, res, next) => {
@@ -82,6 +82,12 @@ app.use('/admin',           require('./routes/admin'))
 app.use('/highlights',      require('./routes/highlights'))
 app.use('/manuals',         require('./routes/manuals'))
 app.use('/upload',          require('./routes/upload'))
+app.use('/kudos',           require('./routes/kudos'))
+app.use('/birthday-wishes', require('./routes/birthdayWishes'))
+app.use('/polls',           require('./routes/polls'))
+app.use('/board',           require('./routes/boardPosts'))
+app.use('/avatar',          require('./routes/avatar'))
+app.use('/quiz',            require('./routes/quiz'))
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 

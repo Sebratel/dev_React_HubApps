@@ -1,9 +1,8 @@
 export const SEBRATEL_PROFILES = [
-  { value: 'infraestrutura', label: 'Infraestrutura' },
-  { value: 'tecnica',        label: 'Técnica'        },
-  { value: 'atendimento',    label: 'Atendimento'    },
-  { value: 'comercial',      label: 'Comercial'      },
-  { value: 'users',          label: 'Geral'          },
+  { value: 'tecnica',    label: 'Técnica'    },
+  { value: 'atendimento',label: 'Atendimento'},
+  { value: 'comercial',  label: 'Comercial'  },
+  { value: 'users',      label: 'Geral'      },
 ] as const
 
 export type SebratelProfile = (typeof SEBRATEL_PROFILES)[number]['value']

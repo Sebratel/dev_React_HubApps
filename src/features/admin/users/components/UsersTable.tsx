@@ -12,8 +12,8 @@ import type { UserModel } from '@/types/models'
 export function UsersTableSkeleton() {
   return (
     <div className="rounded-xl border border-border overflow-hidden bg-card">
-      <div className="bg-muted/40 px-4 py-2.5 border-b border-border hidden sm:grid grid-cols-[1fr_auto_auto_auto_40px] gap-4">
-        {['Usuário', 'Status', 'Perfil', 'Permissões', ''].map((h) => (
+      <div className="bg-muted/40 px-4 py-2.5 border-b border-border hidden sm:grid grid-cols-[1fr_auto_auto_auto_auto_40px] gap-4">
+        {['Usuário', 'Status', 'Perfil', 'Time', 'Permissões', ''].map((h) => (
           <Skeleton key={h} className="h-3 w-20" />
         ))}
       </div>
@@ -87,11 +87,12 @@ export function UsersTable({
       {/* Header */}
       <div
         role="row"
-        className="hidden sm:grid grid-cols-[1fr_100px_120px_180px_48px] gap-4 px-4 py-2.5 bg-muted/40 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+        className="hidden sm:grid grid-cols-[1fr_100px_110px_110px_160px_48px] gap-4 px-4 py-2.5 bg-muted/40 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
       >
         <span>Usuário</span>
         <span>Status</span>
         <span>Perfil</span>
+        <span>Time</span>
         <span>Permissões</span>
         <span />
       </div>
@@ -103,7 +104,7 @@ export function UsersTable({
             role="row"
             className="flex items-center gap-3 px-4 py-3.5 border-b border-border last:border-0
                        hover:bg-muted/25 transition-colors
-                       sm:grid sm:grid-cols-[1fr_100px_120px_180px_48px] sm:gap-4"
+                       sm:grid sm:grid-cols-[1fr_100px_110px_110px_160px_48px] sm:gap-4"
           >
             {/* Avatar + name + email */}
             <div className="flex items-center gap-2.5 min-w-0 flex-1 sm:flex-none">
@@ -133,6 +134,13 @@ export function UsersTable({
             {/* Profile */}
             <div className="hidden sm:block">
               <UserProfileBadge profile={user.profile} />
+            </div>
+
+            {/* Team */}
+            <div className="hidden sm:block">
+              {user.teamName
+                ? <span className="text-xs text-foreground truncate block" title={user.teamName}>{user.teamName}</span>
+                : <span className="text-xs text-muted-foreground">—</span>}
             </div>
 
             {/* Permissions */}

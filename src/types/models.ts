@@ -19,7 +19,8 @@ export interface UserModel {
   photoUrl: string | null
   // Legacy profile field — kept for compatibility with existing Firestore data
   profile: string // 'employee' | 'user' | 'third_party' | 'admin'
-  team: string | null // FK → teams/{teamId}
+  team: string | null     // FK → teams/{teamId}
+  teamName: string | null // denormalized team name (read-only, set by API JOIN)
   permissions: string[]
   isActive: boolean
   isAdmin: boolean // Stored field — NOT computed from permissions array
@@ -28,6 +29,28 @@ export interface UserModel {
   online: boolean
   lastLogin: Date | null
   dashboard?: DashboardPreferences
+  /** Data de nascimento — YYYY-MM-DD — editável pelo próprio usuário */
+  birthDate?: string | null
+  /** Data de admissão — YYYY-MM-DD — editável apenas por admins */
+  hireDate?: string | null
+  /** Status do momento — ex: "🎯 Focado", "🏠 Home office" */
+  status?: string | null
+}
+
+// ─── KudoModel ────────────────────────────────────────────────────────────────
+
+export interface KudoModel {
+  id: string
+  message: string
+  createdAt: Date
+  /** null quando isAnonymous — a API já mascara antes de enviar */
+  fromId: string | null
+  fromName: string
+  fromPhoto: string | null
+  toId: string
+  toName: string
+  toPhoto: string | null
+  isAnonymous: boolean
 }
 
 // ─── AuthResult ──────────────────────────────────────────────────────────────
@@ -200,3 +223,87 @@ export interface ExternalAppLaunchSession {
   launchContext: string | null
   launchContextExpiresAt: Date | null
 }
+
+// ─── Quiz do Dia ──────────────────────────────────────────────────────────────
+
+export interface QuizQuestion {
+  id: number
+  question: string
+  options: { a: string; b: string; c: string; d: string }
+  category: string
+}
+
+export interface QuizAnswerResult {
+  questionId: number
+  chosen: string | null
+  correct: string
+  correctAnswer?: string   // alias returned by /today (played state)
+  timeMs: number
+  pts: number
+  question?: string
+  options?: { a: string; b: string; c: string; d: string }
+}
+
+export interface QuizTodayPending {
+  status: 'pending'
+  weekStartDate: string
+  questions: QuizQuestion[]
+}
+
+export interface QuizTodayPlayed {
+  status: 'played'
+  score: number
+  weekStartDate: string
+  answers: QuizAnswerResult[]
+}
+
+export type QuizToday = QuizTodayPending | QuizTodayPlayed
+
+export interface QuizRankingEntry {
+  position: number
+  userId: string
+  name: string
+  photoUrl: string | null
+  totalScore: number
+  /** Quantas semanas do mês o usuário já jogou */
+  weeksPlayed: number
+}
+
+export interface QuizRanking {
+  /** Top da semana atual */
+  weekly: QuizRankingEntry[]
+  /** Ranking acumulado do mês (soma de todas as semanas) */
+  monthly: QuizRankingEntry[]
+  myPosition: number | null
+  myMonthlyScore: number
+  /** Pontuação desta semana (null se ainda não jogou esta semana) */
+  weekScore: number | null
+  weekStartDate: string
+  monthStartDate: string
+}
+
+export interface QuizSubmitAnswer {
+  questionId: number
+  chosen: string | null
+  timeMs: number
+}
+
+export interface QuizSubmitResult {
+  score: number
+  answers: QuizAnswerResult[]
+}
+
+/** Pergunta completa retornada para admins (inclui gabarito e estado active) */
+export interface QuizAdminQuestion {
+  id: number
+  question: string
+  option_a: string
+  option_b: string
+  option_c: string
+  option_d: string
+  correct: 'a' | 'b' | 'c' | 'd'
+  category: string
+  difficulty: 'facil' | 'medio' | 'dificil'
+  active: 0 | 1
+}
+

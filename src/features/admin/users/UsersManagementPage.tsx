@@ -23,8 +23,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { UserModel } from '@/types/models'
-import { useReducedMotion } from 'framer-motion'
-
 type DialogKind = 'activate' | 'deactivate' | 'edit' | 'promoteAdmin' | 'revokeAdmin' | 'createExternal' | null
 
 function formatMutationError(err: unknown): string {
@@ -69,8 +67,6 @@ export function UsersManagementPage() {
   const [dialog, setDialog] = useState<DialogKind>(null)
 
   if (!currentUser || !canAccessAdminDashboard(currentUser)) return null
-
-  const reduced = useReducedMotion()
 
   function handleExportCsv() {
     const headers = ['Nome', 'E-mail', 'Perfil', 'Time', 'Status', 'Admin', 'Criado em']

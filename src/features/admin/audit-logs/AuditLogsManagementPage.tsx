@@ -19,8 +19,6 @@ import { AuditLogDetailsDialog } from './components/AuditLogDetailsDialog'
 import { AuditLogsPagination } from './components/AuditLogsPagination'
 import type { AuditLogModel } from '@/types/models'
 import type { AuditAction } from '@/types/api'
-import { useReducedMotion } from 'framer-motion'
-
 // ─── Action options for <select> ─────────────────────────────────────────────
 
 const ACTION_OPTIONS: { value: AuditAction | 'all'; label: string }[] = [
@@ -62,8 +60,6 @@ export function AuditLogsManagementPage() {
 
   const [selectedLog, setSelectedLog] = useState<AuditLogModel | null>(null)
   const [isExporting, setIsExporting] = useState(false)
-  const reduced = useReducedMotion()
-
   async function handleExportCsv() {
     setIsExporting(true)
     try {

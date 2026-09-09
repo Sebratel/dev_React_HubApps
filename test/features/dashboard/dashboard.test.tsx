@@ -14,6 +14,7 @@ const mockUser: UserModel = {
   photoUrl: null,
   profile: 'employee',
   team: null,
+  teamName: null,
   permissions: [],
   isActive: true,
   isAdmin: false,
