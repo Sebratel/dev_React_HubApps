@@ -128,7 +128,11 @@ app.use((err, _req, res, _next) => {
 // ─── Start ───────────────────────────────────────────────────
 if (require.main === module) {
   const PORT = Number(process.env.PORT) || 3000
-  app.listen(PORT, () => console.log(`hub-api rodando na porta ${PORT}`))
+  app.listen(PORT, () => {
+    console.log(`hub-api rodando na porta ${PORT}`)
+    // Sincronização nightly de datas de aniversário (Voalle → Hub, 02:00 Brasília)
+    require('./scheduler/birthDateSync').startCron()
+  })
 }
 
 module.exports = app
