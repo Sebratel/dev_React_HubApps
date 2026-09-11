@@ -5,12 +5,13 @@ const path = require('path')
 // (compose `environment:`) — neste caso config() simplesmente não carrega nada.
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })
 
-const express   = require('express')
-const helmet    = require('helmet')
-const cors      = require('cors')
-const morgan    = require('morgan')
-const rateLimit = require('express-rate-limit')
-const admin     = require('firebase-admin')
+const express       = require('express')
+const helmet        = require('helmet')
+const cors          = require('cors')
+const morgan        = require('morgan')
+const rateLimit     = require('express-rate-limit')
+const cookieParser  = require('cookie-parser')
+const admin         = require('firebase-admin')
 
 // ─── Firebase Admin ───────────────────────────────────────────
 if (!admin.apps.length) {
@@ -71,6 +72,7 @@ app.use(helmet({
   hidePoweredBy: true,
 }))
 app.use(morgan('combined'))
+app.use(cookieParser())
 app.use(express.json({ limit: '12mb' })) // aumentado para suportar base64 de imagens geradas por IA
 
 // Static uploads — cross-origin allowed so React app (different port/domain) can display images
@@ -99,6 +101,7 @@ app.use(rateLimit({
 }))
 
 // ─── Rotas ───────────────────────────────────────────────────
+app.use('/auth',            require('./routes/auth'))
 app.use('/users',           require('./routes/users'))
 app.use('/apps',            require('./routes/apps'))
 app.use('/audit-logs',      require('./routes/auditLogs'))
