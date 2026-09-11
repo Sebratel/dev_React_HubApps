@@ -1,6 +1,8 @@
 const router = require('express').Router()
 const pool   = require('../db/pool')
 const { requireAuth } = require('../middleware/auth')
+const { birthdayWishLimiter } = require('../middleware/rateLimits')
+const { stripHtml } = require('../utils/sanitize')
 const { randomUUID } = require('crypto')
 
 // GET /birthday-wishes — aniversariantes de hoje + parabéns recebidos
@@ -49,13 +51,13 @@ router.get('/', requireAuth, async (_req, res, next) => {
 })
 
 // POST /birthday-wishes — enviar parabéns
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, birthdayWishLimiter, async (req, res, next) => {
   const { toUserId, message } = req.body
   if (!toUserId || typeof toUserId !== 'string') {
     return res.status(400).json({ error: 'toUserId obrigatório' })
   }
-  const trimmed = (message || '').trim()
-  if (!trimmed || trimmed.length > 300) {
+  const trimmed = stripHtml(message, 300)
+  if (!trimmed) {
     return res.status(400).json({ error: 'message obrigatório (máx 300 caracteres)' })
   }
 

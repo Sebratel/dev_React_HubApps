@@ -47,4 +47,40 @@ const kudosLimiter = rateLimit({
   message: { error: 'Limite de kudos por hora atingido. Tente novamente mais tarde.' },
 })
 
-module.exports = { auditLogLimiter, provisionLimiter, adminWriteLimiter, ssoLaunchLimiter, kudosLimiter }
+const boardLimiter = rateLimit({
+  windowMs: 10 * 60_000, // 10 minutos
+  max: 5,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Limite de posts no mural atingido. Tente novamente em 10 minutos.' },
+})
+
+const birthdayWishLimiter = rateLimit({
+  windowMs: 60 * 60_000, // 1 hora
+  max: 20,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Limite de mensagens de parabéns atingido. Tente novamente mais tarde.' },
+})
+
+const suggestionLimiter = rateLimit({
+  windowMs: 60 * 60_000, // 1 hora
+  max: 10,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Limite de sugestões por hora atingido. Tente novamente mais tarde.' },
+})
+
+module.exports = {
+  auditLogLimiter,
+  provisionLimiter,
+  adminWriteLimiter,
+  ssoLaunchLimiter,
+  kudosLimiter,
+  boardLimiter,
+  birthdayWishLimiter,
+  suggestionLimiter,
+}

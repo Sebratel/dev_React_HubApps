@@ -1,6 +1,8 @@
 const router = require('express').Router()
 const pool   = require('../db/pool')
 const { requireAuth, requireAdmin } = require('../middleware/auth')
+const { boardLimiter } = require('../middleware/rateLimits')
+const { stripHtml } = require('../utils/sanitize')
 const { randomUUID } = require('crypto')
 
 // ─── Campos comuns ────────────────────────────────────────────────────────────
@@ -31,10 +33,10 @@ router.get('/', requireAuth, async (_req, res, next) => {
 })
 
 // POST /board — criar post
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, boardLimiter, async (req, res, next) => {
   const { message } = req.body
-  const trimmed = (message || '').trim()
-  if (!trimmed || trimmed.length > 500) {
+  const trimmed = stripHtml(message, 500)
+  if (!trimmed) {
     return res.status(400).json({ error: 'message obrigatório (máx 500 caracteres)' })
   }
 

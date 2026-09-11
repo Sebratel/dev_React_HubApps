@@ -41,7 +41,35 @@ const app = express()
 
 app.set('trust proxy', 1)
 
-app.use(helmet())
+app.use(helmet({
+  // CSP explícito — API só serve JSON/uploads, não HTML com scripts
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:  ["'none'"],
+      scriptSrc:   ["'none'"],
+      styleSrc:    ["'none'"],
+      imgSrc:      ["'self'", 'data:'],
+      connectSrc:  ["'self'"],
+      fontSrc:     ["'none'"],
+      objectSrc:   ["'none'"],
+      mediaSrc:    ["'none'"],
+      frameSrc:    ["'none'"],
+      frameAncestors: ["'none'"],
+      formAction:  ["'none'"],
+      baseUri:     ["'none'"],
+    },
+  },
+  // Não enviar referrer para fora do domínio
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  // Bloqueia MIME-type sniffing
+  noSniff: true,
+  // Bloqueia abertura em iframe de outros domínios
+  xFrameOptions: { action: 'deny' },
+  // Força HTTPS em navegadores que já acessaram via HTTPS
+  hsts: { maxAge: 31_536_000, includeSubDomains: true, preload: true },
+  // Remove o header X-Powered-By
+  hidePoweredBy: true,
+}))
 app.use(morgan('combined'))
 app.use(express.json({ limit: '12mb' })) // aumentado para suportar base64 de imagens geradas por IA
 

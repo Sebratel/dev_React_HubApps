@@ -1,7 +1,7 @@
 const router = require('express').Router()
 const pool   = require('../db/pool')
 const { requireAuth, requireAdmin } = require('../middleware/auth')
-const { adminWriteLimiter }         = require('../middleware/rateLimits')
+const { adminWriteLimiter, suggestionLimiter } = require('../middleware/rateLimits')
 const logAudit                      = require('../utils/logAudit')
 const AUDIT_ACTIONS                 = require('../utils/auditActions')
 const {
@@ -13,6 +13,7 @@ const {
   valueToVoteType,
   refreshCounts,
 } = require('../utils/platformSuggestions')
+const { stripHtml } = require('../utils/sanitize')
 
 const VALID_TYPES    = ['feature', 'bug', 'improvement', 'other']
 const VALID_STATUSES = ['pending', 'in_review', 'in_development', 'done', 'rejected']
@@ -97,12 +98,14 @@ router.get('/all', requireAuth, requireAdmin, async (req, res, next) => {
 })
 
 // POST /suggestions — criar sugestão (visível também na plataforma de splitters)
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, suggestionLimiter, async (req, res, next) => {
   const user = await fetchActiveUser(req.uid)
   if (!user) return res.status(403).json({ error: 'Usuário inativo' })
 
-  const { title, body, type, appId, appName, sector } = req.body
-  if (!title?.trim()) return res.status(400).json({ error: 'title obrigatório' })
+  const { title: rawTitle, body: rawBody, type, appId, appName, sector } = req.body
+  const title = stripHtml(rawTitle, 200)
+  const body  = stripHtml(rawBody,  2000)
+  if (!title) return res.status(400).json({ error: 'title obrigatório' })
   if (!sector?.trim()) return res.status(400).json({ error: 'sector obrigatório' })
 
   const resolved = await resolveApp(appId, appName)
@@ -118,7 +121,7 @@ router.post('/', requireAuth, async (req, res, next) => {
   if (!teamRows.length) return res.status(400).json({ error: 'Setor inválido' })
 
   const category = typeToCategory(suggType)
-  const description = body?.trim() || title.trim()
+  const description = body || title  // já sanitizados e trimados pelo stripHtml
 
   const conn = await pool.getConnection()
   let newId
@@ -130,7 +133,7 @@ router.post('/', requireAuth, async (req, res, next) => {
           author_uid, author_email, author_name, author_photo_url)
        VALUES (?, ?, ?, ?, ?, 'open', ?, ?, ?, ?)`,
       [
-        title.trim(),
+        title,
         description,
         sectorValue,
         resolved.appId,
@@ -146,7 +149,7 @@ router.post('/', requireAuth, async (req, res, next) => {
     await logAudit({
       uid: req.uid,
       action: AUDIT_ACTIONS.SUGGESTION_CREATE,
-      details: { id: newId, title: title.trim(), appId: resolved.appId, sector: sectorValue },
+      details: { id: newId, title, appId: resolved.appId, sector: sectorValue },
       req,
       conn,
     })
@@ -248,9 +251,8 @@ router.post('/:id/comments', requireAuth, async (req, res, next) => {
   const user = await fetchActiveUser(req.uid)
   if (!user) return res.status(403).json({ error: 'Usuário inativo' })
 
-  const body = req.body?.body?.trim()
+  const body = stripHtml(req.body?.body, 2000)
   if (!body) return res.status(400).json({ error: 'body obrigatório' })
-  if (body.length > 2000) return res.status(400).json({ error: 'Comentário muito longo (máx. 2000)' })
 
   const suggestionId = Number(req.params.id)
   if (!Number.isFinite(suggestionId)) {

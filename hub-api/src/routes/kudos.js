@@ -5,6 +5,7 @@ const { kudosLimiter } = require('../middleware/rateLimits')
 const logAudit = require('../utils/logAudit')
 const AUDIT_ACTIONS = require('../utils/auditActions')
 const { randomUUID } = require('crypto')
+const { stripHtml } = require('../utils/sanitize')
 
 // GET /kudos — feed dos últimos kudos enviados
 // Quando is_anonymous = 1, o remetente é mascarado na resposta (apenas o DB guarda a identidade real).
@@ -35,7 +36,7 @@ router.post('/', requireAuth, kudosLimiter, async (req, res, next) => {
   if (!message || !message.trim())    return res.status(400).json({ error: 'message obrigatório' })
   if (toUserId === req.uid)           return res.status(400).json({ error: 'Você não pode enviar um kudo para si mesmo' })
 
-  const trimmed   = message.trim().slice(0, 300)
+  const trimmed   = stripHtml(message, 300)
   const anonymous = isAnonymous === true ? 1 : 0
 
   try {
