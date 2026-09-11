@@ -12,6 +12,15 @@ const https    = require('https')
 const { randomUUID } = require('crypto')
 const pool     = require('../db/pool')
 const { requireAuth } = require('../middleware/auth')
+const { avatarSaveLimiter } = require('../middleware/rateLimits')
+
+function detectImageMime(buf) {
+  if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'image/jpeg'
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return 'image/png'
+  if (buf.slice(0, 4).toString('ascii') === 'GIF8') return 'image/gif'
+  if (buf.slice(0, 4).toString('ascii') === 'RIFF' && buf.slice(8, 12).toString('ascii') === 'WEBP') return 'image/webp'
+  return null
+}
 
 // ─── Diretório de avatares gerados ────────────────────────────────────────────
 
@@ -88,19 +97,35 @@ router.post('/generate', requireAuth, async (req, res, next) => {
 
 // ─── POST /avatar/save ────────────────────────────────────────────────────────
 
-router.post('/save', requireAuth, async (req, res, next) => {
+const AVATAR_MAX_BYTES = 4 * 1024 * 1024 // 4 MB após decode
+
+router.post('/save', requireAuth, avatarSaveLimiter, async (req, res, next) => {
   try {
     const { imageBase64 } = req.body
-    if (!imageBase64) return res.status(400).json({ error: 'imageBase64 obrigatório' })
+    if (!imageBase64 || typeof imageBase64 !== 'string') {
+      return res.status(400).json({ error: 'imageBase64 obrigatório' })
+    }
 
+    // Decodifica e verifica tamanho antes de gravar em disco
+    const buf = Buffer.from(imageBase64, 'base64')
+    if (buf.length > AVATAR_MAX_BYTES) {
+      return res.status(413).json({ error: 'Imagem muito grande (máx. 4 MB)' })
+    }
+
+    // Valida magic bytes — rejeita qualquer coisa que não seja imagem real
+    const mime = detectImageMime(buf)
+    if (!mime) {
+      return res.status(400).json({ error: 'Formato de imagem não suportado. Use JPEG, PNG, GIF ou WebP.' })
+    }
+
+    const ext      = mime === 'image/jpeg' ? '.jpg' : mime === 'image/png' ? '.png' : mime === 'image/gif' ? '.gif' : '.webp'
     const userId   = req.user.id
-    const filename = `avatar_${userId}_${Date.now()}_${randomUUID().slice(0, 8)}.png`
+    const filename = `avatar_${userId}_${Date.now()}_${randomUUID().slice(0, 8)}${ext}`
     const filepath = path.join(AVATAR_DIR, filename)
 
-    fs.writeFileSync(filepath, Buffer.from(imageBase64, 'base64'))
+    fs.writeFileSync(filepath, buf)
 
     const photoUrl = `/uploads/avatars/${filename}`
-
     await pool.query('UPDATE users SET photo_url = ? WHERE id = ?', [photoUrl, userId])
 
     res.json({ photoUrl })

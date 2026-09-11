@@ -99,8 +99,11 @@ router.patch('/me', requireAuth, async (req, res, next) => {
     if (status !== null && (typeof status !== 'string' || status.length > 80)) {
       return res.status(400).json({ error: 'status inválido — máximo 80 caracteres' })
     }
+    // Sanitiza HTML do status (exibido no Diretório de Pessoas)
+    const { stripHtml } = require('../utils/sanitize')
+    const cleanStatus = status ? stripHtml(status, 80) : null
     updates.push('status = ?')
-    values.push(status || null)
+    values.push(cleanStatus)
     fields.push('status')
   }
 

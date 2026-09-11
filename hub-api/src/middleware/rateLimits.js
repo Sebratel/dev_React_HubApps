@@ -74,6 +74,15 @@ const suggestionLimiter = rateLimit({
   message: { error: 'Limite de sugestões por hora atingido. Tente novamente mais tarde.' },
 })
 
+const avatarSaveLimiter = rateLimit({
+  windowMs: 10 * 60_000, // 10 minutos
+  max: 5,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Limite de salvamento de avatar atingido. Tente novamente em 10 minutos.' },
+})
+
 module.exports = {
   auditLogLimiter,
   provisionLimiter,
@@ -83,4 +92,5 @@ module.exports = {
   boardLimiter,
   birthdayWishLimiter,
   suggestionLimiter,
+  avatarSaveLimiter,
 }
