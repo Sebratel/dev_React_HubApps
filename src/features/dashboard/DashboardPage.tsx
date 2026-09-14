@@ -182,8 +182,9 @@ export function DashboardPage() {
   const firstName = user.name?.split(' ')[0] ?? user.email.split('@')[0] ?? 'usuário'
 
   const sharedCardProps = {
-    onOpen:           handleOpenApp,
-    onToggleFavorite: toggleFavorite,
+    onOpen:            handleOpenApp,
+    onToggleFavorite:  toggleFavorite,
+    onRequestAccess:   () => {}, // todos os apps são acessíveis — prop mantida para compatibilidade de tipo
   }
 
   return (
