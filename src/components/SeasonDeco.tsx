@@ -230,6 +230,8 @@ const DRAW_FN: Record<Season, DrawFn> = {
   outono:    drawOutono,
 }
 
+const ANIMATED: Partial<Record<Season, true>> = { inverno: true, primavera: true, 'verão': true, outono: true }
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const SeasonDeco = memo(function SeasonDeco({ season, className }: Props) {
@@ -245,31 +247,37 @@ export const SeasonDeco = memo(function SeasonDeco({ season, className }: Props)
     const draw = DRAW_FN[season]
     if (!draw) return
 
-    // Overlay sibling receives pointer events (overrides inherited pointer-events: none)
-    const overlay = canvas.nextElementSibling as HTMLElement | null
-
+    // Track mouse via document — works even with pointer-events: none on canvas.
+    // Coordinates are converted from page space to canvas drawing space.
     function onMove(e: MouseEvent) {
       const rect = canvas!.getBoundingClientRect()
-      const scaleX = canvas!.width / rect.width
-      const scaleY = canvas!.height / rect.height
-      mouseRef.current = {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY,
+      if (
+        e.clientX >= rect.left && e.clientX <= rect.right &&
+        e.clientY >= rect.top  && e.clientY <= rect.bottom
+      ) {
+        const scaleX = canvas!.width  / rect.width
+        const scaleY = canvas!.height / rect.height
+        mouseRef.current = {
+          x: (e.clientX - rect.left) * scaleX,
+          y: (e.clientY - rect.top)  * scaleY,
+        }
+      } else {
+        mouseRef.current = null
       }
     }
-    function onLeave() { mouseRef.current = null }
 
-    overlay?.addEventListener('mousemove', onMove)
-    overlay?.addEventListener('mouseleave', onLeave)
+    document.addEventListener('mousemove', onMove)
+
+    if (!ANIMATED[season]) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      draw(ctx, canvas.width, canvas.height)
+      return () => document.removeEventListener('mousemove', onMove)
+    }
 
     let rafId: number
     const start = performance.now()
 
     function frame(now: number) {
-      // sync canvas height to its rendered CSS height
-      const h = canvas!.offsetHeight
-      if (h > 0 && canvas!.height !== h) canvas!.height = h
-
       ctx!.clearRect(0, 0, canvas!.width, canvas!.height)
       draw(ctx!, canvas!.width, canvas!.height, now - start, mouseRef.current)
       rafId = requestAnimationFrame(frame)
@@ -278,23 +286,17 @@ export const SeasonDeco = memo(function SeasonDeco({ season, className }: Props)
     rafId = requestAnimationFrame(frame)
     return () => {
       cancelAnimationFrame(rafId)
-      overlay?.removeEventListener('mousemove', onMove)
-      overlay?.removeEventListener('mouseleave', onLeave)
+      document.removeEventListener('mousemove', onMove)
     }
   }, [season])
 
   return (
-    // Wrapper inherits className (incl. pointer-events-none from parent).
-    // The overlay div inside explicitly re-enables pointer events for mouse tracking.
-    <div className={className}>
-      <canvas
-        ref={canvasRef}
-        width={200}
-        height={220}
-        className="absolute inset-0 h-full w-full"
-        aria-hidden
-      />
-      <div className="absolute inset-0" style={{ pointerEvents: 'auto' }} aria-hidden />
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={200}
+      height={220}
+      className={className}
+      aria-hidden
+    />
   )
 })
