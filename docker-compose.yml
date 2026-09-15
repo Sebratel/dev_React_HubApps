@@ -22,6 +22,16 @@ services:
       - FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_SERVICE_ACCOUNT_JSON}
       - SSO_JWT_SECRET=${SSO_JWT_SECRET}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      # ─── Gateway de sessão ──────────────────────────────────
+      - HUB_SESSION_SECRET=${HUB_SESSION_SECRET}
+      - HUB_SESSION_DOMAIN=${HUB_SESSION_DOMAIN}
+      # ─── Voalle PostgreSQL (sync de aniversários) ───────────
+      - VOALLE_DB_HOST=${VOALLE_DB_HOST}
+      - VOALLE_DB_PORT=${VOALLE_DB_PORT:-5432}
+      - VOALLE_DB_NAME=${VOALLE_DB_NAME}
+      - VOALLE_DB_USER=${VOALLE_DB_USER}
+      - VOALLE_DB_PASS=${VOALLE_DB_PASS}
+      - VOALLE_DB_SSL=${VOALLE_DB_SSL:-false}
     networks:
       - sebratel-net
 
