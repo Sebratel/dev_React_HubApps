@@ -21,6 +21,9 @@ import {
   updateAdminQuizQuestion,
   importAdminQuizQuestions,
   deleteAdminQuizQuestion,
+  getQuizSchedule,
+  setQuizSchedule,
+  deleteQuizSchedule,
 } from '@/services/quiz.service'
 import type { QuizAdminQuestion } from '@/types/models'
 
@@ -119,112 +122,124 @@ function getUpcomingWeeks(count = 5): WeekInfo[] {
   })
 }
 
-// ── Componente: calendário semanal ────────────────────────────────────────────
+// ── Picker de perguntas por semana ────────────────────────────────────────────
 
-function WeekCalendar({ questions }: { questions: QuizAdminQuestion[] }) {
-  const [selectedIdx, setSelectedIdx] = useState(0)
-  const [expandedId,  setExpandedId]  = useState<number | null>(null)
+interface SchedulePickerProps {
+  open: boolean
+  onClose: () => void
+  week: WeekInfo
+  allQuestions: QuizAdminQuestion[]
+  currentIds: number[]       // IDs atualmente selecionados para a semana
+  onSave: (ids: number[]) => void
+  isSaving: boolean
+}
 
-  const weeks       = useMemo(() => getUpcomingWeeks(5), [])
-  const weekQuestions = useMemo(
-    () => weeks.map(w => computeQuestionsForSeed(w.seed, questions)),
-    [weeks, questions],
-  )
+function SchedulePicker({
+  open, onClose, week, allQuestions, currentIds, onSave, isSaving,
+}: SchedulePickerProps) {
+  const [selected, setSelected] = useState<Set<number>>(new Set(currentIds))
+  const [search,   setSearch]   = useState('')
 
-  const activeCount = questions.filter(q => q.active === 1).length
-  const current     = weeks[selectedIdx]
-  const currentQs   = weekQuestions[selectedIdx]
+  useEffect(() => {
+    if (open) {
+      setSelected(new Set(currentIds))
+      setSearch('')
+    }
+  }, [open, currentIds])
+
+  const active = allQuestions.filter(q => q.active === 1)
+  const filtered = search.trim()
+    ? active.filter(q =>
+        q.question.toLowerCase().includes(search.toLowerCase()) ||
+        q.category.toLowerCase().includes(search.toLowerCase())
+      )
+    : active
+
+  function toggle(id: number) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) { next.delete(id) } else if (next.size < 5) { next.add(id) }
+      return next
+    })
+  }
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-violet-500 shrink-0" />
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Planejamento semanal
-          </p>
-        </div>
-        <p className="text-[11px] text-muted-foreground hidden sm:block">
-          Seleção determinística · muda ao ativar/desativar perguntas
-        </p>
-      </div>
+    <Sheet open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <SheetContent className="w-full sm:max-w-lg flex flex-col overflow-hidden p-0">
+        <SheetHeader className="px-5 pt-5 pb-3 border-b border-border shrink-0">
+          <SheetTitle className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-violet-500" />
+            Editar seleção — {week.sublabel}
+          </SheetTitle>
+          <SheetDescription>
+            {week.label} · Escolha exatamente 5 perguntas ativas para fixar nesta semana.
+          </SheetDescription>
+        </SheetHeader>
 
-      {/* Warning: insufficient questions */}
-      {activeCount < 5 && (
-        <div className="px-4 py-3.5 flex items-center gap-3 bg-amber-50/60 dark:bg-amber-950/15 border-b border-amber-200 dark:border-amber-900">
-          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-          <p className="text-xs text-amber-800 dark:text-amber-300">
-            <span className="font-semibold">Atenção:</span> são necessárias pelo menos 5 perguntas ativas.
-            Há apenas {activeCount} ativa{activeCount !== 1 ? 's' : ''} no momento.
-          </p>
+        {/* Busca */}
+        <div className="px-4 py-3 border-b border-border shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar pergunta ou categoria…"
+              className="pl-9 rounded-xl h-9"
+            />
+          </div>
         </div>
-      )}
 
-      {/* Week tabs — scroll horizontal em mobile */}
-      <div className="flex border-b border-border overflow-x-auto scrollbar-none">
-        {weeks.map((w, i) => (
-          <button
-            key={w.weekStart}
-            onClick={() => { setSelectedIdx(i); setExpandedId(null) }}
-            className={cn(
-              'flex flex-col items-start px-4 py-3 text-left transition-colors shrink-0 min-w-[130px] relative',
-              selectedIdx === i
-                ? 'bg-violet-50/70 dark:bg-violet-950/20'
-                : 'hover:bg-muted/30',
-            )}
-          >
-            {/* Active indicator underline */}
-            {selectedIdx === i && (
-              <span className="absolute bottom-0 inset-x-0 h-0.5 bg-violet-500" />
-            )}
-            <div className="flex items-center gap-1.5 mb-0.5">
-              {w.isCurrent && (
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-500 shrink-0" />
-              )}
-              <span className={cn(
-                'text-[11px] font-bold uppercase tracking-wider',
-                selectedIdx === i
-                  ? 'text-violet-700 dark:text-violet-300'
-                  : w.isCurrent
-                  ? 'text-foreground'
-                  : 'text-muted-foreground',
-              )}>
-                {w.sublabel}
-              </span>
-            </div>
-            <span className="text-[11px] text-muted-foreground">
-              {w.startLabel} – {w.endLabel}
+        {/* Contador */}
+        <div className="px-4 py-2 border-b border-border bg-muted/20 shrink-0 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {selected.size} de 5 selecionadas
+          </span>
+          {selected.size === 5 && (
+            <span className="text-[11px] text-violet-600 dark:text-violet-400 font-medium">
+              ✓ Pronto para salvar
             </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Questions for selected week */}
-      {activeCount < 5 ? (
-        <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-          Adicione perguntas ativas para ver a seleção.
+          )}
         </div>
-      ) : (
-        <div className="divide-y divide-border">
-          {currentQs.map((q, i) => {
-            const isExpanded = expandedId === q.id
-            return (
-              <div key={q.id} className="group">
+
+        {/* Lista de perguntas */}
+        <div className="flex-1 overflow-y-auto divide-y divide-border">
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nenhuma pergunta ativa encontrada.
+            </p>
+          ) : (
+            filtered.map(q => {
+              const isSelected = selected.has(q.id)
+              const disabled   = !isSelected && selected.size >= 5
+              return (
                 <button
-                  onClick={() => setExpandedId(isExpanded ? null : q.id)}
-                  className="w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-muted/20 transition-colors"
+                  key={q.id}
+                  onClick={() => toggle(q.id)}
+                  disabled={disabled}
+                  className={cn(
+                    'w-full flex items-start gap-3 px-4 py-3 text-left transition-colors',
+                    isSelected
+                      ? 'bg-violet-50/80 dark:bg-violet-950/30'
+                      : disabled
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'hover:bg-muted/20',
+                  )}
                 >
-                  {/* Número */}
-                  <span className="flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950/40 text-[10px] font-bold text-violet-600 dark:text-violet-400">
-                    {i + 1}
+                  {/* Checkbox visual */}
+                  <span className={cn(
+                    'shrink-0 mt-0.5 flex h-4.5 w-4.5 h-5 w-5 items-center justify-center rounded-md border transition-colors',
+                    isSelected
+                      ? 'bg-violet-600 border-violet-600'
+                      : 'border-border bg-background',
+                  )}>
+                    {isSelected && <Check className="h-3 w-3 text-white" />}
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <p className={cn('text-sm text-foreground leading-snug', !isExpanded && 'line-clamp-1')}>
+                    <p className="text-sm text-foreground leading-snug line-clamp-2">
                       {q.question}
                     </p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground capitalize">
                         {q.category}
                       </span>
@@ -234,73 +249,292 @@ function WeekCalendar({ questions }: { questions: QuizAdminQuestion[] }) {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 mt-0.5">
-                    <span className="text-[11px] font-mono text-muted-foreground/50">#{q.id}</span>
-                    {isExpanded
-                      ? <ChevronUp   className="h-3.5 w-3.5 text-muted-foreground" />
-                      : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
-                  </div>
+                  <span className="text-[11px] font-mono text-muted-foreground/40 shrink-0 mt-0.5">#{q.id}</span>
                 </button>
+              )
+            })
+          )}
+        </div>
 
-                {/* Alternativas expandidas */}
-                <AnimatePresence initial={false}>
-                  {isExpanded && (
-                    <motion.div
-                      key="opts"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-3 pl-12 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                        {(['a', 'b', 'c', 'd'] as const).map(key => {
-                          const isCorrect = q.correct === key
-                          return (
-                            <div
-                              key={key}
-                              className={cn(
-                                'flex items-start gap-2 rounded-xl px-3 py-2 text-xs border',
-                                isCorrect
-                                  ? 'bg-violet-50 dark:bg-violet-950/30 border-violet-300 dark:border-violet-700'
-                                  : 'bg-muted/30 border-border/60',
-                              )}
-                            >
-                              <span className={cn(
-                                'flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[10px] font-bold mt-0.5',
-                                isCorrect ? 'bg-violet-600 text-white' : 'bg-muted text-muted-foreground',
-                              )}>
-                                {key.toUpperCase()}
-                              </span>
-                              <span className={cn(
-                                'leading-snug',
-                                isCorrect ? 'text-violet-700 dark:text-violet-300 font-medium' : 'text-foreground',
-                              )}>
-                                {q[`option_${key}` as keyof QuizAdminQuestion] as string}
-                              </span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </motion.div>
+        {/* Footer com ações */}
+        <div className="px-4 py-4 border-t border-border bg-muted/20 shrink-0 flex items-center gap-2 justify-between">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isSaving}>
+            Cancelar
+          </Button>
+          <Button
+            size="sm"
+            disabled={selected.size !== 5 || isSaving}
+            onClick={() => onSave([...selected])}
+            className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-transparent"
+          >
+            {isSaving ? 'Salvando…' : 'Salvar seleção'}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+// ── Componente: calendário semanal ────────────────────────────────────────────
+
+function WeekCalendar({ questions }: { questions: QuizAdminQuestion[] }) {
+  const qClient = useQueryClient()
+  const [selectedIdx, setSelectedIdx] = useState(0)
+  const [expandedId,  setExpandedId]  = useState<number | null>(null)
+  const [pickerOpen,  setPickerOpen]  = useState(false)
+
+  const weeks = useMemo(() => getUpcomingWeeks(5), [])
+
+  // Busca os agendamentos manuais para as 5 semanas
+  const weekStartKeys = weeks.map(w => w.weekStart)
+  const { data: schedules = {} } = useQuery({
+    queryKey:  ['admin', 'quiz', 'schedule', weekStartKeys],
+    queryFn:   () => getQuizSchedule(weekStartKeys),
+    staleTime: 30_000,
+  })
+
+  // Perguntas de cada semana: schedule override > RNG
+  const weekQuestions = useMemo(() => weeks.map(w => {
+    const override = schedules[w.weekStart]
+    if (override?.length === 5) {
+      const map = Object.fromEntries(questions.map(q => [q.id, q]))
+      const resolved = override.map(id => map[id]).filter(Boolean) as QuizAdminQuestion[]
+      if (resolved.length === 5) return resolved
+    }
+    return computeQuestionsForSeed(w.seed, questions)
+  }), [weeks, schedules, questions])
+
+  const activeCount = questions.filter(q => q.active === 1).length
+  const current     = weeks[selectedIdx]
+  const currentQs   = weekQuestions[selectedIdx]
+  const isOverridden = !!(schedules[current?.weekStart ?? '']?.length === 5)
+
+  // Mutation para salvar agendamento
+  const saveMutation = useMutation({
+    mutationFn: ({ weekStart, ids }: { weekStart: string; ids: number[] }) =>
+      setQuizSchedule(weekStart, ids),
+    onSuccess: () => {
+      qClient.invalidateQueries({ queryKey: ['admin', 'quiz', 'schedule'] })
+      setPickerOpen(false)
+    },
+  })
+
+  // Mutation para remover agendamento
+  const removeMutation = useMutation({
+    mutationFn: (weekStart: string) => deleteQuizSchedule(weekStart),
+    onSuccess: () => {
+      qClient.invalidateQueries({ queryKey: ['admin', 'quiz', 'schedule'] })
+    },
+  })
+
+  return (
+    <>
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-violet-500 shrink-0" />
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Planejamento semanal
+            </p>
+          </div>
+          <p className="text-[11px] text-muted-foreground hidden sm:block">
+            Fixe perguntas por semana ou deixe o sorteio automático
+          </p>
+        </div>
+
+        {/* Warning: insufficient questions */}
+        {activeCount < 5 && (
+          <div className="px-4 py-3.5 flex items-center gap-3 bg-amber-50/60 dark:bg-amber-950/15 border-b border-amber-200 dark:border-amber-900">
+            <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+            <p className="text-xs text-amber-800 dark:text-amber-300">
+              <span className="font-semibold">Atenção:</span> são necessárias pelo menos 5 perguntas ativas.
+              Há apenas {activeCount} ativa{activeCount !== 1 ? 's' : ''} no momento.
+            </p>
+          </div>
+        )}
+
+        {/* Week tabs */}
+        <div className="flex border-b border-border overflow-x-auto scrollbar-none">
+          {weeks.map((w, i) => {
+            const hasOverride = !!(schedules[w.weekStart]?.length === 5)
+            return (
+              <button
+                key={w.weekStart}
+                onClick={() => { setSelectedIdx(i); setExpandedId(null) }}
+                className={cn(
+                  'flex flex-col items-start px-4 py-3 text-left transition-colors shrink-0 min-w-[130px] relative',
+                  selectedIdx === i
+                    ? 'bg-violet-50/70 dark:bg-violet-950/20'
+                    : 'hover:bg-muted/30',
+                )}
+              >
+                {selectedIdx === i && (
+                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-violet-500" />
+                )}
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  {w.isCurrent && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-violet-500 shrink-0" />
                   )}
-                </AnimatePresence>
-              </div>
+                  <span className={cn(
+                    'text-[11px] font-bold uppercase tracking-wider',
+                    selectedIdx === i
+                      ? 'text-violet-700 dark:text-violet-300'
+                      : w.isCurrent
+                      ? 'text-foreground'
+                      : 'text-muted-foreground',
+                  )}>
+                    {w.sublabel}
+                  </span>
+                  {hasOverride && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" title="Fixado manualmente" />
+                  )}
+                </div>
+                <span className="text-[11px] text-muted-foreground">
+                  {w.startLabel} – {w.endLabel}
+                </span>
+              </button>
             )
           })}
         </div>
-      )}
 
-      {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-border bg-muted/20 flex items-center justify-between">
-        <p className="text-[11px] text-muted-foreground">
-          {current.isCurrent ? '🟢 Rodada em andamento' : `🔮 Previsão para ${current.startLabel}`}
-        </p>
-        <p className="text-[11px] text-muted-foreground hidden sm:block">
-          Ativar ou desativar perguntas altera a seleção futura
-        </p>
+        {/* Questions for selected week */}
+        {activeCount < 5 ? (
+          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+            Adicione perguntas ativas para ver a seleção.
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {currentQs.map((q, i) => {
+              const isExpanded = expandedId === q.id
+              return (
+                <div key={q.id} className="group">
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : q.id)}
+                    className="w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-muted/20 transition-colors"
+                  >
+                    <span className="flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950/40 text-[10px] font-bold text-violet-600 dark:text-violet-400">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn('text-sm text-foreground leading-snug', !isExpanded && 'line-clamp-1')}>
+                        {q.question}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground capitalize">
+                          {q.category}
+                        </span>
+                        <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', DIFF_COLOR[q.difficulty] ?? DIFF_COLOR.facil)}>
+                          {DIFF_LABEL[q.difficulty] ?? q.difficulty}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 mt-0.5">
+                      <span className="text-[11px] font-mono text-muted-foreground/50">#{q.id}</span>
+                      {isExpanded
+                        ? <ChevronUp   className="h-3.5 w-3.5 text-muted-foreground" />
+                        : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
+                    </div>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        key="opts"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-3 pl-12 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {(['a', 'b', 'c', 'd'] as const).map(key => {
+                            const isCorrect = q.correct === key
+                            return (
+                              <div
+                                key={key}
+                                className={cn(
+                                  'flex items-start gap-2 rounded-xl px-3 py-2 text-xs border',
+                                  isCorrect
+                                    ? 'bg-violet-50 dark:bg-violet-950/30 border-violet-300 dark:border-violet-700'
+                                    : 'bg-muted/30 border-border/60',
+                                )}
+                              >
+                                <span className={cn(
+                                  'flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[10px] font-bold mt-0.5',
+                                  isCorrect ? 'bg-violet-600 text-white' : 'bg-muted text-muted-foreground',
+                                )}>
+                                  {key.toUpperCase()}
+                                </span>
+                                <span className={cn(
+                                  'leading-snug',
+                                  isCorrect ? 'text-violet-700 dark:text-violet-300 font-medium' : 'text-foreground',
+                                )}>
+                                  {q[`option_${key}` as keyof QuizAdminQuestion] as string}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Footer com ações */}
+        {activeCount >= 5 && (
+          <div className="px-4 py-2.5 border-t border-border bg-muted/20 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] text-muted-foreground">
+                {current?.isCurrent ? '🟢 Rodada em andamento' : `🔮 Previsão para ${current?.startLabel}`}
+              </p>
+              {isOverridden && (
+                <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-full px-2 py-0.5">
+                  Fixado manualmente
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {isOverridden && (
+                <button
+                  onClick={() => removeMutation.mutate(current.weekStart)}
+                  disabled={removeMutation.isPending}
+                  className="text-[11px] text-muted-foreground hover:text-destructive transition-colors underline underline-offset-2"
+                >
+                  {removeMutation.isPending ? 'Removendo…' : 'Usar sorteio automático'}
+                </button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => setPickerOpen(true)}
+              >
+                <Pencil className="h-3 w-3" />
+                {isOverridden ? 'Alterar seleção' : 'Fixar perguntas'}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Picker sheet */}
+      {current && (
+        <SchedulePicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          week={current}
+          allQuestions={questions}
+          currentIds={schedules[current.weekStart] ?? weekQuestions[selectedIdx]?.map(q => q.id) ?? []}
+          onSave={(ids) => saveMutation.mutate({ weekStart: current.weekStart, ids })}
+          isSaving={saveMutation.isPending}
+        />
+      )}
+    </>
   )
 }
 

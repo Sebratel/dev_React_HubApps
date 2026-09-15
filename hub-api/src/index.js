@@ -88,7 +88,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true)
     cb(new Error('CORS: origem não permitida'))
   },
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }))
 
