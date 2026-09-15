@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, Circle, ChevronDown, X, Sparkles } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
-import { getMyStats } from '@/services/user.service'
+import { getMyStats, markDirectoryVisitedOnServer } from '@/services/user.service'
 import { getPolls } from '@/services/polls.service'
 import { cn } from '@/lib/utils'
 
@@ -24,17 +24,25 @@ function markDismissed(userId: string) {
 }
 
 // Flag "visitou o Diretório" — gravada pelo DirectoryPage ao montar.
-// A chave inclui o userId para evitar contaminação entre usuários no mesmo dispositivo.
-// ⚠️ TODO: migrar para campo no servidor (PATCH /users/me) para persistir entre browsers e após limpeza de dados.
+// Persistida no servidor via PATCH /users/me; localStorage usado apenas como cache otimista.
 function directoryKey(userId: string) { return `hub_directory_visited_${userId}` }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function markDirectoryVisited() {
-  const userId = useAuthStore.getState().user?.id
+  const store = useAuthStore.getState()
+  const userId = store.user?.id
   if (!userId) return
+
+  // Optimistic update — store reacts immediately, no wait for API
+  if (store.user && !store.user.directoryVisited) {
+    store.setUser({ ...store.user, directoryVisited: true })
+  }
+
   try { localStorage.setItem(directoryKey(userId), '1') } catch { /* storage unavailable */ }
+  markDirectoryVisitedOnServer().catch(() => { /* falha silenciosa — localStorage cobre a sessão atual */ })
 }
-function hasVisitedDirectory(userId: string): boolean {
+function hasVisitedDirectory(userId: string, serverValue?: boolean): boolean {
+  if (serverValue) return true
   try { return !!localStorage.getItem(directoryKey(userId)) } catch { return false }
 }
 
@@ -98,22 +106,13 @@ export function OnboardingChecklist({ onOpenSendKudo }: Props) {
   const [allDone,   setAllDone]   = useState(false)
   const [dirVisited, setDirVisited] = useState(false)
 
-  // Inicializa após montar (lê localStorage só no cliente)
+  // Inicializa após montar — lê estado do servidor (user.directoryVisited) ou localStorage como fallback
   useEffect(() => {
     if (!user?.id) return
     if (isDismissed(user.id)) return
     setVisible(true)
-    setDirVisited(hasVisitedDirectory(user.id))
-  }, [user?.id])
-
-  // Sincroniza flag de diretório entre abas (storage event só dispara em outras abas)
-  useEffect(() => {
-    if (!user?.id) return
-    const id = user.id
-    const handler = () => setDirVisited(hasVisitedDirectory(id))
-    window.addEventListener('storage', handler)
-    return () => window.removeEventListener('storage', handler)
-  }, [user?.id])
+    setDirVisited(hasVisitedDirectory(user.id, user.directoryVisited))
+  }, [user?.id, user?.directoryVisited])
 
   const { data: stats } = useQuery({
     queryKey: ['users', 'me', 'stats'],

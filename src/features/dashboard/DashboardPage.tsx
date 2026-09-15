@@ -243,7 +243,7 @@ export function DashboardPage() {
             {!isMyBirthday && (
               <SeasonDeco
                 season={season}
-                className="pointer-events-none absolute right-0 top-0 hidden h-full w-40 sm:block"
+                className="pointer-events-none absolute right-0 top-0 hidden h-full w-48 sm:block"
               />
             )}
 
