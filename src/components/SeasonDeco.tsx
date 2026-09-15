@@ -115,17 +115,10 @@ function drawPrimavera(ctx: CanvasRenderingContext2D, W: number, H: number, t = 
   })
 }
 
-function drawVerao(ctx: CanvasRenderingContext2D, W: number, H: number, t = 0, mouse: Mouse = null) {
+function drawVerao(ctx: CanvasRenderingContext2D, W: number, H: number, t = 0) {
   const sx = W * 0.78, sy = H * 0.18, sr = 26
-
-  let sunPulse = 0
-  if (mouse) {
-    const sdx = sx - mouse.x, sdy = sy - mouse.y
-    const sd = Math.sqrt(sdx * sdx + sdy * sdy)
-    sunPulse = Math.max(0, (1 - sd / 90) ** 2) * 10
-  }
-
   const rayAngle = t * 0.00008
+
   ctx.save()
   ctx.globalAlpha = 0.75
   ctx.translate(sx, sy)
@@ -137,7 +130,7 @@ function drawVerao(ctx: CanvasRenderingContext2D, W: number, H: number, t = 0, m
     const a = (i * Math.PI) / 4
     ctx.beginPath()
     ctx.moveTo(Math.cos(a) * (sr + 7), Math.sin(a) * (sr + 7))
-    ctx.lineTo(Math.cos(a) * (sr + 18 + sunPulse), Math.sin(a) * (sr + 18 + sunPulse))
+    ctx.lineTo(Math.cos(a) * (sr + 18), Math.sin(a) * (sr + 18))
     ctx.stroke()
   }
   ctx.rotate(-rayAngle)
@@ -159,14 +152,7 @@ function drawVerao(ctx: CanvasRenderingContext2D, W: number, H: number, t = 0, m
     ctx.beginPath()
     ctx.moveTo(-waveOffset, wy)
     for (let x = -waveOffset; x <= W + 14; x += 14) {
-      let ripple = 0
-      if (mouse) {
-        const rdx = (x + 7) - mouse.x, rdy = wy - mouse.y
-        const rd = Math.sqrt(rdx * rdx + rdy * rdy)
-        ripple = Math.max(0, (1 - rd / 60) ** 2) * (w % 2 === 0 ? -7 : 7)
-      }
-      const amp = w % 2 === 0 ? -6 : 6
-      ctx.quadraticCurveTo(x + 7, wy + amp + ripple, x + 14, wy)
+      ctx.quadraticCurveTo(x + 7, wy + (w % 2 === 0 ? -6 : 6), x + 14, wy)
     }
     ctx.stroke()
   }
