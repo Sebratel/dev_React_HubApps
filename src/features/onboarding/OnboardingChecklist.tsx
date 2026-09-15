@@ -23,14 +23,19 @@ function markDismissed(userId: string) {
   try { localStorage.setItem(getDismissKey(userId), '1') } catch { /* storage unavailable */ }
 }
 
-// Flag "visitou o Diretório" — gravada pelo DirectoryPage ao montar
-export const DIRECTORY_VISITED_KEY = 'hub_directory_visited'
+// Flag "visitou o Diretório" — gravada pelo DirectoryPage ao montar.
+// A chave inclui o userId para evitar contaminação entre usuários no mesmo dispositivo.
+// ⚠️ TODO: migrar para campo no servidor (PATCH /users/me) para persistir entre browsers e após limpeza de dados.
+function directoryKey(userId: string) { return `hub_directory_visited_${userId}` }
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function markDirectoryVisited() {
-  try { localStorage.setItem(DIRECTORY_VISITED_KEY, '1') } catch { /* storage unavailable */ }
+  const userId = useAuthStore.getState().user?.id
+  if (!userId) return
+  try { localStorage.setItem(directoryKey(userId), '1') } catch { /* storage unavailable */ }
 }
-function hasVisitedDirectory(): boolean {
-  try { return !!localStorage.getItem(DIRECTORY_VISITED_KEY) } catch { return false }
+function hasVisitedDirectory(userId: string): boolean {
+  try { return !!localStorage.getItem(directoryKey(userId)) } catch { return false }
 }
 
 // ─── Linha de tarefa ──────────────────────────────────────────────────────────
@@ -98,15 +103,17 @@ export function OnboardingChecklist({ onOpenSendKudo }: Props) {
     if (!user?.id) return
     if (isDismissed(user.id)) return
     setVisible(true)
-    setDirVisited(hasVisitedDirectory())
+    setDirVisited(hasVisitedDirectory(user.id))
   }, [user?.id])
 
-  // Sincroniza flag de diretório entre abas
+  // Sincroniza flag de diretório entre abas (storage event só dispara em outras abas)
   useEffect(() => {
-    const handler = () => setDirVisited(hasVisitedDirectory())
+    if (!user?.id) return
+    const id = user.id
+    const handler = () => setDirVisited(hasVisitedDirectory(id))
     window.addEventListener('storage', handler)
     return () => window.removeEventListener('storage', handler)
-  }, [])
+  }, [user?.id])
 
   const { data: stats } = useQuery({
     queryKey: ['users', 'me', 'stats'],
