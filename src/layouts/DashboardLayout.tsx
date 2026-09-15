@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { updateMyStatus } from '@/services/user.service'
 import { STATUS_OPTIONS } from '@/utils/statusOptions'
-import { OnboardingModal, useOnboardingNeeded } from '@/features/onboarding/OnboardingModal'
 import { Outlet, NavLink, Link } from 'react-router-dom'
 import { LayoutGrid, Bell, MessageSquare, ShieldCheck, Menu, X, LogOut, ClipboardList, Users, Newspaper } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -44,9 +43,6 @@ export function DashboardLayout() {
   const user = useAuthStore((s) => s.user)
   const secureSignOut = useSecureSignOut()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [onboardingDismissed, setOnboardingDismissed] = useState(false)
-  const onboardingNeeded = useOnboardingNeeded()
-  const showOnboarding = onboardingNeeded && !onboardingDismissed
   useHeartbeat()
 
   // ── Aniversário do usuário logado ──
@@ -364,12 +360,6 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
-
-      {/* Onboarding: aparece para quem ainda não preencheu o aniversário */}
-      <OnboardingModal
-        open={showOnboarding}
-        onClose={() => setOnboardingDismissed(true)}
-      />
 
       {/* ── Toast de aniversário de colegas ─────────────────────────────────── */}
       <AnimatePresence>
