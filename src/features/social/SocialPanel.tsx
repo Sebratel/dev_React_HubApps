@@ -99,7 +99,7 @@ export function SocialPanel() {
             exit={{ opacity: 0, scale: 0.93, y: 16 }}
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             className="flex w-[440px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
-            style={{ transformOrigin: 'bottom right', maxHeight: 'calc(100vh - 120px)' }}
+            style={{ transformOrigin: 'bottom right', height: 520, maxHeight: 'calc(100vh - 120px)' }}
           >
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
