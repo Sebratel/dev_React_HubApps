@@ -15,7 +15,7 @@ const jwt    = require('jsonwebtoken')
 const admin  = require('firebase-admin')
 
 const SESSION_COOKIE_NAME = 'hub_session'
-const SESSION_MAX_AGE_S   = 8 * 60 * 60 // 8 horas
+const SESSION_MAX_AGE_S   = 2 * 60 // 2 minutos — renovado pelo heartbeat do Hub a cada 90s
 
 function sessionSecret() {
   const s = process.env.HUB_SESSION_SECRET

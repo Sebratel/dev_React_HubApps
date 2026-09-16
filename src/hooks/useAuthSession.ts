@@ -49,6 +49,10 @@ function normalizeBootstrapError(err: unknown): string {
   return err instanceof Error ? err.message : 'Erro ao carregar perfil do usuario.'
 }
 
+// Heartbeat: renova o cookie hub_session enquanto o Hub estiver aberto.
+// Cookie dura 2 min; heartbeat a cada 90s garante renovação contínua.
+const HEARTBEAT_INTERVAL_MS = 90_000
+
 // B3 fix: skip Firestore on token refresh (same UID already in store).
 // A3 fix: store actions via getState() - no subscription, no re-renders.
 export function useAuthSession(): void {
@@ -57,7 +61,18 @@ export function useAuthSession(): void {
 
     setLoading(true)
 
+    let heartbeat: ReturnType<typeof setInterval> | null = null
+
+    function clearHeartbeat() {
+      if (heartbeat !== null) {
+        clearInterval(heartbeat)
+        heartbeat = null
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      clearHeartbeat()
+
       if (!firebaseUser) {
         clearUser()
         useAppsStore.getState().clearUserData()
@@ -67,6 +82,13 @@ export function useAuthSession(): void {
       }
 
       if (useAuthStore.getState().user?.id === firebaseUser.uid) {
+        // Usuário já carregado — só reinicia o heartbeat
+        heartbeat = setInterval(async () => {
+          try {
+            const token = await getIdToken(firebaseUser)
+            await createGatewaySession(token)
+          } catch { /* silencioso */ }
+        }, HEARTBEAT_INTERVAL_MS)
         return
       }
 
@@ -83,6 +105,14 @@ export function useAuthSession(): void {
         // Cria cookie de sessão em .sebratel.com.br para o gateway nginx
         const idToken = await getIdToken(firebaseUser)
         void createGatewaySession(idToken)
+
+        // Inicia heartbeat para manter o cookie renovado enquanto o Hub estiver aberto
+        heartbeat = setInterval(async () => {
+          try {
+            const token = await getIdToken(firebaseUser)
+            await createGatewaySession(token)
+          } catch { /* silencioso */ }
+        }, HEARTBEAT_INTERVAL_MS)
 
         if (user.isActive && !sessionStorage.getItem('sebratel:session_logged')) {
           sessionStorage.setItem('sebratel:session_logged', '1')
@@ -103,6 +133,9 @@ export function useAuthSession(): void {
       }
     })
 
-    return unsubscribe
+    return () => {
+      unsubscribe()
+      clearHeartbeat()
+    }
   }, [])
 }
