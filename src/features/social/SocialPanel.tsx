@@ -18,7 +18,7 @@ function getLastSeen(): number {
   try { return Number(localStorage.getItem(LAST_SEEN_KEY) ?? 0) } catch { return 0 }
 }
 function saveLastSeen() {
-  try { localStorage.setItem(LAST_SEEN_KEY, String(Date.now())) } catch {}
+  try { localStorage.setItem(LAST_SEEN_KEY, String(Date.now())) } catch { /* noop — localStorage pode estar bloqueado */ }
 }
 
 type SocialTab = 'mvp' | 'online' | 'kudos' | 'celebr' | 'poll' | 'mural' | 'quiz'

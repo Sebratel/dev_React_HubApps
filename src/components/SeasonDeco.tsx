@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+// canvas e ctx são verificados com early return antes dos callbacks;
+// TypeScript não preserva narrowing em closures — assertions são seguras aqui.
 import { useEffect, useRef, memo } from 'react'
 import type { Season } from '@/utils/season'
 
