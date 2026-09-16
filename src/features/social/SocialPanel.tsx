@@ -51,12 +51,14 @@ export function SocialPanel() {
     return boardPosts.filter(p => new Date(p.createdAt).getTime() > lastSeen).length
   }, [boardPosts, lastSeen])
 
-  // Marca como visto ao abrir o painel
-  useEffect(() => {
-    if (!open) return
-    saveLastSeen()
-    setLastSeen(Date.now())
-  }, [open])
+  function handleTabClick(tabId: SocialTab) {
+    setActiveTab(tabId)
+    // Marca o mural como visto apenas quando o usuário acessa a aba
+    if (tabId === 'mural') {
+      saveLastSeen()
+      setLastSeen(Date.now())
+    }
+  }
 
   // Fecha ao clicar fora — mas NÃO fecha se o clique foi dentro de um
   // diálogo/modal (portais Radix renderizam fora do panelRef no document.body)
@@ -127,15 +129,20 @@ export function SocialPanel() {
                   key={tab.id}
                   role="tab"
                   aria-selected={activeTab === tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabClick(tab.id)}
                   className={cn(
-                    'flex shrink-0 flex-col items-center gap-1 rounded-t-lg border-b-2 px-3 py-2 pb-2.5 text-[11px] whitespace-nowrap transition-colors',
+                    'relative flex shrink-0 flex-col items-center gap-1 rounded-t-lg border-b-2 px-3 py-2 pb-2.5 text-[11px] whitespace-nowrap transition-colors',
                     activeTab === tab.id
                       ? 'border-primary font-semibold text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  <span className="text-base leading-none">{tab.emoji}</span>
+                  <span className="relative text-base leading-none">
+                    {tab.emoji}
+                    {tab.id === 'mural' && unreadCount > 0 && (
+                      <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-red-500 ring-1 ring-background" />
+                    )}
+                  </span>
                   <span>{tab.label}</span>
                 </button>
               ))}
