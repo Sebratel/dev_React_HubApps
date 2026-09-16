@@ -15,26 +15,12 @@ function splitStatements(sql) {
     .filter(s => s.length > 0)
 }
 
-const MIGRATIONS = [
-  { file: '01_create_database.sql',       label: 'Criar schema DB_Hub_Apps'          },
-  { file: '02_add_indexes.sql',           label: 'Índices compostos'                 },
-  { file: '03_add_passuser_status.sql',   label: 'pass_user e status em apps'        },
-  { file: '04_seed_apps.sql',             label: 'Seed apps iniciais Sebratel'       },
-  { file: '05_create_announcements.sql',  label: 'Tabela de avisos'                  },
-  { file: '06_create_teams.sql',          label: 'Tabela de times'                   },
-  { file: '07_create_suggestions.sql',    label: 'Tabela de sugestões'               },
-  { file: '08_add_heartbeat.sql',         label: 'Coluna last_heartbeat em users'    },
-  { file: '09_add_favorites.sql',         label: 'Coluna favorites em users'         },
-  { file: '10_add_review_note.sql',       label: 'Coluna review_note em access_requests' },
-  { file: '11_add_card_color.sql',        label: 'Coluna card_color em apps'             },
-  { file: '12_create_highlights.sql',     label: 'Tabela de destaques'                   },
-  { file: '13_add_highlight_image_options.sql', label: 'Opções de imagem em highlights'  },
-  { file: '14_create_suggestion_engagement.sql', label: 'Engajamento de sugestões'       },
-  { file: '15_create_app_manuals.sql',    label: 'Tabela de manuais de aplicativos'      },
-  { file: '16_expand_highlight_image_url.sql', label: 'Expande highlight_image_url'      },
-  { file: '17_consolidate_suggestions_to_platform.sql', label: 'Consolida sugestões nas tabelas platform_*' },
-  { file: '18_add_app_id_to_platform_suggestions.sql', label: 'Coluna app_id em platform_suggestions' },
-]
+// Descobre automaticamente todos os *.sql em ordem alfabética
+const MIGRATIONS = fs
+  .readdirSync(__dirname)
+  .filter(f => f.endsWith('.sql'))
+  .sort()
+  .map(file => ({ file, label: file.replace(/\.sql$/, '').replace(/_/g, ' ') }))
 
 // Errors that mean "already exists" — safe to skip for idempotency
 const SKIP_CODES = new Set([
