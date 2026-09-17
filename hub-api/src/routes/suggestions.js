@@ -1,7 +1,7 @@
 const router = require('express').Router()
 const pool   = require('../db/pool')
 const { requireAuth, requireAdmin } = require('../middleware/auth')
-const { adminWriteLimiter, suggestionLimiter } = require('../middleware/rateLimits')
+const { adminWriteLimiter, suggestionLimiter, suggestionCommentLimiter, suggestionVoteLimiter } = require('../middleware/rateLimits')
 const logAudit                      = require('../utils/logAudit')
 const AUDIT_ACTIONS                 = require('../utils/auditActions')
 const {
@@ -166,7 +166,7 @@ router.post('/', requireAuth, suggestionLimiter, async (req, res, next) => {
 })
 
 // POST /suggestions/:id/vote
-router.post('/:id/vote', requireAuth, async (req, res, next) => {
+router.post('/:id/vote', requireAuth, suggestionVoteLimiter, async (req, res, next) => {
   const user = await fetchActiveUser(req.uid)
   if (!user) return res.status(403).json({ error: 'Usuário inativo' })
 
@@ -247,7 +247,7 @@ router.get('/:id/comments', requireAuth, async (req, res, next) => {
 })
 
 // POST /suggestions/:id/comments
-router.post('/:id/comments', requireAuth, async (req, res, next) => {
+router.post('/:id/comments', requireAuth, suggestionCommentLimiter, async (req, res, next) => {
   const user = await fetchActiveUser(req.uid)
   if (!user) return res.status(403).json({ error: 'Usuário inativo' })
 

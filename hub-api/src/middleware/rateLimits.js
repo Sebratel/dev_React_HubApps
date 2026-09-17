@@ -83,6 +83,51 @@ const avatarSaveLimiter = rateLimit({
   message: { error: 'Limite de salvamento de avatar atingido. Tente novamente em 10 minutos.' },
 })
 
+const avatarGenerateLimiter = rateLimit({
+  windowMs: 60 * 60_000, // 1 hora
+  max: 10,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Limite de geração de avatares atingido. Tente novamente em 1 hora.' },
+})
+
+const pollCreateLimiter = rateLimit({
+  windowMs: 60 * 60_000, // 1 hora
+  max: 3,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Limite de criação de enquetes atingido. Tente novamente em 1 hora.' },
+})
+
+const pollVoteLimiter = rateLimit({
+  windowMs: 60_000, // 1 minuto
+  max: 10,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Muitas tentativas de voto. Tente novamente em 1 minuto.' },
+})
+
+const suggestionCommentLimiter = rateLimit({
+  windowMs: 60_000, // 1 minuto
+  max: 10,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Muitos comentários em sequência. Tente novamente em 1 minuto.' },
+})
+
+const suggestionVoteLimiter = rateLimit({
+  windowMs: 60_000, // 1 minuto
+  max: 20,
+  keyGenerator: uidOrIp,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Muitos votos em sequência. Tente novamente em 1 minuto.' },
+})
+
 module.exports = {
   auditLogLimiter,
   provisionLimiter,
@@ -93,4 +138,9 @@ module.exports = {
   birthdayWishLimiter,
   suggestionLimiter,
   avatarSaveLimiter,
+  avatarGenerateLimiter,
+  pollCreateLimiter,
+  pollVoteLimiter,
+  suggestionCommentLimiter,
+  suggestionVoteLimiter,
 }

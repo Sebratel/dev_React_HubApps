@@ -23,9 +23,10 @@ router.get('/me', requireAuth, async (req, res, next) => {
 
 // POST /users/provision — cria ou atualiza usuário no primeiro login (sem race condition)
 router.post('/provision', requireAuth, provisionLimiter, async (req, res, next) => {
-  const { name, email, photoUrl } = req.body
-  if (!name || !email) return res.status(400).json({ error: 'name e email obrigatórios' })
-  const normalEmail = email.trim().toLowerCase()
+  const { name, photoUrl } = req.body
+  // Email sempre vem do token Firebase verificado — nunca do body (previne impersonação)
+  const normalEmail = (req.email || '').trim().toLowerCase()
+  if (!name || !normalEmail) return res.status(400).json({ error: 'name obrigatório' })
 
   try {
     await pool.query(
@@ -508,12 +509,13 @@ router.get('/me/favorites', requireAuth, async (req, res, next) => {
 // PATCH /users/me/favorites
 router.patch('/me/favorites', requireAuth, async (req, res, next) => {
   const { favorites } = req.body
-  if (!Array.isArray(favorites) || !favorites.every((f) => typeof f === 'string')) {
-    return res.status(400).json({ error: 'favorites deve ser um array de strings' })
+  if (!Array.isArray(favorites) || favorites.length > 100 || !favorites.every((f) => typeof f === 'string')) {
+    return res.status(400).json({ error: 'favorites deve ser um array de até 100 strings' })
   }
+  const sanitized = favorites.map(f => f.trim().slice(0, 36)).filter(Boolean)
   try {
-    await pool.query('UPDATE users SET favorites = ? WHERE id = ?', [JSON.stringify(favorites), req.uid])
-    res.json({ favorites })
+    await pool.query('UPDATE users SET favorites = ? WHERE id = ?', [JSON.stringify(sanitized), req.uid])
+    res.json({ favorites: sanitized })
   } catch (err) { next(err) }
 })
 

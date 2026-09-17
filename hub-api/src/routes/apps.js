@@ -8,11 +8,15 @@ const logAudit      = require('../utils/logAudit')
 const AUDIT_ACTIONS = require('../utils/auditActions')
 
 // GET /apps — lista todos os apps ativos para qualquer usuário autenticado com domínio @sebratel.com.br
-router.get('/', requireAuth, async (_req, res) => {
-  const [allApps] = await pool.query(
-    'SELECT * FROM apps WHERE is_active = 1 ORDER BY name'
-  )
-  res.json(allApps)
+router.get('/', requireAuth, async (_req, res, next) => {
+  try {
+    const [allApps] = await pool.query(
+      `SELECT id, name, description, url, icon_url, card_color, pass_token, pass_user,
+              is_active, status, category
+       FROM apps WHERE is_active = 1 ORDER BY name`
+    )
+    res.json(allApps)
+  } catch (err) { next(err) }
 })
 
 // GET /apps/all — lista todos (admin only)
@@ -168,13 +172,28 @@ router.post('/:id/launch-token', requireAuth, ssoLaunchLimiter, async (req, res,
     }
 
     const [userRows] = await pool.query(
-      'SELECT id, name FROM users WHERE id = ?',
+      'SELECT id, name, profile, team FROM users WHERE id = ?',
       [req.uid]
     )
     if (!userRows.length) {
       return res.status(403).json({ error: 'Usuário não encontrado' })
     }
     const u = userRows[0]
+
+    // Verificar se o usuário tem acesso a este app
+    const allowedUsers    = JSON.parse(app.allowed_users    || '[]')
+    const allowedTeams    = JSON.parse(app.allowed_teams    || '[]')
+    const allowedProfiles = JSON.parse(app.allowed_profiles || '[]')
+
+    const isUnrestricted = allowedUsers.length === 0 && allowedTeams.length === 0 && allowedProfiles.length === 0
+    const hasAccess = isUnrestricted ||
+      allowedUsers.includes(req.uid) ||
+      (u.team    && allowedTeams.includes(String(u.team))) ||
+      (u.profile && allowedProfiles.includes(u.profile))
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Você não tem permissão para acessar este aplicativo' })
+    }
 
     const expSeconds = 300 // 5 minutos
     const token = jwt.sign(

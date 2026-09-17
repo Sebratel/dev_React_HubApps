@@ -1,6 +1,7 @@
 const router     = require('express').Router()
 const pool       = require('../db/pool')
 const { requireAuth } = require('../middleware/auth')
+const { pollCreateLimiter, pollVoteLimiter } = require('../middleware/rateLimits')
 const { randomUUID }  = require('crypto')
 
 // GET /polls — enquetes abertas com contagens e voto do usuário
@@ -66,7 +67,7 @@ router.get('/', requireAuth, async (req, res, next) => {
 })
 
 // POST /polls — criar enquete
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, pollCreateLimiter, async (req, res, next) => {
   const { question, options, closesAt } = req.body
 
   if (!question || typeof question !== 'string' || !question.trim()) {
@@ -126,7 +127,7 @@ router.post('/', requireAuth, async (req, res, next) => {
 })
 
 // POST /polls/:id/vote — votar (ou trocar voto)
-router.post('/:id/vote', requireAuth, async (req, res, next) => {
+router.post('/:id/vote', requireAuth, pollVoteLimiter, async (req, res, next) => {
   const { optionId } = req.body
   if (!optionId) return res.status(400).json({ error: 'optionId obrigatório' })
 

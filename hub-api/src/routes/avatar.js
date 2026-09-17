@@ -12,7 +12,7 @@ const https    = require('https')
 const { randomUUID } = require('crypto')
 const pool     = require('../db/pool')
 const { requireAuth } = require('../middleware/auth')
-const { avatarSaveLimiter } = require('../middleware/rateLimits')
+const { avatarSaveLimiter, avatarGenerateLimiter } = require('../middleware/rateLimits')
 
 function detectImageMime(buf) {
   if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'image/jpeg'
@@ -60,12 +60,13 @@ function fetchImageBuffer(url, redirectsLeft = 5) {
 // ─── POST /avatar/generate ────────────────────────────────────────────────────
 // Usa Pollinations.ai (FLUX) — gratuito, sem chave de API
 
-router.post('/generate', requireAuth, async (req, res, next) => {
+router.post('/generate', requireAuth, avatarGenerateLimiter, async (req, res, next) => {
   try {
-    const { style = 'cartoon', prompt = '' } = req.body
+    const { style = 'cartoon' } = req.body
+    const prompt = String(req.body.prompt || '').trim().slice(0, 200) // máx 200 chars
 
     const styleDesc = STYLE_PROMPTS[style] || STYLE_PROMPTS.cartoon
-    const userDesc  = prompt?.trim() ? `, ${prompt.trim()}` : ''
+    const userDesc  = prompt ? `, ${prompt}` : ''
 
     const basePrompt =
       `profile avatar portrait, ${styleDesc}${userDesc}, ` +
