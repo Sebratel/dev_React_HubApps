@@ -412,7 +412,7 @@ export function AdminAnalyticsPage() {
                 <BarRow
                   key={u.userId}
                   rank={i + 1}
-                  label={u.userName || u.userId.slice(0, 12)}
+                  label={u.userName || u.userId?.slice(0, 12) || '(desconhecido)'}
                   value={u.openCount}
                   max={maxUsers}
                   mounted={mounted}
