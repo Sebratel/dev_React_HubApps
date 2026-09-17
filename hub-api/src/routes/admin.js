@@ -91,30 +91,32 @@ router.get('/analytics', requireAuth, requireAdmin, async (req, res, next) => {
 
   try {
     const [topAppsRows, dailyRows, topUsersRows, [[{ total }]]] = await Promise.all([
-      // Top 10 apps por número de acessos no período
-      // Suporta dois formatos de details: JSON {"appId","appName"} (novo) e string "Abriu: Nome" (legado)
+      // Top 10 apps — subquery extrai app_name antes de agrupar para garantir GROUP BY correto.
+      // Suporta JSON {"appId","appName"} (novo) e string legada "Abriu: Nome" via SUBSTRING_INDEX.
       pool.query(
-        `SELECT
-           CASE WHEN JSON_VALID(details)
-             THEN JSON_UNQUOTE(JSON_EXTRACT(details, '$.appId'))
-             ELSE NULL
-           END AS app_id,
-           CASE WHEN JSON_VALID(details)
-             THEN JSON_UNQUOTE(JSON_EXTRACT(details, '$.appName'))
-             ELSE TRIM(SUBSTRING_INDEX(details, ': ', -1))
-           END AS app_name,
-           COUNT(*) AS open_count
-         FROM audit_logs
-         WHERE action = 'APP_OPEN'
-           AND details IS NOT NULL
-           AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+        `SELECT app_id, app_name, COUNT(*) AS open_count
+         FROM (
+           SELECT
+             CASE WHEN JSON_VALID(details)
+               THEN JSON_UNQUOTE(JSON_EXTRACT(details, '$.appId'))
+               ELSE NULL
+             END AS app_id,
+             CASE WHEN JSON_VALID(details)
+               THEN JSON_UNQUOTE(JSON_EXTRACT(details, '$.appName'))
+               ELSE TRIM(SUBSTRING_INDEX(details, ': ', -1))
+             END AS app_name
+           FROM audit_logs
+           WHERE action = 'APP_OPEN'
+             AND details IS NOT NULL
+             AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+         ) sub
+         WHERE app_name IS NOT NULL AND app_name != ''
          GROUP BY app_id, app_name
-         HAVING app_name IS NOT NULL AND app_name != ''
          ORDER BY open_count DESC
          LIMIT 10`,
         [days]
       ),
-      // Acessos por dia (para gráfico de linha)
+      // Acessos por dia — GROUP BY usa expressão direta (não alias) para compatibilidade MySQL
       pool.query(
         `SELECT
            DATE_FORMAT(created_at, '%Y-%m-%d') AS access_date,
@@ -122,20 +124,21 @@ router.get('/analytics', requireAuth, requireAdmin, async (req, res, next) => {
          FROM audit_logs
          WHERE action = 'APP_OPEN'
            AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
-         GROUP BY access_date
+         GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
          ORDER BY access_date ASC`,
         [days]
       ),
-      // Top 5 usuários que mais abriram apps
+      // Top 5 usuários — JOIN com users para nome atual (audit_log pode ter nome vazio se user sem nome)
       pool.query(
         `SELECT
-           user_id,
-           user_name,
+           al.user_id,
+           COALESCE(NULLIF(u.name, ''), NULLIF(al.user_name, ''), al.user_id) AS user_name,
            COUNT(*) AS open_count
-         FROM audit_logs
-         WHERE action = 'APP_OPEN'
-           AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
-         GROUP BY user_id, user_name
+         FROM audit_logs al
+         LEFT JOIN users u ON u.id = al.user_id
+         WHERE al.action = 'APP_OPEN'
+           AND al.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+         GROUP BY al.user_id
          ORDER BY open_count DESC
          LIMIT 5`,
         [days]
