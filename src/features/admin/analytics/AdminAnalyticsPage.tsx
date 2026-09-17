@@ -9,11 +9,11 @@ import {
 } from '@/services/admin/admin-analytics.service'
 
 // ─── Period selector ──────────────────────────────────────────────────────────
-const PERIODS: { value: AnalyticsPeriod; label: string }[] = [
-  { value: '7d',  label: '7 dias'   },
-  { value: '30d', label: '30 dias'  },
-  { value: '90d', label: '90 dias'  },
-  { value: '1y',  label: '12 meses' },
+const PERIODS: { value: AnalyticsPeriod; label: string; days: number }[] = [
+  { value: '7d',  label: '7 dias',   days: 7   },
+  { value: '30d', label: '30 dias',  days: 30  },
+  { value: '90d', label: '90 dias',  days: 90  },
+  { value: '1y',  label: '12 meses', days: 365 },
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -261,9 +261,8 @@ export function AdminAnalyticsPage() {
     null,
   )
 
-  const avgPerDay = data && data.dailyAccesses.length > 0
-    ? Math.round(data.totalAccesses / data.dailyAccesses.length)
-    : 0
+  const periodDays = PERIODS.find((p) => p.value === period)?.days ?? 30
+  const avgPerDay  = data ? Math.round(data.totalAccesses / periodDays) : 0
 
   const periodLabel = PERIODS.find((p) => p.value === period)?.label ?? ''
 
@@ -413,7 +412,7 @@ export function AdminAnalyticsPage() {
                 <BarRow
                   key={u.userId}
                   rank={i + 1}
-                  label={u.userName}
+                  label={u.userName || u.userId.slice(0, 12)}
                   value={u.openCount}
                   max={maxUsers}
                   mounted={mounted}
