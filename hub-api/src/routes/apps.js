@@ -12,7 +12,7 @@ router.get('/', requireAuth, async (_req, res, next) => {
   try {
     const [allApps] = await pool.query(
       `SELECT id, name, description, url, icon_url, card_color, pass_token, pass_user,
-              is_active, status, category
+              is_active, status
        FROM apps WHERE is_active = 1 ORDER BY name`
     )
     res.json(allApps)
