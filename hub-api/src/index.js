@@ -73,7 +73,10 @@ app.use(helmet({
 }))
 app.use(morgan('combined'))
 app.use(cookieParser())
-app.use(express.json({ limit: '12mb' })) // aumentado para suportar base64 de imagens geradas por IA
+// /avatar/save recebe imagem em base64 (até ~9MB) — demais rotas ficam em 50kb
+const _jsonSmall = express.json({ limit: '50kb' })
+const _jsonLarge = express.json({ limit: '12mb' })
+app.use((req, res, next) => (req.path.startsWith('/avatar') ? _jsonLarge : _jsonSmall)(req, res, next))
 
 // Static uploads — cross-origin allowed so React app (different port/domain) can display images
 app.use('/uploads', (_req, res, next) => {
