@@ -63,9 +63,13 @@ export function BirthdayConfetti() {
       const elapsed  = now - startTime
       const progress = Math.min(elapsed / DURATION_MS, 1)
       // Mantém visível até 70% do tempo, depois fade-out
-      const alpha    = progress < 0.7 ? 1 : 1 - (progress - 0.7) / 0.3
+      const alpha = progress < 0.7 ? 1 : 1 - (progress - 0.7) / 0.3
 
+      // Reseta transform antes do clearRect (clearRect é afetado pelo transform atual)
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.clearRect(0, 0, canvas.width, canvas.height)
+      // globalAlpha igual para todas as partículas no frame — atribui uma vez só
+      ctx.globalAlpha = alpha
 
       for (const p of particles) {
         // Física simples: drift + gravidade leve crescente
@@ -76,10 +80,10 @@ export function BirthdayConfetti() {
         if (p.x < -20)               p.x = canvas.width + 20
         if (p.x > canvas.width + 20) p.x = -20
 
-        ctx.save()
-        ctx.globalAlpha = alpha
-        ctx.translate(p.x, p.y)
-        ctx.rotate(p.rotation)
+        // setTransform em vez de save/translate/rotate/restore — zero operações de pilha
+        const cos = Math.cos(p.rotation)
+        const sin = Math.sin(p.rotation)
+        ctx.setTransform(cos, sin, -sin, cos, p.x, p.y)
         ctx.fillStyle = p.color
 
         if (p.isCircle) {
@@ -90,18 +94,18 @@ export function BirthdayConfetti() {
           // Retângulo achatado (papel de confetti)
           ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2)
         }
-
-        ctx.restore()
       }
 
       if (progress < 1) {
         raf = requestAnimationFrame(draw)
       } else {
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
         ctx.clearRect(0, 0, canvas.width, canvas.height)
       }
     }
 
-    raf = requestAnimationFrame(draw)
+    // Double-RAF: aguarda a primeira pintada do React antes de iniciar o loop
+    raf = requestAnimationFrame(() => { raf = requestAnimationFrame(draw) })
 
     return () => {
       cancelAnimationFrame(raf)
@@ -113,6 +117,7 @@ export function BirthdayConfetti() {
     <canvas
       ref={canvasRef}
       className="pointer-events-none fixed inset-0 z-[60]"
+      style={{ willChange: 'transform' }}
       aria-hidden
     />
   )
