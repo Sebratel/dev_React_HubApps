@@ -14,6 +14,7 @@ const {
   refreshCounts,
 } = require('../utils/platformSuggestions')
 const { stripHtml } = require('../utils/sanitize')
+const { validate, suggestionSchema } = require('../utils/schemas')
 
 const VALID_TYPES    = ['feature', 'bug', 'improvement', 'other']
 const VALID_STATUSES = ['pending', 'in_review', 'in_development', 'done', 'rejected']
@@ -98,7 +99,7 @@ router.get('/all', requireAuth, requireAdmin, async (req, res, next) => {
 })
 
 // POST /suggestions — criar sugestão (visível também na plataforma de splitters)
-router.post('/', requireAuth, suggestionLimiter, async (req, res, next) => {
+router.post('/', requireAuth, suggestionLimiter, validate(suggestionSchema), async (req, res, next) => {
   const user = await fetchActiveUser(req.uid)
   if (!user) return res.status(403).json({ error: 'Usuário inativo' })
 

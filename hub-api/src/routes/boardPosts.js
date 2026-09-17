@@ -4,6 +4,7 @@ const { requireAuth, requireAdmin } = require('../middleware/auth')
 const { boardLimiter } = require('../middleware/rateLimits')
 const { stripHtml } = require('../utils/sanitize')
 const { randomUUID } = require('crypto')
+const { validate, boardPostSchema } = require('../utils/schemas')
 
 // ─── Campos comuns ────────────────────────────────────────────────────────────
 
@@ -33,7 +34,7 @@ router.get('/', requireAuth, async (_req, res, next) => {
 })
 
 // POST /board — criar post
-router.post('/', requireAuth, boardLimiter, async (req, res, next) => {
+router.post('/', requireAuth, boardLimiter, validate(boardPostSchema), async (req, res, next) => {
   const { message } = req.body
   const trimmed = stripHtml(message, 500)
   if (!trimmed) {
