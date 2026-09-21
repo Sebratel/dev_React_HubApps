@@ -5,6 +5,7 @@ const { adminWriteLimiter }         = require('../middleware/rateLimits')
 const { randomUUID }                = require('crypto')
 const logAudit                      = require('../utils/logAudit')
 const AUDIT_ACTIONS                 = require('../utils/auditActions')
+const { validate, announcementSchema } = require('../utils/schemas')
 
 const VALID_TYPES = ['info', 'warning', 'urgent', 'success']
 
@@ -46,9 +47,8 @@ router.get('/all', requireAuth, requireAdmin, async (_req, res, next) => {
 })
 
 // POST /announcements — admin: criar aviso
-router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
+router.post('/', requireAuth, requireAdmin, adminWriteLimiter, validate(announcementSchema), async (req, res, next) => {
   const { title, body, type, allowedProfiles } = req.body
-  if (!title?.trim()) return res.status(400).json({ error: 'title obrigatório' })
 
   const annoType = VALID_TYPES.includes(type) ? type : 'info'
   const id       = randomUUID()

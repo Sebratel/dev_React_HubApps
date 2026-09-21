@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, Circle, ChevronDown, X, Sparkles } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
-import { getMyStats } from '@/services/user.service'
+import { getMyStats, markDirectoryVisitedOnServer } from '@/services/user.service'
 import { getPolls } from '@/services/polls.service'
 import { cn } from '@/lib/utils'
 
@@ -23,14 +23,27 @@ function markDismissed(userId: string) {
   try { localStorage.setItem(getDismissKey(userId), '1') } catch { /* storage unavailable */ }
 }
 
-// Flag "visitou o Diretório" — gravada pelo DirectoryPage ao montar
-export const DIRECTORY_VISITED_KEY = 'hub_directory_visited'
+// Flag "visitou o Diretório" — gravada pelo DirectoryPage ao montar.
+// Persistida no servidor via PATCH /users/me; localStorage usado apenas como cache otimista.
+function directoryKey(userId: string) { return `hub_directory_visited_${userId}` }
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function markDirectoryVisited() {
-  try { localStorage.setItem(DIRECTORY_VISITED_KEY, '1') } catch { /* storage unavailable */ }
+  const store = useAuthStore.getState()
+  const userId = store.user?.id
+  if (!userId) return
+
+  // Optimistic update — store reacts immediately, no wait for API
+  if (store.user && !store.user.directoryVisited) {
+    store.setUser({ ...store.user, directoryVisited: true })
+  }
+
+  try { localStorage.setItem(directoryKey(userId), '1') } catch { /* storage unavailable */ }
+  markDirectoryVisitedOnServer().catch(() => { /* falha silenciosa — localStorage cobre a sessão atual */ })
 }
-function hasVisitedDirectory(): boolean {
-  try { return !!localStorage.getItem(DIRECTORY_VISITED_KEY) } catch { return false }
+function hasVisitedDirectory(userId: string, serverValue?: boolean): boolean {
+  if (serverValue) return true
+  try { return !!localStorage.getItem(directoryKey(userId)) } catch { return false }
 }
 
 // ─── Linha de tarefa ──────────────────────────────────────────────────────────
@@ -93,20 +106,13 @@ export function OnboardingChecklist({ onOpenSendKudo }: Props) {
   const [allDone,   setAllDone]   = useState(false)
   const [dirVisited, setDirVisited] = useState(false)
 
-  // Inicializa após montar (lê localStorage só no cliente)
+  // Inicializa após montar — lê estado do servidor (user.directoryVisited) ou localStorage como fallback
   useEffect(() => {
     if (!user?.id) return
     if (isDismissed(user.id)) return
     setVisible(true)
-    setDirVisited(hasVisitedDirectory())
-  }, [user?.id])
-
-  // Sincroniza flag de diretório entre abas
-  useEffect(() => {
-    const handler = () => setDirVisited(hasVisitedDirectory())
-    window.addEventListener('storage', handler)
-    return () => window.removeEventListener('storage', handler)
-  }, [])
+    setDirVisited(hasVisitedDirectory(user.id, user.directoryVisited))
+  }, [user?.id, user?.directoryVisited])
 
   const { data: stats } = useQuery({
     queryKey: ['users', 'me', 'stats'],

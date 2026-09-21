@@ -21,6 +21,7 @@ interface UserRow {
   birth_date?: string | null
   hire_date?: string | null
   status?: string | null
+  directory_visited?: number
 }
 
 // Usuário presente (online agora) — retornado por /users/presence
@@ -59,10 +60,15 @@ function rowToUserModel(row: UserRow): UserModel {
     updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(row.created_at),
     online: !!row.online,
     lastLogin: row.last_login ? new Date(row.last_login) : null,
-    birthDate: row.birth_date ?? null,
-    hireDate:  row.hire_date  ?? null,
-    status:    row.status     ?? null,
+    birthDate:        row.birth_date        ?? null,
+    hireDate:         row.hire_date         ?? null,
+    status:           row.status            ?? null,
+    directoryVisited: !!row.directory_visited,
   }
+}
+
+export async function markDirectoryVisitedOnServer(): Promise<void> {
+  await api.patch('/users/me', { directory_visited: 1 })
 }
 
 export async function getUserById(uid: string): Promise<UserModel | null> {

@@ -58,3 +58,22 @@ export async function importAdminQuizQuestions(
 export async function deleteAdminQuizQuestion(id: number): Promise<{ ok: boolean }> {
   return api.delete<{ ok: boolean }>(`/quiz/questions/${id}`)
 }
+
+// ── Schedule ─────────────────────────────────────────────────────────────────
+
+/** Retorna agendamentos manuais: { 'YYYY-MM-DD': [id1, id2, id3, id4, id5] } */
+export async function getQuizSchedule(weekStarts: string[]): Promise<Record<string, number[]>> {
+  if (!weekStarts.length) return {}
+  return api.get<Record<string, number[]>>(`/quiz/schedule?weeks=${weekStarts.join(',')}`)
+}
+
+export async function setQuizSchedule(
+  weekStart: string,
+  questionIds: number[],
+): Promise<{ ok: boolean }> {
+  return api.put<{ ok: boolean }>(`/quiz/schedule/${weekStart}`, { question_ids: questionIds })
+}
+
+export async function deleteQuizSchedule(weekStart: string): Promise<{ ok: boolean }> {
+  return api.delete<{ ok: boolean }>(`/quiz/schedule/${weekStart}`)
+}

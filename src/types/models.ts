@@ -35,6 +35,8 @@ export interface UserModel {
   hireDate?: string | null
   /** Status do momento — ex: "🎯 Focado", "🏠 Home office" */
   status?: string | null
+  /** Visitou o Diretório de Pessoas ao menos uma vez (persistido no servidor) */
+  directoryVisited?: boolean
 }
 
 // ─── KudoModel ────────────────────────────────────────────────────────────────

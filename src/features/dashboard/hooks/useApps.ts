@@ -1,7 +1,7 @@
 import { useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getApps } from '@/services/app.service'
-import { getUserApps, getAppsWithoutAccess } from '@/utils/permissions'
+import { getUserApps } from '@/utils/permissions'
 import { useAuthStore } from '@/stores/auth.store'
 import { useAppsStore } from '@/stores/apps.store'
 import type { AppItemModel } from '@/types/models'
@@ -21,13 +21,10 @@ export function useApps() {
     enabled: !!user,
     staleTime: 60_000,
     gcTime: 10 * 60_000,
-    refetchInterval: 60_000,      // detecta aprovação de acesso em até 1 min
     refetchIntervalInBackground: false,
   })
 
   const userApps = useMemo(() => (user ? getUserApps(user, allApps) : []), [user, allApps])
-
-  const blockedApps = useMemo(() => getAppsWithoutAccess(allApps, userApps), [allApps, userApps])
 
   const favoriteApps = useMemo(
     () => userApps.filter((app) => favorites.includes(app.id)),
@@ -54,5 +51,5 @@ export function useApps() {
     }
   }, [allApps])
 
-  return { allApps, userApps, blockedApps, favoriteApps, recentApps, isLoading, error }
+  return { allApps, userApps, favoriteApps, recentApps, isLoading, error }
 }

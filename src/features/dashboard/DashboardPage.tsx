@@ -8,14 +8,12 @@ import { useApps } from './hooks/useApps'
 import { BookCard } from './components/BookCard'
 import { FeaturedBanner } from './components/FeaturedBanner'
 import { AppManual } from './components/AppManual'
-import { AccessRequestModal } from './components/AccessRequestModal'
 import { Input } from '@/components/ui/input'
 import { buildAppUrl, requestAppLaunchToken } from '@/services/app.service'
 import { getHighlights } from '@/services/highlight.service'
 import { getManuals } from '@/services/manual.service'
 import { logAppOpen } from '@/services/audit-log.service'
 import { useFavoritesSync } from './hooks/useFavoritesSync'
-import { usePendingRequestAppIds } from './hooks/usePendingRequestAppIds'
 import { SocialPanel } from '@/features/social/SocialPanel'
 import { BirthdayConfetti } from '@/components/BirthdayConfetti'
 import { SeasonDeco } from '@/components/SeasonDeco'
@@ -26,7 +24,7 @@ import { SendKudoDialog } from '@/features/kudos/SendKudoDialog'
 import { cn } from '@/lib/utils'
 import type { AppItemModel } from '@/types/models'
 
-type Tab = 'todos' | 'favoritos' | 'recentes' | 'bloqueados'
+type Tab = 'todos' | 'favoritos' | 'recentes'
 
 function getGreeting(): { label: string; Icon: typeof Sun } {
   const h = new Date().getHours()
@@ -73,17 +71,15 @@ function LoadingGrid() {
 }
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'todos',      label: 'Todos'      },
-  { key: 'favoritos',  label: 'Favoritos'  },
-  { key: 'recentes',   label: 'Recentes'   },
-  { key: 'bloqueados', label: 'Sem acesso' },
+  { key: 'todos',     label: 'Todos'     },
+  { key: 'favoritos', label: 'Favoritos' },
+  { key: 'recentes',  label: 'Recentes'  },
 ]
 
 const EMPTY: Record<Tab, { label: string; hint: string }> = {
-  todos:      { label: 'Nenhum aplicativo disponível.',      hint: 'Entre em contato com o administrador.' },
-  favoritos:  { label: 'Sem favoritos ainda.',               hint: 'Clique na estrela em qualquer app para salvar.' },
-  recentes:   { label: 'Nenhum app aberto recentemente.',    hint: 'Seus últimos acessos aparecerão aqui.' },
-  bloqueados: { label: 'Todos os apps estão disponíveis.',   hint: '' },
+  todos:     { label: 'Nenhum aplicativo disponível.',   hint: 'Entre em contato com o administrador.' },
+  favoritos: { label: 'Sem favoritos ainda.',            hint: 'Clique na estrela em qualquer app para salvar.' },
+  recentes:  { label: 'Nenhum app aberto recentemente.', hint: 'Seus últimos acessos aparecerão aqui.' },
 }
 
 export function DashboardPage() {
@@ -95,7 +91,7 @@ export function DashboardPage() {
   const toggleFavorite = useAppsStore((s) => s.toggleFavorite)
   const markRecent     = useAppsStore((s) => s.markRecent)
 
-  const { userApps, blockedApps, recentApps, favoriteApps, isLoading, error } = useApps()
+  const { userApps, recentApps, favoriteApps, isLoading, error } = useApps()
 
   const { data: highlights = [] } = useQuery({
     queryKey: ['highlights'],
@@ -110,12 +106,9 @@ export function DashboardPage() {
     enabled:   !!user,
   })
 
-  const pendingAppIds = usePendingRequestAppIds()
-
   const [kudoDialogOpen, setKudoDialogOpen] = useState(false)
   const [search,         setSearch]         = useState('')
   const [activeTab,      setActiveTab]      = useState<Tab>('todos')
-  const [requestApp,     setRequestApp]     = useState<AppItemModel | null>(null)
   const [notice,         setNotice]         = useState<string | null>(null)
   const [ssoLoadingId,   setSsoLoadingId]   = useState<string | null>(null)
 
@@ -134,24 +127,21 @@ export function DashboardPage() {
     const matches = (a: AppItemModel) =>
       a.name.toLowerCase().includes(normalized) || a.description.toLowerCase().includes(normalized)
     const accessible = userApps.filter(matches)
-    const blocked    = blockedApps.filter(matches)
-    return { accessible, blocked, total: accessible.length + blocked.length }
-  }, [userApps, blockedApps, searchTerm, isSearching])
+    return { accessible, total: accessible.length }
+  }, [userApps, searchTerm, isSearching])
 
   const tabApps = useMemo((): AppItemModel[] => {
     switch (activeTab) {
-      case 'todos':      return userApps
-      case 'favoritos':  return favoriteApps
-      case 'recentes':   return recentApps
-      case 'bloqueados': return blockedApps
+      case 'todos':     return userApps
+      case 'favoritos': return favoriteApps
+      case 'recentes':  return recentApps
     }
-  }, [activeTab, userApps, favoriteApps, recentApps, blockedApps])
+  }, [activeTab, userApps, favoriteApps, recentApps])
 
   const tabCounts: Record<Tab, number> = {
-    todos:      userApps.length,
-    favoritos:  favoriteApps.length,
-    recentes:   recentApps.length,
-    bloqueados: blockedApps.length,
+    todos:     userApps.length,
+    favoritos: favoriteApps.length,
+    recentes:  recentApps.length,
   }
 
   async function handleOpenApp(app: AppItemModel) {
@@ -192,9 +182,9 @@ export function DashboardPage() {
   const firstName = user.name?.split(' ')[0] ?? user.email.split('@')[0] ?? 'usuário'
 
   const sharedCardProps = {
-    onOpen:           handleOpenApp,
-    onRequestAccess:  setRequestApp,
-    onToggleFavorite: toggleFavorite,
+    onOpen:            handleOpenApp,
+    onToggleFavorite:  toggleFavorite,
+    onRequestAccess:   () => {}, // todos os apps são acessíveis — prop mantida para compatibilidade de tipo
   }
 
   return (
@@ -253,7 +243,7 @@ export function DashboardPage() {
             {!isMyBirthday && (
               <SeasonDeco
                 season={season}
-                className="pointer-events-none absolute right-0 top-0 hidden h-full w-40 sm:block"
+                className="pointer-events-none absolute right-0 top-0 hidden h-full w-48 sm:block"
               />
             )}
 
@@ -420,9 +410,6 @@ export function DashboardPage() {
                         {searchResults.accessible.map((app, i) => (
                           <BookCard key={app.id} app={app} hasAccess={true} isFavorite={favorites.includes(app.id)} isPending={false} index={i} {...sharedCardProps} />
                         ))}
-                        {searchResults.blocked.map((app, i) => (
-                          <BookCard key={app.id} app={app} hasAccess={false} isFavorite={false} isPending={pendingAppIds.has(app.id)} index={searchResults.accessible.length + i} {...sharedCardProps} />
-                        ))}
                       </div>
                     )}
                   </motion.div>
@@ -509,9 +496,9 @@ export function DashboardPage() {
                             <BookCard
                               key={app.id}
                               app={app}
-                              hasAccess={activeTab !== 'bloqueados'}
+                              hasAccess={true}
                               isFavorite={favorites.includes(app.id)}
-                              isPending={activeTab === 'bloqueados' && pendingAppIds.has(app.id)}
+                              isPending={false}
                               index={i}
                               {...sharedCardProps}
                             />
@@ -535,7 +522,6 @@ export function DashboardPage() {
 
       {/* Diálogos */}
       <SendKudoDialog open={kudoDialogOpen} onClose={() => setKudoDialogOpen(false)} />
-      <AccessRequestModal app={requestApp} open={requestApp !== null} onClose={() => setRequestApp(null)} />
     </div>
   )
 }

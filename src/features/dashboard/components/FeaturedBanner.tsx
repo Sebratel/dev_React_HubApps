@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useId } from 'react'
 import {
   motion,
   useMotionValue, useTransform, useMotionTemplate, animate,
@@ -27,8 +27,10 @@ interface CardProps {
 
 function CarouselCard({ item, idx, n, pos, cardW, cardH, step, rotDeg, onNavigate }: CardProps) {
   const reduced = useReducedMotion()
-  const [hover, setHover]       = useState(false)
-  const [isCenter, setIsCenter] = useState(false)
+  const [hover, setHover]         = useState(false)
+  const [isCenter, setIsCenter]   = useState(false)
+  const [imgError, setImgError]   = useState(false)
+  const patternId = useId()
 
   // d = circular distance from pos to idx, range (-n/2, n/2]
   const d = useTransform(pos, (p) => {
@@ -97,28 +99,43 @@ function CarouselCard({ item, idx, n, pos, cardW, cardH, step, rotDeg, onNavigat
       <div className="absolute inset-0 bg-neutral-900" aria-hidden />
 
       {/* Blurred colour backdrop */}
-      <img
-        src={resolveAssetUrl(item.imageUrl)}
-        alt=""
-        aria-hidden
-        className="absolute inset-0 h-full w-full object-cover scale-150"
-        style={{ filter: 'blur(64px)', opacity: 0.55 }}
-        draggable={false}
-      />
+      {!imgError && (
+        <img
+          src={resolveAssetUrl(item.imageUrl)}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover scale-150"
+          style={{ filter: 'blur(64px)', opacity: 0.55 }}
+          draggable={false}
+        />
+      )}
 
       {/* Main image — gentle Ken Burns zoom on hover */}
-      <img
-        src={resolveAssetUrl(item.imageUrl)}
-        alt={item.title}
-        className="absolute inset-0 h-full w-full"
-        style={{
-          objectFit:     item.objectFit ?? 'cover',
-          objectPosition: item.objectFit === 'contain' ? 'center' : (item.objectPosition ?? 'center'),
-          transform: lifted ? 'scale(1.06)' : 'scale(1)',
-          transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
-        }}
-        draggable={false}
-      />
+      {imgError ? (
+        // Fallback: grade sutil quando imagem não carrega (ex: arquivo só existe em produção)
+        <svg className="absolute inset-0 h-full w-full" aria-hidden>
+          <defs>
+            <pattern id={patternId} width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="1" fill="rgba(255,255,255,0.04)" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+        </svg>
+      ) : (
+        <img
+          src={resolveAssetUrl(item.imageUrl)}
+          alt={item.title}
+          className="absolute inset-0 h-full w-full"
+          style={{
+            objectFit:     item.objectFit ?? 'cover',
+            objectPosition: item.objectFit === 'contain' ? 'center' : (item.objectPosition ?? 'center'),
+            transform: lifted ? 'scale(1.06)' : 'scale(1)',
+            transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+          }}
+          draggable={false}
+          onError={() => setImgError(true)}
+        />
+      )}
 
       {/* Bottom-left gradient for text readability — deepens slightly on hover */}
       <div

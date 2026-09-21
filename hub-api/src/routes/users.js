@@ -5,6 +5,7 @@ const { requireAuth, requireAdmin, invalidateAdminCache } = require('../middlewa
 const { provisionLimiter, adminWriteLimiter } = require('../middleware/rateLimits')
 const logAudit       = require('../utils/logAudit')
 const AUDIT_ACTIONS  = require('../utils/auditActions')
+const { validate, usersMeSchema } = require('../utils/schemas')
 
 const USER_FIELDS = 'u.id, u.email, u.name, u.photo_url, u.profile, u.team, t.name AS team_name, u.is_active, u.is_admin, u.last_login, u.created_at, u.birth_date, u.hire_date, u.status'
 const USER_FROM   = 'users u LEFT JOIN teams t ON t.id = u.team'
@@ -23,9 +24,10 @@ router.get('/me', requireAuth, async (req, res, next) => {
 
 // POST /users/provision — cria ou atualiza usuário no primeiro login (sem race condition)
 router.post('/provision', requireAuth, provisionLimiter, async (req, res, next) => {
-  const { name, email, photoUrl } = req.body
-  if (!name || !email) return res.status(400).json({ error: 'name e email obrigatórios' })
-  const normalEmail = email.trim().toLowerCase()
+  const { name, photoUrl } = req.body
+  // Email sempre vem do token Firebase verificado — nunca do body (previne impersonação)
+  const normalEmail = (req.email || '').trim().toLowerCase()
+  if (!name || !normalEmail) return res.status(400).json({ error: 'name obrigatório' })
 
   try {
     await pool.query(
@@ -70,37 +72,30 @@ router.patch('/me/heartbeat', requireAuth, async (req, res, next) => {
 
 // PATCH /users/me — usuário atualiza o próprio nome e/ou data de nascimento
 // IMPORTANTE: deve ficar ANTES de PATCH /:id, senão Express casa /me como id="me"
-router.patch('/me', requireAuth, async (req, res, next) => {
-  const { name, birth_date } = req.body
+router.patch('/me', requireAuth, validate(usersMeSchema), async (req, res, next) => {
+  const { name, birth_date, status } = req.body
   const updates = []
   const values  = []
   const fields  = []
 
   if (name !== undefined) {
-    if (!name || typeof name !== 'string' || !name.trim()) {
-      return res.status(400).json({ error: 'name inválido' })
-    }
     updates.push('name = ?')
     values.push(name.trim().slice(0, 120))
     fields.push('name')
   }
 
   if (birth_date !== undefined) {
-    if (birth_date !== null && !/^\d{4}-\d{2}-\d{2}$/.test(String(birth_date))) {
-      return res.status(400).json({ error: 'birth_date inválido — use o formato YYYY-MM-DD' })
-    }
     updates.push('birth_date = ?')
     values.push(birth_date || null)
     fields.push('birth_date')
   }
 
   if ('status' in req.body) {
-    const { status } = req.body
-    if (status !== null && (typeof status !== 'string' || status.length > 80)) {
-      return res.status(400).json({ error: 'status inválido — máximo 80 caracteres' })
-    }
+    // Sanitiza HTML do status (exibido no Diretório de Pessoas)
+    const { stripHtml } = require('../utils/sanitize')
+    const cleanStatus = status ? stripHtml(status, 80) : null
     updates.push('status = ?')
-    values.push(status || null)
+    values.push(cleanStatus)
     fields.push('status')
   }
 
@@ -505,12 +500,13 @@ router.get('/me/favorites', requireAuth, async (req, res, next) => {
 // PATCH /users/me/favorites
 router.patch('/me/favorites', requireAuth, async (req, res, next) => {
   const { favorites } = req.body
-  if (!Array.isArray(favorites) || !favorites.every((f) => typeof f === 'string')) {
-    return res.status(400).json({ error: 'favorites deve ser um array de strings' })
+  if (!Array.isArray(favorites) || favorites.length > 100 || !favorites.every((f) => typeof f === 'string')) {
+    return res.status(400).json({ error: 'favorites deve ser um array de até 100 strings' })
   }
+  const sanitized = favorites.map(f => f.trim().slice(0, 36)).filter(Boolean)
   try {
-    await pool.query('UPDATE users SET favorites = ? WHERE id = ?', [JSON.stringify(favorites), req.uid])
-    res.json({ favorites })
+    await pool.query('UPDATE users SET favorites = ? WHERE id = ?', [JSON.stringify(sanitized), req.uid])
+    res.json({ favorites: sanitized })
   } catch (err) { next(err) }
 })
 

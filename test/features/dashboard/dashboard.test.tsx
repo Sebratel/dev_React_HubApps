@@ -136,15 +136,6 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('button', { name: /^Abrir Financeiro/ })).toBeTruthy()
   })
 
-  it('renders blocked app in "Sem acesso" tab', async () => {
-    render(<DashboardPage />, { wrapper: Wrapper })
-    fireEvent.click(screen.getByRole('tab', { name: /Sem acesso/ }))
-    await waitFor(() => {
-      expect(screen.getAllByText('RH Portal').length).toBeGreaterThan(0)
-    })
-    expect(screen.getByRole('button', { name: /Solicitar acesso/ })).toBeTruthy()
-  })
-
   it('filters apps by search term', () => {
     render(<DashboardPage />, { wrapper: Wrapper })
     const input = screen.getByPlaceholderText('Buscar aplicativo...')
@@ -153,15 +144,4 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('RH Portal')).toBeNull()
   })
 
-  it('opens access request modal when Solicitar acesso is clicked', async () => {
-    render(<DashboardPage />, { wrapper: Wrapper })
-    fireEvent.click(screen.getByRole('tab', { name: /Sem acesso/ }))
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Solicitar acesso/ })).toBeTruthy()
-    })
-    fireEvent.click(screen.getByRole('button', { name: /Solicitar acesso/ }))
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Descreva brevemente o motivo...')).toBeTruthy()
-    })
-  })
 })

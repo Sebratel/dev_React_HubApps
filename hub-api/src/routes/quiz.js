@@ -60,9 +60,31 @@ function monthStart() {
 }
 
 /** Seleciona N perguntas da semana de forma determinística pelo seed semanal */
-function selectWeekQuestions(all, n = 5) {
-  const rand = mulberry32(weekSeed())
+function selectWeekQuestions(all, n = 5, seed = weekSeed()) {
+  const rand = mulberry32(seed)
   return [...all].sort(() => rand() - 0.5).slice(0, n)
+}
+
+/**
+ * Retorna as perguntas da semana usando o agendamento manual se disponível,
+ * senão cai no RNG determinístico.
+ * @param {object} conn - conexão com o pool
+ * @param {Array}  all  - todas as perguntas ativas
+ * @param {string} ws   - week_start (YYYY-MM-DD)
+ */
+async function resolveWeekQuestions(conn, all, ws) {
+  const [[sched]] = await conn.query(
+    'SELECT question_ids FROM quiz_schedule WHERE week_start = ?',
+    [ws]
+  )
+  if (sched) {
+    const ids = JSON.parse(sched.question_ids)
+    // Filtra para garantir que as perguntas ainda existem e estão ativas
+    const map = Object.fromEntries(all.map(q => [q.id, q]))
+    const resolved = ids.map(id => map[id]).filter(Boolean)
+    if (resolved.length === 5) return resolved
+  }
+  return selectWeekQuestions(all)
 }
 
 // ── GET /quiz/today ───────────────────────────────────────────────────────────
@@ -124,7 +146,7 @@ router.get('/today', requireAuth, async (req, res) => {
       return res.status(503).json({ error: 'Perguntas insuficientes no banco.' })
     }
 
-    const selected = selectWeekQuestions(all)
+    const selected = await resolveWeekQuestions(conn, all, ws)
 
     res.json({
       status: 'pending',
@@ -174,7 +196,7 @@ router.post('/submit', requireAuth, async (req, res) => {
 
     // Valida que os questionIds correspondem ao quiz desta semana
     const [all]     = await conn.query('SELECT * FROM quiz_questions WHERE active = 1 ORDER BY id')
-    const weekQs    = selectWeekQuestions(all)
+    const weekQs    = await resolveWeekQuestions(conn, all, ws)
     const weekIds   = new Set(weekQs.map(q => q.id))
 
     if (!answers.every(a => weekIds.has(a.questionId))) {
@@ -529,6 +551,108 @@ router.delete('/questions/:id', requireAuth, requireAdmin, async (req, res) => {
     res.json({ ok: true })
   } catch (err) {
     console.error('[quiz/questions DELETE]', err)
+    res.status(500).json({ error: 'Erro interno.' })
+  } finally {
+    conn?.release()
+  }
+})
+
+// ── Admin: GET /quiz/schedule ─────────────────────────────────────────────────
+// Retorna os agendamentos manuais para as semanas informadas em ?weeks=YYYY-MM-DD,...
+
+router.get('/schedule', requireAuth, requireAdmin, async (req, res) => {
+  const weeksParam = req.query.weeks
+  if (!weeksParam) return res.json({})
+
+  const weeks = String(weeksParam).split(',').map(s => s.trim()).filter(Boolean)
+  if (!weeks.length) return res.json({})
+
+  let conn
+  try {
+    conn = await pool.getConnection()
+    const placeholders = weeks.map(() => '?').join(',')
+    const [rows] = await conn.query(
+      `SELECT week_start, question_ids FROM quiz_schedule WHERE week_start IN (${placeholders})`,
+      weeks
+    )
+    const result = {}
+    for (const r of rows) {
+      const ws = r.week_start instanceof Date
+        ? r.week_start.toISOString().slice(0, 10)
+        : String(r.week_start)
+      result[ws] = JSON.parse(r.question_ids)
+    }
+    res.json(result)
+  } catch (err) {
+    console.error('[quiz/schedule GET]', err)
+    res.status(500).json({ error: 'Erro interno.' })
+  } finally {
+    conn?.release()
+  }
+})
+
+// ── Admin: PUT /quiz/schedule/:weekStart ──────────────────────────────────────
+// Body: { question_ids: [1, 2, 3, 4, 5] }
+
+router.put('/schedule/:weekStart', requireAuth, requireAdmin, async (req, res) => {
+  const { weekStart } = req.params
+  const { question_ids } = req.body
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
+    return res.status(400).json({ error: 'weekStart deve ser YYYY-MM-DD.' })
+  }
+  if (!Array.isArray(question_ids) || question_ids.length !== 5) {
+    return res.status(400).json({ error: 'question_ids deve conter exatamente 5 IDs.' })
+  }
+  if (!question_ids.every(id => Number.isInteger(id) && id > 0)) {
+    return res.status(400).json({ error: 'Todos os IDs devem ser inteiros positivos.' })
+  }
+
+  let conn
+  try {
+    conn = await pool.getConnection()
+
+    // Verifica que todas as perguntas existem e estão ativas
+    const placeholders = question_ids.map(() => '?').join(',')
+    const [found] = await conn.query(
+      `SELECT id FROM quiz_questions WHERE id IN (${placeholders}) AND active = 1`,
+      question_ids
+    )
+    if (found.length !== 5) {
+      return res.status(400).json({ error: 'Uma ou mais perguntas não existem ou estão inativas.' })
+    }
+
+    await conn.query(
+      `INSERT INTO quiz_schedule (week_start, question_ids)
+       VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE question_ids = VALUES(question_ids), updated_at = NOW()`,
+      [weekStart, JSON.stringify(question_ids)]
+    )
+    res.json({ ok: true, weekStart, question_ids })
+  } catch (err) {
+    console.error('[quiz/schedule PUT]', err)
+    res.status(500).json({ error: 'Erro interno.' })
+  } finally {
+    conn?.release()
+  }
+})
+
+// ── Admin: DELETE /quiz/schedule/:weekStart ───────────────────────────────────
+
+router.delete('/schedule/:weekStart', requireAuth, requireAdmin, async (req, res) => {
+  const { weekStart } = req.params
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
+    return res.status(400).json({ error: 'weekStart deve ser YYYY-MM-DD.' })
+  }
+
+  let conn
+  try {
+    conn = await pool.getConnection()
+    await conn.query('DELETE FROM quiz_schedule WHERE week_start = ?', [weekStart])
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('[quiz/schedule DELETE]', err)
     res.status(500).json({ error: 'Erro interno.' })
   } finally {
     conn?.release()

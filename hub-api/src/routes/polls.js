@@ -1,7 +1,9 @@
 const router     = require('express').Router()
 const pool       = require('../db/pool')
 const { requireAuth } = require('../middleware/auth')
+const { pollCreateLimiter, pollVoteLimiter } = require('../middleware/rateLimits')
 const { randomUUID }  = require('crypto')
+const { validate, pollSchema } = require('../utils/schemas')
 
 // GET /polls — enquetes abertas com contagens e voto do usuário
 router.get('/', requireAuth, async (req, res, next) => {
@@ -66,19 +68,10 @@ router.get('/', requireAuth, async (req, res, next) => {
 })
 
 // POST /polls — criar enquete
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, pollCreateLimiter, validate(pollSchema), async (req, res, next) => {
   const { question, options, closesAt } = req.body
 
-  if (!question || typeof question !== 'string' || !question.trim()) {
-    return res.status(400).json({ error: 'question obrigatório' })
-  }
-  if (!Array.isArray(options) || options.length < 2 || options.length > 4) {
-    return res.status(400).json({ error: 'options deve ter entre 2 e 4 itens' })
-  }
   const texts = options.map(o => (typeof o === 'string' ? o : o?.text ?? '').trim())
-  if (texts.some(t => !t || t.length > 200)) {
-    return res.status(400).json({ error: 'Cada opção deve ter entre 1 e 200 caracteres' })
-  }
 
   // Limita 1 enquete ativa por usuário
   const [[existing]] = await pool.query(`
@@ -126,7 +119,7 @@ router.post('/', requireAuth, async (req, res, next) => {
 })
 
 // POST /polls/:id/vote — votar (ou trocar voto)
-router.post('/:id/vote', requireAuth, async (req, res, next) => {
+router.post('/:id/vote', requireAuth, pollVoteLimiter, async (req, res, next) => {
   const { optionId } = req.body
   if (!optionId) return res.status(400).json({ error: 'optionId obrigatório' })
 

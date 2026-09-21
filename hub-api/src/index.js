@@ -5,12 +5,13 @@ const path = require('path')
 // (compose `environment:`) — neste caso config() simplesmente não carrega nada.
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })
 
-const express   = require('express')
-const helmet    = require('helmet')
-const cors      = require('cors')
-const morgan    = require('morgan')
-const rateLimit = require('express-rate-limit')
-const admin     = require('firebase-admin')
+const express       = require('express')
+const helmet        = require('helmet')
+const cors          = require('cors')
+const morgan        = require('morgan')
+const rateLimit     = require('express-rate-limit')
+const cookieParser  = require('cookie-parser')
+const admin         = require('firebase-admin')
 
 // ─── Firebase Admin ───────────────────────────────────────────
 if (!admin.apps.length) {
@@ -41,9 +42,41 @@ const app = express()
 
 app.set('trust proxy', 1)
 
-app.use(helmet())
+app.use(helmet({
+  // CSP explícito — API só serve JSON/uploads, não HTML com scripts
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:  ["'none'"],
+      scriptSrc:   ["'none'"],
+      styleSrc:    ["'none'"],
+      imgSrc:      ["'self'", 'data:'],
+      connectSrc:  ["'self'"],
+      fontSrc:     ["'none'"],
+      objectSrc:   ["'none'"],
+      mediaSrc:    ["'none'"],
+      frameSrc:    ["'none'"],
+      frameAncestors: ["'none'"],
+      formAction:  ["'none'"],
+      baseUri:     ["'none'"],
+    },
+  },
+  // Não enviar referrer para fora do domínio
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  // Bloqueia MIME-type sniffing
+  noSniff: true,
+  // Bloqueia abertura em iframe de outros domínios
+  xFrameOptions: { action: 'deny' },
+  // Força HTTPS em navegadores que já acessaram via HTTPS
+  hsts: { maxAge: 31_536_000, includeSubDomains: true, preload: true },
+  // Remove o header X-Powered-By
+  hidePoweredBy: true,
+}))
 app.use(morgan('combined'))
-app.use(express.json({ limit: '12mb' })) // aumentado para suportar base64 de imagens geradas por IA
+app.use(cookieParser())
+// /avatar/save recebe imagem em base64 (até ~9MB) — demais rotas ficam em 50kb
+const _jsonSmall = express.json({ limit: '50kb' })
+const _jsonLarge = express.json({ limit: '12mb' })
+app.use((req, res, next) => (req.path.startsWith('/avatar') ? _jsonLarge : _jsonSmall)(req, res, next))
 
 // Static uploads — cross-origin allowed so React app (different port/domain) can display images
 app.use('/uploads', (_req, res, next) => {
@@ -58,7 +91,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true)
     cb(new Error('CORS: origem não permitida'))
   },
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }))
 
@@ -71,6 +104,7 @@ app.use(rateLimit({
 }))
 
 // ─── Rotas ───────────────────────────────────────────────────
+app.use('/auth',            require('./routes/auth'))
 app.use('/users',           require('./routes/users'))
 app.use('/apps',            require('./routes/apps'))
 app.use('/audit-logs',      require('./routes/auditLogs'))
@@ -100,7 +134,17 @@ app.use((err, _req, res, _next) => {
 // ─── Start ───────────────────────────────────────────────────
 if (require.main === module) {
   const PORT = Number(process.env.PORT) || 3000
-  app.listen(PORT, () => console.log(`hub-api rodando na porta ${PORT}`))
+
+  // Executa migrations pendentes antes de abrir o servidor
+  require('./db/migrate')()
+    .catch(err => console.error('[migrate] ❌', err.message))
+    .finally(() => {
+      app.listen(PORT, () => {
+        console.log(`hub-api rodando na porta ${PORT}`)
+        // Sincronização nightly de datas de aniversário (Voalle → Hub, 02:00 Brasília)
+        require('./scheduler/birthDateSync').startCron()
+      })
+    })
 }
 
 module.exports = app

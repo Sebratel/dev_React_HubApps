@@ -1,5 +1,4 @@
-import type { UserModel } from '@/types/models'
-import type { AppItemModel } from '@/types/models'
+import type { UserModel, AppItemModel } from '@/types/models'
 
 // ─── User permission helpers ──────────────────────────────────────────────────
 // TypeScript equivalents of Flutter's UserModel getters.
@@ -42,25 +41,10 @@ export function canAccessAccessRequestsManagement(user: UserModel): boolean {
 }
 
 // ─── App access logic ─────────────────────────────────────────────────────────
-// Mirrors Flutter's AppsService._userHasAccess() exactly.
+// O Hub é um launcher aberto: todos os apps ativos aparecem para todos os
+// usuários autenticados @sebratel.com.br. Cada app gerencia seu próprio controle
+// de acesso internamente.
 
-export function userHasAppAccess(user: UserModel, app: AppItemModel): boolean {
-  if (app.status === 'maintenance') return false
-  return (
-    app.allowedProfiles.includes(user.profile) ||
-    app.allowedUsers.includes(user.id) ||
-    (user.team !== null && app.allowedTeams.includes(user.team))
-  )
-}
-
-export function getUserApps(user: UserModel, allApps: AppItemModel[]): AppItemModel[] {
-  return allApps.filter((app) => userHasAppAccess(user, app))
-}
-
-export function getAppsWithoutAccess(
-  allApps: AppItemModel[],
-  userApps: AppItemModel[]
-): AppItemModel[] {
-  const userAppIds = new Set(userApps.map((a) => a.id))
-  return allApps.filter((a) => !userAppIds.has(a.id) && a.status !== 'maintenance')
+export function getUserApps(_user: UserModel, allApps: AppItemModel[]): AppItemModel[] {
+  return allApps.filter((app) => app.status !== 'maintenance')
 }
