@@ -157,6 +157,9 @@ router.post('/', requireAuth, suggestionLimiter, validate(suggestionSchema), asy
     await conn.commit()
   } catch (err) {
     await conn.rollback()
+    if (err.code === 'ER_DATA_TOO_LONG') {
+      return res.status(400).json({ error: 'O texto é muito longo. Reduza o conteúdo e tente novamente.' })
+    }
     return next(err)
   } finally {
     conn.release()
