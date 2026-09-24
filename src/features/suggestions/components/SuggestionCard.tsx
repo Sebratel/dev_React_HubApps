@@ -83,7 +83,7 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
               <div className="mt-1.5">
                 <p
                   className={cn(
-                    'whitespace-pre-line text-sm leading-relaxed text-muted-foreground',
+                    'whitespace-pre-line break-words text-sm leading-relaxed text-muted-foreground',
                     needsClamp && !bodyExpanded && 'line-clamp-3',
                   )}
                 >
