@@ -11,8 +11,11 @@ import { getApps } from '@/services/app.service'
 import { getTeams } from '@/services/team.service'
 import { getUserApps } from '@/utils/permissions'
 import { useAuthStore } from '@/stores/auth.store'
+import { cn } from '@/lib/utils'
 import type { SuggestionType } from '@/types/enums'
 import type { CreateSuggestionPayload } from '@/services/suggestion.service'
+
+const BODY_MAX = 3000
 
 const TYPE_OPTIONS: { value: SuggestionType; label: string }[] = [
   { value: 'feature',     label: 'Nova funcionalidade' },
@@ -78,6 +81,7 @@ export function SuggestionFormDialog({
     setError(null)
     if (!form.sector.trim()) { setError('Selecione o setor.'); return }
     if (!form.title.trim()) { setError('O título é obrigatório.'); return }
+    if (form.body.length > BODY_MAX) { setError(`Os detalhes não podem ultrapassar ${BODY_MAX} caracteres.`); return }
     try {
       await onSave({
         title:   form.title.trim(),
@@ -181,8 +185,17 @@ export function SuggestionFormDialog({
               onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
               disabled={isSubmitting}
               rows={4}
-              className="resize-none"
+              maxLength={BODY_MAX}
+              className={cn('resize-none', form.body.length > BODY_MAX * 0.9 && 'border-amber-400 focus-visible:ring-amber-400')}
             />
+            <p className={cn(
+              'text-xs text-right tabular-nums',
+              form.body.length >= BODY_MAX ? 'text-destructive font-medium' :
+              form.body.length > BODY_MAX * 0.9 ? 'text-amber-500' :
+              'text-muted-foreground',
+            )}>
+              {form.body.length} / {BODY_MAX}
+            </p>
           </div>
 
           {error && (
@@ -196,7 +209,7 @@ export function SuggestionFormDialog({
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
           <Button
             onClick={handleSubmit as unknown as React.MouseEventHandler}
-            disabled={isSubmitting || !form.title.trim() || !form.sector.trim()}
+            disabled={isSubmitting || !form.title.trim() || !form.sector.trim() || form.body.length > BODY_MAX}
           >
             {isSubmitting ? 'Enviando...' : 'Enviar sugestão'}
           </Button>

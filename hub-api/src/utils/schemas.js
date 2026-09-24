@@ -40,7 +40,7 @@ const pollSchema = z.object({
 
 const suggestionSchema = z.object({
   title:   z.string().min(1).max(200),
-  body:    z.string().max(2000).optional().nullable(),
+  body:    z.string().max(3000).optional().nullable(),
   type:    z.enum(['feature', 'bug', 'improvement', 'other']).optional(),
   appId:   z.string().max(128).optional().nullable(),
   appName: z.string().max(200).optional().nullable(),
