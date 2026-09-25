@@ -368,10 +368,10 @@ export function DashboardLayout() {
             key="birthday-toast"
             role="status"
             aria-live="polite"
-            className="fixed bottom-6 right-4 z-40 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-xl dark:border-amber-700 dark:bg-amber-950 max-w-xs"
-            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            className="fixed top-16 right-4 z-50 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-xl dark:border-amber-700 dark:bg-amber-950 max-w-xs"
+            initial={{ opacity: 0, y: -16, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            exit={{ opacity: 0, y: -12, scale: 0.96 }}
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Ícone */}
