@@ -29,6 +29,7 @@ import { PublicProfilePage } from '@/features/directory/PublicProfilePage'
 import { BoardPage } from '@/features/board/BoardPage'
 import { QuizPage } from '@/features/quiz/QuizPage'
 import { AdminQuizPage } from '@/features/admin/quiz/AdminQuizPage'
+import { EmbeddedAppPage } from '@/features/app-embed/EmbeddedAppPage'
 
 export const router = createBrowserRouter(
   [
@@ -93,6 +94,10 @@ export const router = createBrowserRouter(
                 {
                   path: '/quiz',
                   element: <QuizPage />,
+                },
+                {
+                  path: '/app/:id',
+                  element: <EmbeddedAppPage />,
                 },
               ],
             },
