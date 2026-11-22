@@ -126,7 +126,12 @@ app.use('/quiz',            require('./routes/quiz'))
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 
 // ─── Error handler ───────────────────────────────────────────
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
+  if (err.message?.startsWith('CORS:')) {
+    const origin = req.headers.origin || '(sem origin)'
+    console.warn(`[CORS] origem bloqueada: ${origin}`)
+    return res.status(403).json({ error: err.message })
+  }
   console.error(err)
   res.status(500).json({ error: 'Erro interno do servidor' })
 })

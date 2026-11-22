@@ -12,6 +12,7 @@ interface AdminAppRow {
   card_color: string | null
   pass_token: number
   pass_user: number
+  embed?: number
   is_active: number
   status: string
   allowed_profiles: string | string[]
@@ -43,6 +44,7 @@ function rowToAppModel(row: AdminAppRow): AppItemModel {
     openInExternalBrowser: false,
     passUser: !!row.pass_user,
     passToken: !!row.pass_token,
+    embed: !!row.embed,
     url: row.url,
     route: null,
     allowedProfiles: parseJson(row.allowed_profiles),
@@ -65,6 +67,7 @@ export interface CreateAppPayload {
   cardColor?: string | null
   passToken?: boolean
   passUser?: boolean
+  embed?: boolean
   status?: 'active' | 'maintenance' | 'novo'
   allowedProfiles?: string[]
   allowedUsers?: string[]
@@ -79,6 +82,7 @@ export interface UpdateAppPayload {
   card_color?: string | null
   pass_token?: boolean
   pass_user?: boolean
+  embed?: boolean
   is_active?: boolean
   status?: 'active' | 'maintenance' | 'novo'
   allowed_profiles?: string[]

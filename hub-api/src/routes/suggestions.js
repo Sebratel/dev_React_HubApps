@@ -105,7 +105,7 @@ router.post('/', requireAuth, suggestionLimiter, validate(suggestionSchema), asy
 
   const { title: rawTitle, body: rawBody, type, appId, appName, sector } = req.body
   const title = stripHtml(rawTitle, 200)
-  const body  = stripHtml(rawBody,  2000)
+  const body  = stripHtml(rawBody,  3000)
   if (!title) return res.status(400).json({ error: 'title obrigatório' })
   if (!sector?.trim()) return res.status(400).json({ error: 'sector obrigatório' })
 
@@ -157,6 +157,9 @@ router.post('/', requireAuth, suggestionLimiter, validate(suggestionSchema), asy
     await conn.commit()
   } catch (err) {
     await conn.rollback()
+    if (err.code === 'ER_DATA_TOO_LONG') {
+      return res.status(400).json({ error: 'O texto é muito longo. Reduza o conteúdo e tente novamente.' })
+    }
     return next(err)
   } finally {
     conn.release()

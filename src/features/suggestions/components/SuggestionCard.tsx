@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { ThumbsUp, ThumbsDown, MessageSquare, ChevronDown } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { UserAvatar } from '@/components/UserAvatar'
 import type { SuggestionModel, VoteValue } from '@/services/suggestion.service'
 import { getSuggestionTypeMeta, getSuggestionStatusMeta } from '../utils'
 import { SuggestionComments } from './SuggestionComments'
+
+const BODY_CLAMP_THRESHOLD = 200 // chars — abaixo disso não precisa de "ver mais"
 
 interface SuggestionCardProps {
   suggestion: SuggestionModel
@@ -23,6 +25,9 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
   const status = getSuggestionStatusMeta(s.status)
   const TypeIcon = type.icon
   const [commentsOpen, setCommentsOpen] = useState(false)
+  const [bodyExpanded, setBodyExpanded] = useState(false)
+
+  const needsClamp = !!s.body && (s.body.length > BODY_CLAMP_THRESHOLD || s.body.split('\n').length > 3)
 
   const scoreTone =
     s.score > 0 ? 'text-success' : s.score < 0 ? 'text-destructive' : 'text-muted-foreground'
@@ -75,7 +80,28 @@ export function SuggestionCard({ suggestion: s, mine, onVote }: SuggestionCardPr
           <div>
             <h3 className="text-lg font-bold leading-snug text-foreground">{s.title}</h3>
             {s.body && (
-              <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{s.body}</p>
+              <div className="mt-1.5">
+                <p
+                  className={cn(
+                    'whitespace-pre-line break-words text-sm leading-relaxed text-muted-foreground',
+                    needsClamp && !bodyExpanded && 'line-clamp-3',
+                  )}
+                >
+                  {s.body}
+                </p>
+                {needsClamp && (
+                  <button
+                    type="button"
+                    onClick={() => setBodyExpanded((v) => !v)}
+                    className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                  >
+                    {bodyExpanded
+                      ? <><ChevronUp className="h-3.5 w-3.5" aria-hidden /> Ver menos</>
+                      : <><ChevronDown className="h-3.5 w-3.5" aria-hidden /> Ver mais</>
+                    }
+                  </button>
+                )}
+              </div>
             )}
           </div>
 

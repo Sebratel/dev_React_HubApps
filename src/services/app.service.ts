@@ -10,6 +10,7 @@ interface AppRow {
   card_color: string | null
   pass_token: number
   pass_user: number
+  embed?: number
   is_active: number
   status: string
   allowed_profiles: string | string[]
@@ -41,6 +42,7 @@ function rowToApp(row: AppRow): AppItemModel {
     openInExternalBrowser: false,
     passUser: !!row.pass_user,
     passToken: !!row.pass_token,
+    embed: !!row.embed,
     url: row.url,
     route: null,
     allowedProfiles: parseJson(row.allowed_profiles),
@@ -70,6 +72,22 @@ export async function requestAppLaunchToken(
   appId: string
 ): Promise<{ token: string; expiresAt: string }> {
   return api.post<{ token: string; expiresAt: string }>(`/apps/${appId}/launch-token`)
+}
+
+/**
+ * URL final do app: com SSO, pede um token de lançamento (5 min) e anexa `sso_token`;
+ * sem SSO, usa buildAppUrl (que anexa uid/nome/email quando passUser).
+ */
+export async function resolveLaunchUrl(
+  app: AppItemModel,
+  user: { id: string; name: string; email: string }
+): Promise<string> {
+  if (app.passToken) {
+    const { token } = await requestAppLaunchToken(app.id)
+    const sep = app.url && app.url.includes('?') ? '&' : '?'
+    return `${app.url}${sep}sso_token=${encodeURIComponent(token)}`
+  }
+  return buildAppUrl(app, user.id, user.name, user.email)
 }
 
 export function buildAppUrl(

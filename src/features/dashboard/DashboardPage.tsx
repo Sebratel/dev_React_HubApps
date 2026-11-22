@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Search, PackageOpen, Sunrise, Sun, Moon, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth.store'
 import { useAppsStore } from '@/stores/apps.store'
 import { useApps } from './hooks/useApps'
@@ -90,6 +91,7 @@ export function DashboardPage() {
   const favorites      = useAppsStore((s) => s.favorites)
   const toggleFavorite = useAppsStore((s) => s.toggleFavorite)
   const markRecent     = useAppsStore((s) => s.markRecent)
+  const navigate       = useNavigate()
 
   const { userApps, recentApps, favoriteApps, isLoading, error } = useApps()
 
@@ -146,6 +148,14 @@ export function DashboardPage() {
 
   async function handleOpenApp(app: AppItemModel) {
     if (!user || ssoLoadingId) return
+
+    // App embutido: abre dentro do Hub; a página /app/:id pede o token SSO e monta o iframe.
+    if (app.embed) {
+      markRecent(app.id)
+      logAppOpen(user, app).catch((e) => console.error('[audit]', e))
+      navigate(`/app/${app.id}`)
+      return
+    }
 
     if (app.passToken) {
       setSsoLoadingId(app.id)

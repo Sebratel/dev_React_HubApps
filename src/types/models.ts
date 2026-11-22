@@ -81,6 +81,7 @@ export interface AppItemModel {
   openInExternalBrowser: boolean
   passUser: boolean // inject uid/name/email/permissions as query params
   passToken: boolean // inject session token as query param
+  embed?: boolean // open inside the Hub (iframe at /app/:id) instead of a new tab
   url: string | null // legacy field
   route: string | null // legacy field
   allowedProfiles: string[]

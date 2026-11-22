@@ -18,7 +18,7 @@ async function logAudit({ uid, action, details, req, conn }) {
 
   let detailsStr = null
   if (details != null) {
-    detailsStr = typeof details === 'string' ? details : JSON.stringify(details)
+    detailsStr = typeof details === 'string' ? details : JSON.stringify(details, (_k, v) => typeof v === 'bigint' ? Number(v) : v)
   }
 
   await db.query(

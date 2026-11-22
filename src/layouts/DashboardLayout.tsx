@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { updateMyStatus } from '@/services/user.service'
 import { STATUS_OPTIONS } from '@/utils/statusOptions'
-import { Outlet, NavLink, Link } from 'react-router-dom'
+import { Outlet, NavLink, Link, useMatch } from 'react-router-dom'
 import { LayoutGrid, Bell, MessageSquare, ShieldCheck, Menu, X, LogOut, ClipboardList, Users, Newspaper } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -43,6 +43,7 @@ export function DashboardLayout() {
   const user = useAuthStore((s) => s.user)
   const secureSignOut = useSecureSignOut()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const embeddedApp = useMatch('/app/:id') !== null
   useHeartbeat()
 
   // ── Aniversário do usuário logado ──
@@ -356,7 +357,13 @@ export function DashboardLayout() {
           )}
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0">
+        {/* App embutido (/app/:id) ocupa a área inteira, sem padding nem rolagem própria */}
+        <main
+          className={cn(
+            'flex-1 min-w-0',
+            embeddedApp ? 'flex flex-col min-h-0 overflow-hidden' : 'p-4 sm:p-6 overflow-y-auto',
+          )}
+        >
           <Outlet />
         </main>
       </div>
@@ -368,10 +375,10 @@ export function DashboardLayout() {
             key="birthday-toast"
             role="status"
             aria-live="polite"
-            className="fixed bottom-6 right-4 z-40 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-xl dark:border-amber-700 dark:bg-amber-950 max-w-xs"
-            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            className="fixed top-16 right-4 z-50 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-xl dark:border-amber-700 dark:bg-amber-950 max-w-xs"
+            initial={{ opacity: 0, y: -16, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            exit={{ opacity: 0, y: -12, scale: 0.96 }}
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Ícone */}
