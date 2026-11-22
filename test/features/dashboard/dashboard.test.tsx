@@ -1,6 +1,6 @@
 /// <reference types="vitest/globals" />
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
@@ -59,10 +59,17 @@ const blockedApp = makeApp({
   name: 'RH Portal',
   description: 'Portal de RH',
 })
+const embeddedApp = makeApp({
+  id: 'app-3',
+  name: 'Data Hub',
+  description: 'Catálogo de dados',
+  passToken: true,
+  embed: true,
+})
 
 vi.mock('@/features/dashboard/hooks/useApps', () => ({
   useApps: () => ({
-    userApps: [accessibleApp],
+    userApps: [accessibleApp, embeddedApp],
     blockedApps: [blockedApp],
     favoriteApps: [],
     recentApps: [],
@@ -144,4 +151,38 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('RH Portal')).toBeNull()
   })
 
+  it('opens an embedded app inside the Hub instead of a new tab', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const { requestAppLaunchToken } = await import('@/services/app.service')
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/']}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/app/:id" element={<p>página embutida</p>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /^Abrir Data Hub/ }))
+
+    await waitFor(() => expect(screen.getByText('página embutida')).toBeTruthy())
+    expect(openSpy).not.toHaveBeenCalled()
+    // O token SSO é pedido pela página embutida, não pelo clique.
+    expect(requestAppLaunchToken).not.toHaveBeenCalled()
+    openSpy.mockRestore()
+  })
+
+  it('keeps opening non-embedded apps in a new tab', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    render(<DashboardPage />, { wrapper: Wrapper })
+
+    fireEvent.click(screen.getByRole('button', { name: /^Abrir Financeiro/ }))
+
+    await waitFor(() => expect(openSpy).toHaveBeenCalledWith('https://example.com', '_blank', 'noopener,noreferrer'))
+    openSpy.mockRestore()
+  })
 })

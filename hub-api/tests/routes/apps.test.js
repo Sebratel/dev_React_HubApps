@@ -27,12 +27,12 @@ jest.mock('../../src/middleware/auth', () => ({
   _clearCacheForTesting: jest.fn(),
 }))
 
-jest.mock('../../src/middleware/rateLimits', () => ({
-  provisionLimiter:  (_req, _res, next) => next(),
-  adminWriteLimiter: (_req, _res, next) => next(),
-  auditLogLimiter:   (_req, _res, next) => next(),
-  ssoLaunchLimiter:  (_req, _res, next) => next(),
-}))
+// Todos os limitadores viram passagem livre — o index carrega todas as rotas, então o mock
+// precisa cobrir cada limitador exportado (lista fixa quebrava quando surgia um novo).
+jest.mock('../../src/middleware/rateLimits', () => {
+  const passa = (_req, _res, next) => next()
+  return new Proxy({}, { get: () => passa })
+})
 
 const request = require('supertest')
 const pool    = require('../../src/db/pool')
@@ -53,9 +53,76 @@ beforeEach(() => {
   conn.release.mockReset()
 })
 
+// ─── GET /apps ────────────────────────────────────────────────────────────────
+
+describe('GET /apps', () => {
+  it('returns embed in the list', async () => {
+    pool.query.mockResolvedValueOnce([[{ id: 'app-1', name: 'Data Hub', embed: 1 }]])
+
+    const res = await request(app).get('/apps').set('Authorization', 'Bearer token')
+
+    expect(res.status).toBe(200)
+    expect(res.body[0].embed).toBe(1)
+    expect(pool.query.mock.calls[0][0]).toMatch(/embed/)
+  })
+
+  it('still lists apps when the embed column does not exist yet', async () => {
+    const semColuna = Object.assign(new Error("Unknown column 'embed'"), { code: 'ER_BAD_FIELD_ERROR' })
+    pool.query
+      .mockRejectedValueOnce(semColuna)
+      .mockResolvedValueOnce([[{ id: 'app-1', name: 'Data Hub' }]])
+
+    const res = await request(app).get('/apps').set('Authorization', 'Bearer token')
+
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveLength(1)
+    expect(pool.query.mock.calls[1][0]).not.toMatch(/embed/)
+  })
+
+  it('returns 500 for other database errors', async () => {
+    pool.query.mockRejectedValueOnce(new Error('connection lost'))
+
+    const res = await request(app).get('/apps').set('Authorization', 'Bearer token')
+
+    expect(res.status).toBe(500)
+  })
+})
+
 // ─── POST /apps ───────────────────────────────────────────────────────────────
 
 describe('POST /apps', () => {
+  it('saves embed = 1 when requested', async () => {
+    conn.query
+      .mockResolvedValueOnce([{}])
+      .mockResolvedValueOnce([[{ name: 'Admin' }]])
+      .mockResolvedValueOnce([{}])
+    pool.query.mockResolvedValueOnce([[{ id: 'app-x', embed: 1 }]])
+
+    await request(app)
+      .post('/apps')
+      .set('Authorization', 'Bearer token')
+      .send({ name: 'Data Hub', url: 'https://data-hub.sebratel.net.br', embed: true })
+
+    const [sql, params] = conn.query.mock.calls[0]
+    expect(sql).toMatch(/pass_user, embed, is_active/)
+    expect(params[8]).toBe(1)
+  })
+
+  it('defaults embed to 0', async () => {
+    conn.query
+      .mockResolvedValueOnce([{}])
+      .mockResolvedValueOnce([[{ name: 'Admin' }]])
+      .mockResolvedValueOnce([{}])
+    pool.query.mockResolvedValueOnce([[{ id: 'app-x' }]])
+
+    await request(app)
+      .post('/apps')
+      .set('Authorization', 'Bearer token')
+      .send({ name: 'App X', url: 'https://x.com' })
+
+    expect(conn.query.mock.calls[0][1][8]).toBe(0)
+  })
+
   it('returns 400 when name or url is missing', async () => {
     const res = await request(app)
       .post('/apps')
@@ -145,6 +212,22 @@ describe('PATCH /apps/:id', () => {
     expect(res.status).toBe(200)
     expect(conn.query.mock.calls[2][1][3]).toBe('APP_UPDATE')
     expect(conn.commit).toHaveBeenCalled()
+  })
+
+  it('accepts embed as an updatable field', async () => {
+    conn.query
+      .mockResolvedValueOnce([{}])
+      .mockResolvedValueOnce([[{ name: 'Admin' }]])
+      .mockResolvedValueOnce([{}])
+    pool.query.mockResolvedValueOnce([[{ id: 'app-1', embed: 1 }]])
+
+    const res = await request(app)
+      .patch('/apps/app-1')
+      .set('Authorization', 'Bearer token')
+      .send({ embed: true })
+
+    expect(res.status).toBe(200)
+    expect(conn.query.mock.calls[0][0]).toMatch(/`embed` = \?/)
   })
 
   it('emits APP_DEACTIVATE when is_active = 0', async () => {

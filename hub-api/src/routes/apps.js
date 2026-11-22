@@ -7,14 +7,24 @@ const { randomUUID } = require('crypto')
 const logAudit      = require('../utils/logAudit')
 const AUDIT_ACTIONS = require('../utils/auditActions')
 
+const LIST_COLUMNS = `id, name, description, url, icon_url, card_color, pass_token, pass_user,
+              is_active, status`
+
 // GET /apps — lista todos os apps ativos para qualquer usuário autenticado com domínio @sebratel.com.br
 router.get('/', requireAuth, async (_req, res, next) => {
   try {
-    const [allApps] = await pool.query(
-      `SELECT id, name, description, url, icon_url, card_color, pass_token, pass_user,
-              is_active, status
-       FROM apps WHERE is_active = 1 ORDER BY name`
-    )
+    let allApps
+    try {
+      ;[allApps] = await pool.query(
+        `SELECT ${LIST_COLUMNS}, embed FROM apps WHERE is_active = 1 ORDER BY name`
+      )
+    } catch (err) {
+      // Migration 20 ainda não aplicada: a lista de apps não pode cair por causa da coluna nova.
+      if (err.code !== 'ER_BAD_FIELD_ERROR') throw err
+      ;[allApps] = await pool.query(
+        `SELECT ${LIST_COLUMNS} FROM apps WHERE is_active = 1 ORDER BY name`
+      )
+    }
     res.json(allApps)
   } catch (err) { next(err) }
 })
@@ -27,7 +37,7 @@ router.get('/all', requireAuth, requireAdmin, async (_req, res) => {
 
 // POST /apps — cria app (admin only)
 router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
-  const { name, url, description, iconUrl, cardColor, passToken, passUser, status, allowedProfiles, allowedUsers, allowedTeams } = req.body
+  const { name, url, description, iconUrl, cardColor, passToken, passUser, embed, status, allowedProfiles, allowedUsers, allowedTeams } = req.body
   if (!name || !url) return res.status(400).json({ error: 'name e url obrigatórios' })
 
   const validStatuses = ['active', 'maintenance', 'novo']
@@ -41,8 +51,8 @@ router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, 
     await conn.beginTransaction()
 
     await conn.query(
-      `INSERT INTO apps (id, name, url, description, icon_url, card_color, pass_token, pass_user, is_active, status, allowed_profiles, allowed_users, allowed_teams)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO apps (id, name, url, description, icon_url, card_color, pass_token, pass_user, embed, is_active, status, allowed_profiles, allowed_users, allowed_teams)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id, name, url,
         description || null,
@@ -50,6 +60,7 @@ router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, 
         cardColor   || null,
         passToken   ? 1 : 0,
         passUser    ? 1 : 0,
+        embed       ? 1 : 0,
         isActive,
         appStatus,
         JSON.stringify(allowedProfiles || []),
@@ -74,7 +85,7 @@ router.post('/', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, 
 
 // PATCH /apps/:id — atualiza app (admin only)
 router.patch('/:id', requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
-  const allowed = ['name', 'url', 'description', 'icon_url', 'card_color', 'pass_token', 'pass_user',
+  const allowed = ['name', 'url', 'description', 'icon_url', 'card_color', 'pass_token', 'pass_user', 'embed',
                    'is_active', 'status', 'allowed_profiles', 'allowed_users', 'allowed_teams']
   const fields  = Object.keys(req.body).filter(k => allowed.includes(k))
   if (!fields.length) return res.status(400).json({ error: 'Nenhum campo válido' })

@@ -56,6 +56,7 @@ const appFormSchema = z.object({
   cardColor: z.enum(['dark', 'muted', 'white', 'amber']).nullable().optional(),
   passToken: z.boolean(),
   passUser: z.boolean(),
+  embed: z.boolean(),
   status: z.enum(['active', 'maintenance', 'novo']),
   allowedProfiles: z.array(z.string()),
   allowedUsers: z.array(z.string()),
@@ -129,6 +130,7 @@ export function AppFormDialog({
       cardColor: (app?.cardColor as 'dark' | 'muted' | 'white' | 'amber' | null) ?? null,
       passToken: app?.passToken ?? false,
       passUser: app?.passUser ?? false,
+      embed: app?.embed ?? false,
       status: (app?.status as 'active' | 'maintenance' | 'novo') ?? 'active',
       allowedProfiles: app?.allowedProfiles ?? [],
       allowedUsers: app?.allowedUsers ?? [],
@@ -147,6 +149,7 @@ export function AppFormDialog({
         cardColor: (app?.cardColor as 'dark' | 'muted' | 'white' | 'amber' | null) ?? null,
         passToken: app?.passToken ?? false,
         passUser: app?.passUser ?? false,
+        embed: app?.embed ?? false,
         status: (app?.status as 'active' | 'maintenance' | 'novo') ?? 'active',
         allowedProfiles: app?.allowedProfiles ?? [],
         allowedUsers: app?.allowedUsers ?? [],
@@ -442,6 +445,27 @@ export function AppFormDialog({
                   <span className="text-sm">
                     <span className="font-medium">Passar dados do usuário na URL</span>
                     <span className="ml-1 text-xs text-muted-foreground">(uid, nome, email)</span>
+                  </span>
+                </label>
+              )}
+            />
+            <Controller
+              name="embed"
+              control={control}
+              render={({ field }) => (
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    id="app-embed"
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium">Abrir dentro do Hub</span>
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      (o app precisa liberar o Hub em frame-ancestors)
+                    </span>
                   </span>
                 </label>
               )}
