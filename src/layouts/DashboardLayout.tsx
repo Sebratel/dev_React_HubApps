@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { updateMyStatus } from '@/services/user.service'
 import { STATUS_OPTIONS } from '@/utils/statusOptions'
 import { Outlet, NavLink, Link, useMatch } from 'react-router-dom'
-import { LayoutGrid, Bell, MessageSquare, ShieldCheck, Menu, X, LogOut, ClipboardList, Users, Newspaper } from 'lucide-react'
+import { LayoutGrid, Bell, MessageSquare, ShieldCheck, Menu, X, LogOut, ClipboardList, Users, Newspaper, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/auth.store'
@@ -44,6 +44,12 @@ export function DashboardLayout() {
   const secureSignOut = useSecureSignOut()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const embeddedApp = useMatch('/app/:id') !== null
+  // Menu recolhido (só ícones) no desktop. Recolhe sozinho ao abrir um app
+  // embutido — o app precisa da largura — e volta ao sair; o botão alterna à mão.
+  const [collapsed, setCollapsed] = useState(embeddedApp)
+  useEffect(() => { setCollapsed(embeddedApp) }, [embeddedApp])
+  // Recolhido vale só no desktop (prefixo lg:). No celular o menu é gaveta e abre inteiro.
+  const whenCollapsed = (cls: string) => (collapsed ? cls : '')
   useHeartbeat()
 
   // ── Aniversário do usuário logado ──
@@ -140,20 +146,23 @@ export function DashboardLayout() {
         className={cn(
           'flex flex-col bg-card border-r border-border shrink-0 w-56',
           'fixed lg:static inset-y-0 left-0 z-30',
-          'transition-transform lg:transition-none duration-200 ease-in-out',
+          'transition-transform lg:transition-[width] duration-200 ease-in-out',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          whenCollapsed('lg:w-[60px]'),
         )}
         aria-label="Navegação principal"
+        data-collapsed={collapsed ? 'true' : 'false'}
       >
         {/* Brand */}
-        <div className="h-16 flex items-center gap-3 px-[14px] border-b border-border/70 shrink-0">
+        <div className={cn('h-16 flex items-center gap-3 px-[14px] border-b border-border/70 shrink-0', whenCollapsed('lg:px-[13px]'))}>
           <Link
             to="/"
             onClick={() => setSidebarOpen(false)}
             className="flex items-center gap-3 rounded-xl transition-transform duration-150 active:scale-95"
+            title="Sebratel Hub"
           >
             <SebratelLogo size={34} />
-            <span className="flex flex-col leading-none">
+            <span className={cn('flex flex-col leading-none', whenCollapsed('lg:hidden'))}>
               <span className="font-extrabold text-[15px] text-foreground tracking-tight">Sebratel</span>
               <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary mt-0.5">Hub</span>
             </span>
@@ -170,10 +179,12 @@ export function DashboardLayout() {
                 to={to}
                 end={end}
                 onClick={() => setSidebarOpen(false)}
+                title={collapsed ? label : undefined}
                 className={({ isActive }) =>
                   cn(
                     'relative flex items-center gap-3 px-[10px] py-2.5 rounded-xl text-sm',
                     'transition-all duration-150',
+                    whenCollapsed('lg:justify-center lg:px-0'),
                     isActive
                       ? 'bg-primary/12 font-semibold text-primary'
                       : 'font-medium text-muted-foreground hover:bg-accent hover:text-foreground',
@@ -186,11 +197,15 @@ export function DashboardLayout() {
                       <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary" aria-hidden />
                     )}
                     <Icon className="sidebar-nav-icon h-[18px] w-[18px] shrink-0" aria-hidden />
-                    <span className="flex-1 leading-none">{label}</span>
+                    <span className={cn('flex-1 leading-none', whenCollapsed('lg:hidden'))}>{label}</span>
                     {count > 0 && (
-                      <span className="ml-auto text-[10px] font-bold leading-none bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">
+                      <span className={cn('ml-auto text-[10px] font-bold leading-none bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center', whenCollapsed('lg:hidden'))}>
                         {count > 99 ? '99+' : count}
                       </span>
+                    )}
+                    {/* Recolhido: o número vira um ponto sobre o ícone */}
+                    {count > 0 && collapsed && (
+                      <span className="hidden lg:block absolute top-1.5 right-2.5 h-2 w-2 rounded-full bg-primary" aria-hidden />
                     )}
                   </>
                 )}
@@ -205,10 +220,12 @@ export function DashboardLayout() {
               <NavLink
                 to="/admin"
                 onClick={() => setSidebarOpen(false)}
+                title={collapsed ? 'Administração' : undefined}
                 className={({ isActive }) =>
                   cn(
                     'relative flex items-center gap-3 px-[10px] py-2.5 rounded-xl text-sm',
                     'transition-all duration-150',
+                    whenCollapsed('lg:justify-center lg:px-0'),
                     isActive
                       ? 'bg-primary/12 font-semibold text-primary'
                       : 'font-medium text-muted-foreground hover:bg-accent hover:text-foreground',
@@ -221,7 +238,7 @@ export function DashboardLayout() {
                       <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary" aria-hidden />
                     )}
                     <ShieldCheck className="sidebar-nav-icon h-[18px] w-[18px] shrink-0" aria-hidden />
-                    <span className="flex-1 leading-none">Administração</span>
+                    <span className={cn('flex-1 leading-none', whenCollapsed('lg:hidden'))}>Administração</span>
                   </>
                 )}
               </NavLink>
@@ -229,13 +246,33 @@ export function DashboardLayout() {
           )}
         </nav>
 
+        {/* Recolher/expandir o menu (só desktop; no celular ele já é gaveta) */}
+        <div className="hidden lg:block px-2 pb-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            className={cn(
+              'flex items-center gap-3 w-full rounded-xl px-[10px] py-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors',
+              whenCollapsed('lg:justify-center lg:px-0'),
+            )}
+            aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
+            aria-expanded={!collapsed}
+            title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+          >
+            {collapsed
+              ? <PanelLeftOpen className="h-[18px] w-[18px] shrink-0" aria-hidden />
+              : <PanelLeftClose className="h-[18px] w-[18px] shrink-0" aria-hidden />}
+            {!collapsed && <span>Recolher menu</span>}
+          </button>
+        </div>
+
         {/* User section */}
         {user && (
           <div className="border-t border-border p-2 shrink-0 flex flex-col gap-0.5">
             <Link
               to="/perfil"
               onClick={() => setSidebarOpen(false)}
-              className="flex items-center gap-3 rounded-xl px-[10px] py-2 hover:bg-accent transition-colors"
+              className={cn('flex items-center gap-3 rounded-xl px-[10px] py-2 hover:bg-accent transition-colors', whenCollapsed('lg:justify-center lg:px-0'))}
               title="Editar perfil"
             >
               <div className="relative shrink-0">
@@ -249,15 +286,15 @@ export function DashboardLayout() {
                   </span>
                 )}
               </div>
-              <div className="min-w-0">
+              <div className={cn('min-w-0', whenCollapsed('lg:hidden'))}>
                 <p className="text-sm font-medium text-foreground truncate leading-tight">
                   {user.name || user.email}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
             </Link>
-            {/* Status do momento */}
-            <div className="relative px-[10px]" ref={statusPickerRef}>
+            {/* Status do momento (some no menu recolhido: não cabe) */}
+            <div className={cn('relative px-[10px]', whenCollapsed('lg:hidden'))} ref={statusPickerRef}>
               <button
                 onClick={() => setStatusPickerOpen((o) => !o)}
                 disabled={statusMutation.isPending}
@@ -318,12 +355,12 @@ export function DashboardLayout() {
 
             <button
               onClick={secureSignOut}
-              className="flex items-center gap-3 w-full rounded-xl px-[10px] py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className={cn('flex items-center gap-3 w-full rounded-xl px-[10px] py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors', whenCollapsed('lg:justify-center lg:px-0'))}
               title="Encerrar sessão"
               aria-label="Encerrar sessão"
             >
               <LogOut className="h-[18px] w-[18px] shrink-0" aria-hidden />
-              <span>Sair</span>
+              <span className={whenCollapsed('lg:hidden')}>Sair</span>
             </button>
           </div>
         )}
