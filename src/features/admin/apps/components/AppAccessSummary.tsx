@@ -7,10 +7,11 @@ export function AppAccessSummary({ app }: { app: AppItemModel }) {
   const hasTeams = app.allowedTeams.length > 0
   const hasAny = hasProfiles || hasUsers || hasTeams
 
+  // Sem regra = liberado para todos (o hub-api só restringe quando há alguma lista preenchida).
   if (!hasAny) {
     return (
-      <span className="inline-flex items-center rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
-        Nenhuma regra
+      <span className="inline-flex items-center rounded-full border border-green-300 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+        Toda a organização
       </span>
     )
   }
