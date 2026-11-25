@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { AppIcon } from '@/components/app-icon'
@@ -65,6 +65,35 @@ const appFormSchema = z.object({
 
 export type AppFormValues = z.infer<typeof appFormSchema>
 
+type AccessRules = Pick<AppFormValues, 'allowedProfiles' | 'allowedUsers' | 'allowedTeams'>
+
+/** Sem nenhuma regra = liberado para toda a organização (é o que o hub-api faz no launch-token). */
+function hasAccessRules(app?: AppItemModel): boolean {
+  return !!app && (app.allowedProfiles.length + app.allowedUsers.length + app.allowedTeams.length) > 0
+}
+
+/** "Selecionar todos" / "Limpar" ao lado do título de cada lista de acesso. */
+function ListActions({ allLabel, onAll, onClear, canClear }: {
+  allLabel: string
+  onAll: () => void
+  onClear: () => void
+  canClear: boolean
+}) {
+  return (
+    <div className="flex items-center gap-3 text-xs">
+      {/* #8A5A00: o âmbar da marca não tem contraste legível sobre o branco */}
+      <button type="button" onClick={onAll} className="font-medium text-[#8A5A00] hover:underline">
+        {allLabel}
+      </button>
+      {canClear && (
+        <button type="button" onClick={onClear} className="text-muted-foreground hover:text-foreground hover:underline">
+          Limpar
+        </button>
+      )}
+    </div>
+  )
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface AppFormDialogProps {
@@ -90,6 +119,11 @@ export function AppFormDialog({
   const title = isEdit ? 'Editar aplicativo' : 'Criar aplicativo'
 
   const [userSearch, setUserSearch] = useState('')
+  // false = "Selecionar todos — toda a organização" marcado (listas vazias).
+  const [restricted, setRestricted] = useState(() => hasAccessRules(app))
+  const [accessError, setAccessError] = useState<string | null>(null)
+  // Guarda a escolha ao marcar "toda a organização", para voltar se desmarcar em seguida.
+  const savedRules = useRef<AccessRules | null>(null)
 
   const { data: allUsers = [], isLoading: usersLoading } = useQuery({
     queryKey: ['admin', 'users', 'all'],
@@ -119,6 +153,8 @@ export function AppFormDialog({
     control,
     watch,
     reset,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<AppFormValues>({
     resolver: zodResolver(appFormSchema),
@@ -141,6 +177,9 @@ export function AppFormDialog({
   useEffect(() => {
     if (open) {
       setUserSearch('')
+      setRestricted(hasAccessRules(app))
+      setAccessError(null)
+      savedRules.current = null
       reset({
         name: app?.name ?? '',
         url: app?.url ?? '',
@@ -168,8 +207,30 @@ export function AppFormDialog({
     allowedUsers.length === 0 &&
     allowedTeams.length === 0
 
+  function setRules(rules: AccessRules) {
+    setValue('allowedProfiles', rules.allowedProfiles, { shouldDirty: true })
+    setValue('allowedUsers', rules.allowedUsers, { shouldDirty: true })
+    setValue('allowedTeams', rules.allowedTeams, { shouldDirty: true })
+  }
+
+  function setWholeOrganization(all: boolean) {
+    setAccessError(null)
+    if (all) {
+      const { allowedProfiles: p, allowedUsers: u, allowedTeams: t } = getValues()
+      savedRules.current = { allowedProfiles: p, allowedUsers: u, allowedTeams: t }
+      setRules({ allowedProfiles: [], allowedUsers: [], allowedTeams: [] })
+    } else if (savedRules.current) {
+      setRules(savedRules.current)
+    }
+    setRestricted(!all)
+  }
+
   function onSubmit(values: AppFormValues) {
-    onConfirm(values)
+    if (restricted && noAccessRules) {
+      setAccessError('Escolha ao menos um perfil, usuário ou time — ou marque "Selecionar todos — toda a organização".')
+      return
+    }
+    onConfirm(restricted ? values : { ...values, allowedProfiles: [], allowedUsers: [], allowedTeams: [] })
   }
 
   return (
@@ -472,13 +533,44 @@ export function AppFormDialog({
             />
           </div>
 
+          {/* Quem pode abrir */}
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Quem pode abrir</span>
+            <label className="flex cursor-pointer select-none items-start gap-2 rounded-md border border-input bg-background px-3 py-2.5">
+              <input
+                id="app-toda-organizacao"
+                type="checkbox"
+                checked={!restricted}
+                onChange={(e) => setWholeOrganization(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-input"
+              />
+              <span className="text-sm">
+                <span className="font-medium">Selecionar todos — toda a organização</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  Qualquer conta @sebratel.com.br abre o app, inclusive quem entrar depois.
+                  Desmarque para escolher perfis, usuários ou times.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          {restricted && (<>
           {/* Allowed Profiles */}
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">Perfis com acesso</span>
             <Controller
               name="allowedProfiles"
               control={control}
               render={({ field }) => (
+                <>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium">Perfis com acesso</span>
+                  <ListActions
+                    allLabel="Selecionar todos"
+                    onAll={() => field.onChange(PROFILE_OPTIONS.map((o) => o.value))}
+                    onClear={() => field.onChange([])}
+                    canClear={field.value.length > 0}
+                  />
+                </div>
                 <div className="flex flex-wrap gap-3">
                   {PROFILE_OPTIONS.map(({ value, label }) => (
                     <label key={value} className="flex items-center gap-1.5 cursor-pointer text-sm">
@@ -499,18 +591,27 @@ export function AppFormDialog({
                     </label>
                   ))}
                 </div>
+                </>
               )}
             />
           </div>
 
           {/* Allowed Users */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Usuários específicos</span>
             <Controller
               name="allowedUsers"
               control={control}
               render={({ field }) => (
                 <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium">Usuários específicos</span>
+                    <ListActions
+                      allLabel={`Selecionar todos${userSearch.trim() ? ' os encontrados' : ''} (${filteredUsers.length})`}
+                      onAll={() => field.onChange(Array.from(new Set([...field.value, ...filteredUsers.map((u) => u.id)])))}
+                      onClear={() => field.onChange([])}
+                      canClear={field.value.length > 0}
+                    />
+                  </div>
                   <Input
                     placeholder="Buscar por nome ou e-mail..."
                     value={userSearch}
@@ -559,12 +660,20 @@ export function AppFormDialog({
 
           {/* Allowed Teams */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Times com acesso</span>
             <Controller
               name="allowedTeams"
               control={control}
               render={({ field }) => (
                 <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium">Times com acesso</span>
+                    <ListActions
+                      allLabel="Selecionar todos"
+                      onAll={() => field.onChange(allTeams.map((t) => t.id))}
+                      onClear={() => field.onChange([])}
+                      canClear={field.value.length > 0}
+                    />
+                  </div>
                   <div className="max-h-44 overflow-y-auto rounded-md border border-input bg-background divide-y divide-border">
                     {teamsLoading ? (
                       <p className="px-3 py-2.5 text-sm text-muted-foreground">Carregando times...</p>
@@ -603,16 +712,16 @@ export function AppFormDialog({
             />
           </div>
 
-          {/* No access rules warning */}
+          {/* Restringir sem escolher ninguém: o hub-api trataria como liberado para todos */}
           {noAccessRules && (
             <div
-              role="note"
+              role={accessError ? 'alert' : 'note'}
               className="rounded-md border border-orange-300 bg-orange-50 px-3 py-2 text-xs text-orange-800"
             >
-              <strong>Atenção:</strong> Nenhuma regra de acesso configurada. O aplicativo ficará
-              inacessível para todos os usuários até que ao menos uma regra seja adicionada.
+              {accessError ?? 'Escolha ao menos um perfil, usuário ou time. Sem nenhuma marcação o app fica liberado para toda a organização.'}
             </div>
           )}
+          </>)}
 
           {/* Mutation error */}
           {error && (
