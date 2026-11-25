@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Search, PackageOpen, Sunrise, Sun, Moon, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -17,9 +16,7 @@ import { logAppOpen } from '@/services/audit-log.service'
 import { useFavoritesSync } from './hooks/useFavoritesSync'
 import { SocialPanel } from '@/features/social/SocialPanel'
 import { BirthdayConfetti } from '@/components/BirthdayConfetti'
-import { SeasonDeco } from '@/components/SeasonDeco'
 import { isBirthdayToday } from '@/utils/isBirthdayToday'
-import { getSeason } from '@/utils/season'
 import { OnboardingChecklist } from '@/features/onboarding/OnboardingChecklist'
 import { SendKudoDialog } from '@/features/kudos/SendKudoDialog'
 import { cn } from '@/lib/utils'
@@ -44,28 +41,24 @@ function formatToday(): string {
 function HeroAvatar({ name, photoUrl }: { name: string; photoUrl: string | null }) {
   const initials = name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')
   return (
-    <div className="relative shrink-0">
-      <div
-        className="absolute -inset-1 rounded-2xl"
-        style={{ background: 'hsl(var(--primary) / 0.18)', filter: 'blur(8px)' }}
-        aria-hidden
-      />
-      <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/70 bg-primary/15 shadow-sm">
-        {photoUrl ? (
-          <img src={photoUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <span className="text-lg font-bold text-primary">{initials || '?'}</span>
-        )}
-      </div>
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#FFF1CC]">
+      {photoUrl ? (
+        <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <span className="text-base font-bold text-[#8A5A00]">{initials || '?'}</span>
+      )}
     </div>
   )
 }
 
+/** Cartões de ~156 px: 7 por linha numa tela de 1280 px. */
+const GRID_STYLE = { gridTemplateColumns: 'repeat(auto-fill, minmax(156px, 1fr))' }
+
 function LoadingGrid() {
   return (
-    <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(168px, 185px))' }}>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="min-h-[200px] w-full rounded-3xl bg-muted/60 animate-pulse" />
+    <div className="grid gap-3" style={GRID_STYLE}>
+      {Array.from({ length: 7 }).map((_, i) => (
+        <div key={i} className="min-h-[132px] w-full rounded-[14px] bg-muted/60 animate-pulse" />
       ))}
     </div>
   )
@@ -85,7 +78,6 @@ const EMPTY: Record<Tab, { label: string; hint: string }> = {
 
 export function DashboardPage() {
   useFavoritesSync()
-  const reduced = useReducedMotion()
 
   const user           = useAuthStore((s) => s.user)
   const favorites      = useAppsStore((s) => s.favorites)
@@ -187,7 +179,6 @@ export function DashboardPage() {
   if (!user) return null
 
   const isMyBirthday = isBirthdayToday(user.birthDate)
-  const season = getSeason()
   const { label: greetingLabel, Icon: GreetingIcon } = getGreeting()
   const firstName = user.name?.split(' ')[0] ?? user.email.split('@')[0] ?? 'usuário'
 
@@ -197,335 +188,194 @@ export function DashboardPage() {
     onRequestAccess:   () => {}, // todos os apps são acessíveis — prop mantida para compatibilidade de tipo
   }
 
+  const renderGrid = (apps: AppItemModel[]) => (
+    <div className="grid gap-3" style={GRID_STYLE} aria-live="polite">
+      {apps.map((app) => (
+        <BookCard
+          key={app.id}
+          app={app}
+          hasAccess={true}
+          isFavorite={favorites.includes(app.id)}
+          isPending={false}
+          {...sharedCardProps}
+        />
+      ))}
+    </div>
+  )
+
   return (
     <div className="relative pb-6">
       {/* Confetti de aniversário */}
       {isMyBirthday && <BirthdayConfetti />}
 
-      {/* Atmospheric blur spheres */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden>
-        <div
-          className="absolute -right-24 -top-24 h-96 w-96 rounded-full"
-          style={{ background: 'hsl(var(--primary) / 0.05)', filter: 'blur(80px)' }}
-        />
-        <div
-          className="absolute -left-32 top-1/2 h-72 w-72 rounded-full"
-          style={{ background: 'hsl(var(--primary) / 0.035)', filter: 'blur(80px)' }}
-        />
-      </div>
+      <div className="flex flex-col gap-4">
 
-      {/* ── Layout coluna única + painel flutuante ────────────────────────────── */}
-      <div className="flex flex-col gap-5">
-
-          {/* Hero */}
-          <motion.section
-            className="relative overflow-hidden rounded-3xl"
-            style={{
-              backgroundColor: isMyBirthday ? 'rgba(255,251,235,0.52)' : 'rgba(255,255,255,0.42)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: isMyBirthday ? '1px solid rgba(251,191,36,0.45)' : '1px solid rgba(255,255,255,0.6)',
-              boxShadow: isMyBirthday
-                ? '0 8px 32px rgba(251,191,36,0.12), inset 0 1px 0 rgba(255,255,255,0.85)'
-                : '0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.85)',
-            }}
-            initial={reduced ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {isMyBirthday && (
-              <div
-                className="pointer-events-none absolute top-0 left-0 right-0 h-1"
-                style={{ background: 'linear-gradient(90deg, #f59e0b, #fbbf24, #f97316, #fbbf24, #f59e0b)' }}
-                aria-hidden
-              />
-            )}
+        {/* Boas-vindas + busca, numa faixa só */}
+        <section
+          className={cn(
+            'relative flex flex-wrap items-center gap-x-6 gap-y-4 overflow-hidden rounded-2xl border bg-card px-5 py-4',
+            'shadow-[0_2px_10px_-4px_rgba(120,60,0,0.10)]',
+            isMyBirthday ? 'border-amber-300/70 bg-amber-50/60' : 'border-[#EDE6D8]',
+          )}
+        >
+          {isMyBirthday && (
             <div
-              className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full"
-              style={{
-                background: isMyBirthday ? 'rgba(251,191,36,0.15)' : 'hsl(var(--primary) / 0.10)',
-                filter: 'blur(60px)',
-              }}
+              className="pointer-events-none absolute inset-x-0 top-0 h-1"
+              style={{ background: 'linear-gradient(90deg, #f59e0b, #fbbf24, #f97316, #fbbf24, #f59e0b)' }}
               aria-hidden
             />
+          )}
 
-            {/* Decoração sazonal — visível apenas em telas médias+ */}
-            {!isMyBirthday && (
-              <SeasonDeco
-                season={season}
-                className="pointer-events-none absolute right-0 top-0 hidden h-full w-48 sm:block"
-              />
-            )}
-
-            <div className="relative flex flex-col gap-3 p-5 sm:p-6 sm:pr-44">
-              {/* Greeting chip + date */}
-              <motion.div
-                className="flex flex-wrap items-center gap-3"
-                initial={reduced ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              >
+          <div className="flex min-w-0 items-center gap-3.5">
+            <HeroAvatar name={user.name ?? firstName} photoUrl={user.photoUrl} />
+            <div className="flex min-w-0 flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2">
                 {isMyBirthday ? (
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1">
-                    <span className="text-sm leading-none" aria-hidden>🎂</span>
-                    <span className="text-xs font-semibold text-amber-700">Feliz Aniversário!</span>
-                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                    <span aria-hidden>🎂</span> Feliz Aniversário!
+                  </span>
                 ) : (
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/[0.12] px-3 py-1">
-                    <GreetingIcon className="h-3.5 w-3.5 text-primary" aria-hidden />
-                    <span className="text-xs font-semibold text-primary">{greetingLabel}</span>
-                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF1CC] px-2.5 py-0.5 text-xs font-semibold text-[#7A5000]">
+                    <GreetingIcon className="h-3 w-3" aria-hidden />
+                    {greetingLabel}
+                  </span>
                 )}
-                <span className="text-xs font-medium text-muted-foreground">{formatToday()}</span>
-              </motion.div>
-
-              {/* Avatar + name */}
-              <motion.div
-                className="flex items-center gap-4"
-                initial={reduced ? false : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.32, delay: reduced ? 0 : 0.06, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <HeroAvatar name={user.name ?? firstName} photoUrl={user.photoUrl} />
-                <div className="flex flex-col gap-1">
-                  <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground">
-                    {isMyBirthday ? 'Feliz Aniversário,' : 'Bem-vindo,'}{' '}
-                    <motion.span
-                      className={isMyBirthday ? 'text-amber-500' : 'text-primary'}
-                      initial={reduced ? false : { opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.32, delay: reduced ? 0 : 0.12, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      {firstName}
-                    </motion.span>
-                    <span className={isMyBirthday ? 'text-amber-500' : 'text-primary'}>
-                      {isMyBirthday ? '! 🎉' : '.'}
-                    </span>
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    {isMyBirthday
-                      ? 'Que seu dia seja incrível! Seus colegas estão aqui para comemorar com você. 🥳'
-                      : 'Sua biblioteca de aplicativos, tudo em um só lugar.'}
-                  </p>
-                </div>
-              </motion.div>
-
-              {/* Search */}
-              <motion.div
-                className="relative w-full sm:max-w-[460px]"
-                initial={reduced ? false : { opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.26, delay: reduced ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <Input
-                  placeholder="Buscar aplicativo..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className={cn(
-                    'peer h-11 w-full rounded-2xl border-white/60 bg-white/55 pl-10 transition-colors duration-[160ms] focus-visible:bg-white/80',
-                    search && 'pr-10',
-                  )}
-                  aria-label="Buscar aplicativo"
-                  aria-live="polite"
-                />
-                <Search
-                  className={cn(
-                    'pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2',
-                    'text-muted-foreground/65',
-                    'transition-[opacity,transform] duration-[160ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
-                    'peer-focus:translate-x-px peer-focus:text-primary',
-                  )}
-                  aria-hidden
-                />
-                <AnimatePresence>
-                  {search && (
-                    <motion.button
-                      key="clear"
-                      initial={{ opacity: 0, scale: 0.6 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.6 }}
-                      transition={{ duration: 0.12 }}
-                      onClick={() => setSearch('')}
-                      className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-muted-foreground/20 text-muted-foreground transition-colors hover:bg-muted-foreground/30"
-                      aria-label="Limpar busca"
-                    >
-                      <X className="h-3 w-3" />
-                    </motion.button>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+                <span className="text-xs text-muted-foreground">{formatToday()}</span>
+              </div>
+              <h1 className="text-[22px] font-bold leading-tight tracking-tight text-foreground">
+                {isMyBirthday ? 'Feliz Aniversário,' : 'Bem-vindo,'}{' '}
+                {/* #A86F00: o âmbar da marca não tem contraste legível sobre o branco */}
+                <span className={isMyBirthday ? 'text-amber-600' : 'text-[#A86F00]'}>{firstName}</span>
+                {isMyBirthday ? '! 🎉' : '.'}
+              </h1>
+              {isMyBirthday && (
+                <p className="text-sm text-muted-foreground">
+                  Que seu dia seja incrível! Seus colegas estão aqui para comemorar com você. 🥳
+                </p>
+              )}
             </div>
-          </motion.section>
+          </div>
 
-          {/* Banners de erro e SSO */}
-          {error && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              Erro ao carregar aplicativos. Tente recarregar a página.
-            </div>
-          )}
-          {notice && (
-            <div role="status" className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-700">
-              {notice}
-            </div>
-          )}
-
-          {/* Checklist de onboarding */}
-          <OnboardingChecklist onOpenSendKudo={() => setKudoDialogOpen(true)} />
-
-          {/* Conteúdo principal: destaques + tabs + grid */}
-          <AnimatePresence mode="wait" initial={false}>
-            {isLoading ? (
-              <motion.div
-                key="loading"
-                exit={reduced ? undefined : { opacity: 0 }}
-                transition={{ duration: 0.15 }}
+          <div className="relative w-full sm:ml-auto sm:w-auto sm:min-w-[260px] sm:flex-[0_1_380px]">
+            <Input
+              placeholder="Buscar aplicativo..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={cn(
+                'peer h-10 w-full rounded-xl border-[#E6DDCB] bg-[#FBF8F2] pl-10 transition-colors duration-150 focus-visible:bg-white',
+                search && 'pr-10',
+              )}
+              aria-label="Buscar aplicativo"
+            />
+            <Search
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70 peer-focus:text-primary"
+              aria-hidden
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-muted-foreground/20 text-muted-foreground transition-colors hover:bg-muted-foreground/30"
+                aria-label="Limpar busca"
               >
-                <LoadingGrid />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="content"
-                className="flex flex-col gap-5"
-                initial={reduced ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.24, ease: [0.4, 0, 0.2, 1] }}
-              >
-                {highlights.length > 0 && <FeaturedBanner highlights={highlights} />}
-
-                {isSearching && searchResults ? (
-                  <motion.div
-                    key="search"
-                    className="flex flex-col gap-4"
-                    initial={reduced ? false : { opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <p className="text-sm text-muted-foreground">
-                      {searchResults.total === 0
-                        ? 'Nenhum resultado para a busca.'
-                        : `${searchResults.total} resultado${searchResults.total !== 1 ? 's' : ''} encontrado${searchResults.total !== 1 ? 's' : ''}`}
-                    </p>
-                    {searchResults.total === 0 ? (
-                      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center" role="status" aria-live="polite">
-                        <PackageOpen className="h-12 w-12 text-muted-foreground/40" aria-hidden />
-                        <p className="text-sm font-medium text-muted-foreground">Nenhum aplicativo encontrado</p>
-                        <p className="text-xs text-muted-foreground/70">Tente buscar por outro nome ou descrição.</p>
-                      </div>
-                    ) : (
-                      <div
-                        className="grid gap-5"
-                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(168px, 185px))' }}
-                        aria-live="polite"
-                      >
-                        {searchResults.accessible.map((app, i) => (
-                          <BookCard key={app.id} app={app} hasAccess={true} isFavorite={favorites.includes(app.id)} isPending={false} index={i} {...sharedCardProps} />
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="tabs"
-                    className="flex flex-col gap-5"
-                    initial={reduced ? false : { opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
-                  >
-                    {/* Tab bar */}
-                    <div className="overflow-x-auto scrollbar-none -mx-1 px-1 pb-0.5">
-                      <div
-                        className="flex gap-1 rounded-2xl p-1 min-w-max sm:min-w-0"
-                        style={{
-                          background: 'rgba(255,255,255,0.55)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
-                          border: '1px solid rgba(255,255,255,0.65)',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                        }}
-                        role="tablist"
-                        aria-label="Filtrar aplicativos"
-                      >
-                        {TABS.map(({ key, label }) => (
-                          <button
-                            key={key}
-                            role="tab"
-                            aria-selected={activeTab === key}
-                            onClick={() => setActiveTab(key)}
-                            className={cn(
-                              'relative flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150 whitespace-nowrap',
-                              activeTab === key ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
-                            )}
-                          >
-                            {activeTab === key && (
-                              <motion.div
-                                layoutId="tab-pill"
-                                className="absolute inset-0 rounded-xl bg-white shadow-sm"
-                                transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                              />
-                            )}
-                            <span className="relative z-10">{label}</span>
-                            {tabCounts[key] > 0 && (
-                              <span className={cn('relative z-10 text-[11px] font-semibold tabular-nums', activeTab === key ? 'text-primary' : 'text-muted-foreground/50')}>
-                                {tabCounts[key]}
-                              </span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Grid */}
-                    <AnimatePresence mode="wait">
-                      {tabApps.length === 0 ? (
-                        <motion.div
-                          key={`empty-${activeTab}`}
-                          className="flex flex-col items-center justify-center gap-3 py-16 text-center"
-                          initial={reduced ? false : { opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={reduced ? undefined : { opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          role="status"
-                        >
-                          <PackageOpen className="h-10 w-10 text-muted-foreground/40" aria-hidden />
-                          <p className="text-sm font-medium text-muted-foreground">{EMPTY[activeTab].label}</p>
-                          {EMPTY[activeTab].hint && (
-                            <p className="text-xs text-muted-foreground/60">{EMPTY[activeTab].hint}</p>
-                          )}
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key={`grid-${activeTab}`}
-                          className="grid gap-5"
-                          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(168px, 185px))' }}
-                          initial={reduced ? false : { opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={reduced ? undefined : { opacity: 0 }}
-                          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                        >
-                          {tabApps.map((app, i) => (
-                            <BookCard
-                              key={app.id}
-                              app={app}
-                              hasAccess={true}
-                              isFavorite={favorites.includes(app.id)}
-                              isPending={false}
-                              index={i}
-                              {...sharedCardProps}
-                            />
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                )}
-              </motion.div>
+                <X className="h-3 w-3" aria-hidden />
+              </button>
             )}
-          </AnimatePresence>
+          </div>
+        </section>
 
-          {/* Manual do Colaborador */}
-          <AppManual manuals={manuals} />
+        {/* Banners de erro e SSO */}
+        {error && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Erro ao carregar aplicativos. Tente recarregar a página.
+          </div>
+        )}
+        {notice && (
+          <div role="status" className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-700">
+            {notice}
+          </div>
+        )}
 
-      </div>{/* /flex */}
+        {/* Checklist de onboarding (fechado por padrão) */}
+        <OnboardingChecklist onOpenSendKudo={() => setKudoDialogOpen(true)} />
+
+        {isLoading ? (
+          <LoadingGrid />
+        ) : (
+          <>
+            {highlights.length > 0 && <FeaturedBanner highlights={highlights} />}
+
+            {isSearching && searchResults ? (
+              <section aria-label="Resultado da busca" className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground" role="status">
+                  {searchResults.total === 0
+                    ? 'Nenhum resultado para a busca.'
+                    : `${searchResults.total} resultado${searchResults.total !== 1 ? 's' : ''} encontrado${searchResults.total !== 1 ? 's' : ''}`}
+                </p>
+                {searchResults.total === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                    <PackageOpen className="h-12 w-12 text-muted-foreground/40" aria-hidden />
+                    <p className="text-sm font-medium text-muted-foreground">Nenhum aplicativo encontrado</p>
+                    <p className="text-xs text-muted-foreground/70">Tente buscar por outro nome ou descrição.</p>
+                  </div>
+                ) : (
+                  renderGrid(searchResults.accessible)
+                )}
+              </section>
+            ) : (
+              <section aria-label="Aplicativos" className="mt-1 flex flex-col gap-3.5">
+                <div
+                  className="inline-flex max-w-full gap-1 self-start overflow-x-auto rounded-xl border border-[#EDE6D8] bg-white p-1 scrollbar-none"
+                  role="tablist"
+                  aria-label="Filtrar aplicativos"
+                >
+                  {TABS.map(({ key, label }) => {
+                    const active = activeTab === key
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => setActiveTab(key)}
+                        className={cn(
+                          'inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 text-[13px] transition-colors duration-150',
+                          active
+                            ? 'bg-[#FFF1CC] font-semibold text-[#2d1800]'
+                            : 'font-medium text-muted-foreground hover:bg-[#F3EDE0] hover:text-foreground',
+                        )}
+                      >
+                        {label}
+                        {tabCounts[key] > 0 && (
+                          <span className={cn('text-xs tabular-nums', active ? 'text-[#8A5A00]' : 'text-muted-foreground')}>
+                            {tabCounts[key]}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {tabApps.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-3 py-16 text-center" role="status">
+                    <PackageOpen className="h-10 w-10 text-muted-foreground/40" aria-hidden />
+                    <p className="text-sm font-medium text-muted-foreground">{EMPTY[activeTab].label}</p>
+                    {EMPTY[activeTab].hint && (
+                      <p className="text-xs text-muted-foreground/70">{EMPTY[activeTab].hint}</p>
+                    )}
+                  </div>
+                ) : (
+                  renderGrid(tabApps)
+                )}
+              </section>
+            )}
+          </>
+        )}
+
+        {/* Manual do Colaborador */}
+        <AppManual manuals={manuals} />
+
+      </div>
 
       {/* Painel social flutuante */}
       <SocialPanel />

@@ -102,7 +102,8 @@ export function OnboardingChecklist({ onOpenSendKudo }: Props) {
   const user = useAuthStore((s) => s.user)
 
   const [visible,   setVisible]   = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  // Começa fechado: na home, os apps vêm primeiro; o cabeçalho já mostra o progresso e o próximo passo.
+  const [collapsed, setCollapsed] = useState(true)
   const [allDone,   setAllDone]   = useState(false)
   const [dirVisited, setDirVisited] = useState(false)
 
@@ -182,6 +183,7 @@ export function OnboardingChecklist({ onOpenSendKudo }: Props) {
   ] : []
 
   const doneCount = tasks.filter((t) => t.done).length
+  const pending   = tasks.filter((t) => !t.done)
   const total     = tasks.length
   const progress  = total > 0 ? Math.round((doneCount / total) * 100) : 0
   const isAllDone = total > 0 && doneCount === total
@@ -208,82 +210,80 @@ export function OnboardingChecklist({ onOpenSendKudo }: Props) {
         exit={{ opacity: 0, scale: 0.97, y: -8 }}
         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
-          'rounded-2xl border bg-card overflow-hidden',
+          'rounded-[14px] border bg-card overflow-hidden',
           isAllDone
             ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-900/10'
-            : 'border-border'
+            : 'border-[#EDE6D8]'
         )}
       >
-        {/* ── Header ── */}
-        <button
-          type="button"
-          onClick={() => !isAllDone && setCollapsed((c) => !c)}
-          className={cn(
-            'w-full flex items-center gap-3 px-4 py-3 text-left',
-            !isAllDone && 'hover:bg-muted/40 transition-colors'
-          )}
-          aria-expanded={!collapsed}
-        >
-          <div className={cn(
-            'flex h-6 w-6 shrink-0 items-center justify-center rounded-lg',
-            isAllDone ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-primary/10'
-          )}>
-            {isAllDone
-              ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" aria-hidden />
-              : <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
-            }
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <p className={cn(
-              'text-sm font-semibold leading-tight',
-              isAllDone ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'
-            )}>
-              {isAllDone ? '🎉 Tudo pronto! Aproveite o Hub.' : 'Primeiros passos'}
-            </p>
-            {!isAllDone && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {doneCount} de {total} concluídos
-              </p>
+        {/* ── Header ── (o "x" fica fora do botão de abrir: botão dentro de botão não é válido) */}
+        <div className="flex items-center gap-1 pr-2">
+          <button
+            type="button"
+            onClick={() => !isAllDone && setCollapsed((c) => !c)}
+            className={cn(
+              'flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-3.5 pr-1 text-left',
+              !isAllDone && 'rounded-l-[14px] hover:bg-muted/40 transition-colors'
             )}
-          </div>
-
-          {!isAllDone && (
-            <div
-              className="shrink-0 h-1.5 w-20 rounded-full bg-muted overflow-hidden"
-              role="progressbar"
-              aria-valuenow={doneCount}
-              aria-valuemax={total}
-            >
-              <motion.div
-                className="h-full rounded-full bg-primary"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
-              />
+            aria-expanded={isAllDone ? undefined : !collapsed}
+          >
+            <div className={cn(
+              'flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg',
+              isAllDone ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-primary/10'
+            )}>
+              {isAllDone
+                ? <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden />
+                : <Sparkles className="h-4 w-4 text-primary" aria-hidden />
+              }
             </div>
-          )}
+
+            <div className="flex-1 min-w-0">
+              <p className={cn(
+                'text-[13px] font-semibold leading-tight',
+                isAllDone ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'
+              )}>
+                {isAllDone ? '🎉 Tudo pronto! Aproveite o Hub.' : 'Primeiros passos'}
+              </p>
+              {!isAllDone && (
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {doneCount} de {total} concluídos
+                  {pending[0] && <span className="hidden sm:inline"> · Próximo: {pending[0].label}</span>}
+                </p>
+              )}
+            </div>
+
+            {!isAllDone && (
+              <div
+                className="hidden h-1.5 w-28 shrink-0 overflow-hidden rounded-full bg-muted sm:block"
+                role="progressbar"
+                aria-label="Progresso dos primeiros passos"
+                aria-valuenow={doneCount}
+                aria-valuemin={0}
+                aria-valuemax={total}
+              >
+                <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+              </div>
+            )}
+
+            {!isAllDone && (
+              <ChevronDown
+                className={cn('h-4 w-4 text-muted-foreground transition-transform shrink-0', !collapsed && 'rotate-180')}
+                aria-hidden
+              />
+            )}
+          </button>
 
           {!isAllDone && (
-            <ChevronDown
-              className={cn('h-4 w-4 text-muted-foreground transition-transform shrink-0', collapsed && 'rotate-180')}
-              aria-hidden
-            />
-          )}
-
-          {!isAllDone && (
-            <span
-              role="button"
-              tabIndex={0}
+            <button
+              type="button"
               aria-label="Dispensar checklist"
-              onClick={(e) => { e.stopPropagation(); dismiss() }}
-              onKeyDown={(e) => e.key === 'Enter' && (e.stopPropagation(), dismiss())}
-              className="shrink-0 h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              onClick={dismiss}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              <X className="h-3.5 w-3.5" />
-            </span>
+              <X className="h-4 w-4" aria-hidden />
+            </button>
           )}
-        </button>
+        </div>
 
         {/* ── Body ── */}
         <AnimatePresence initial={false}>
@@ -307,7 +307,7 @@ export function OnboardingChecklist({ onOpenSendKudo }: Props) {
                 </div>
               ) : (
                 <div className="px-3 pb-3 flex flex-col gap-0.5 border-t border-border pt-2">
-                  {tasks.map((task) => (
+                  {pending.map((task) => (
                     <TaskRow key={task.id} task={task} />
                   ))}
                 </div>
