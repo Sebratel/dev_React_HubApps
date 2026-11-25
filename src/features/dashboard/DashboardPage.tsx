@@ -51,8 +51,11 @@ function HeroAvatar({ name, photoUrl }: { name: string; photoUrl: string | null 
   )
 }
 
-/** Cartões de ~156 px: 7 por linha numa tela de 1280 px. */
-const GRID_STYLE = { gridTemplateColumns: 'repeat(auto-fill, minmax(156px, 1fr))' }
+/**
+ * Cartões a partir de 172 px (7 por linha numa tela de 1366 px). `gridAutoRows: 1fr` deixa todas
+ * as linhas com a altura da mais alta: a grade fica regular mesmo com nomes de tamanhos diferentes.
+ */
+const GRID_STYLE = { gridTemplateColumns: 'repeat(auto-fill, minmax(172px, 1fr))', gridAutoRows: '1fr' }
 
 function LoadingGrid() {
   return (

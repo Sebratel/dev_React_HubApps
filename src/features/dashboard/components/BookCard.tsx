@@ -89,15 +89,17 @@ export function BookCard({
       </div>
 
       <div className="flex flex-1 flex-col gap-1">
-        <h3 className="line-clamp-2 text-sm font-bold leading-snug text-[#2d1800]">
+        <h3 className="text-sm font-bold leading-snug text-[#2d1800]">
+          {/* O corte em 2 linhas fica no <span>: no <h3> ele não alcança o texto de dentro do botão. */}
           <button
             type="button"
             onClick={handleClick}
             disabled={isPending}
             aria-label={label}
-            className="text-left outline-none after:absolute after:inset-0 after:content-[''] disabled:cursor-default"
+            title={app.name}
+            className="block w-full text-left outline-none after:absolute after:inset-0 after:content-[''] disabled:cursor-default"
           >
-            {app.name}
+            <span className="line-clamp-2">{app.name}</span>
           </button>
         </h3>
         {app.description && (
