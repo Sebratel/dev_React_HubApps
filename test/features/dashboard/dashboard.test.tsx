@@ -132,9 +132,10 @@ describe('DashboardPage', () => {
 
   it('renders dashboard header and search', () => {
     render(<DashboardPage />, { wrapper: Wrapper })
-    // Hero redesign replaced the "Aplicativos" heading with a welcome + subtitle.
-    expect(screen.getByText('Sua biblioteca de aplicativos, tudo em um só lugar.')).toBeTruthy()
+    // Boas-vindas numa faixa só: saudação + nome, busca ao lado e abas dos apps.
+    expect(screen.getByRole('heading', { level: 1, name: /Bem-vindo,/ })).toBeTruthy()
     expect(screen.getByPlaceholderText('Buscar aplicativo...')).toBeTruthy()
+    expect(screen.getByRole('tablist', { name: 'Filtrar aplicativos' })).toBeTruthy()
   })
 
   it('renders accessible app with Abrir button', () => {
